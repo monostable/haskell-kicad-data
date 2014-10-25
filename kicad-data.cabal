@@ -16,16 +16,37 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:       Data.Kicad.KicadExpr
-                       , Data.Kicad.Parse
-                       , Data.Kicad.SExpr
-                       , Data.Kicad.ParseSExpr
-                       , Data.Kicad.Interpret
+  exposed-modules:
+      Data.Kicad.KicadExpr
+    , Data.Kicad.Parse
+    , Data.Kicad.SExpr
+    , Data.Kicad.ParseSExpr
+    , Data.Kicad.Interpret
   -- other-modules:
   -- other-extensions:
-  build-depends:        base >=4.7 && <4.8
-                      , parsec >=3.1 && <3.2
-                      , parsec-numbers >= 0.1.0  && <0.2.0
-                      , lens-family >= 1.1 && <1.2
+  build-depends:
+    base >=4.7 && <4.8
+    , parsec >=3.1 && <3.2
+    , parsec-numbers >= 0.1.0  && <0.2.0
+    , lens-family >= 1.1 && <1.2
   -- hs-source-dirs:
   default-language:    Haskell2010
+
+test-suite kicad-data-tests
+  type: exitcode-stdio-1.0
+  x-uses-tf: true
+  ghc-options: -threaded -Wall -rtsopts -O
+  hs-source-dirs: tests, ./
+  default-language: Haskell2010
+  main-is: Test.hs
+
+  build-depends:
+      base >= 4 && < 5
+    , parsec >=3.1 && <3.2
+    , parsec-numbers >= 0.1.0  && <0.2.0
+    , lens-family >= 1.1 && <1.2
+    , HUnit >= 1.2 && < 2
+    , QuickCheck >= 2
+    , test-framework >= 0.8 && < 1
+    , test-framework-hunit >= 0.3 && < 1
+    , test-framework-quickcheck2 >= 0.3 && < 1
