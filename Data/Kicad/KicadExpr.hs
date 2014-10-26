@@ -1,16 +1,31 @@
 module Data.Kicad.KicadExpr where
 import Lens.Family2
+import Data.AEq
+import Data.Tuple (swap)
 
 data KicadExpr = KicadExprModule KicadModule
                | KicadExprItem KicadItem
                | KicadExprAttribute KicadAttribute
     deriving (Show, Eq)
 
+instance AEq KicadExpr where
+    KicadExprModule    x ~== KicadExprModule y = x ~== y
+    KicadExprItem      x ~== KicadExprItem   y = x ~== y
+    KicadExprAttribute x ~== KicadExprAttribute y = x ~== y
+    _ ~== _ = False
+
+
 data KicadModule = KicadModule  { kicadModuleName  :: String
                                 , kicadModuleLayer :: KicadLayerT
                                 , kicadModuleItems :: [KicadItem]
                                 }
     deriving (Show, Eq)
+
+instance AEq KicadModule where
+    KicadModule n1 l1 is1 ~== KicadModule n2 l2 is2 =
+           n1 == n2
+        && l1 == l2
+        && is1 ~== is2
 
 data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                              , fpTextStr       :: String
@@ -36,6 +51,33 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                           , padRectDelta  :: Maybe (Double, Double)
                           }
     deriving (Show, Eq)
+
+instance AEq KicadItem where
+    (KicadFpText t1 s1 a1 l1 h1 si1 th1 i1) ~== (KicadFpText t2 s2 a2 l2 h2 si2 th2 i2) =
+           t1 == t2
+        && s1 == s2
+        && a1 ~== a2
+        && l1 == l2
+        && h1 == h2
+        && si1 ~== si2
+        && th1 ~== th2
+        && i1 == i2
+    (KicadFpLine s1 e1 l1 w1) ~== (KicadFpLine s2 e2 l2 w2) =
+           s1 ~== s2
+        && e1 ~== e2
+        && l1 == l2
+        && w1 ~== w2
+    (KicadPad n1 t1 s1 a1 si1 l1 d1 r1) ~== (KicadPad n2 t2 s2 a2 si2 l2 d2 r2) =
+           n1 == n2
+        && t1 == t2
+        && s1 == s2
+        && a1 ~== a2
+        && si1 ~== si2
+        && l1 == l2
+        && d1 ~== d2
+        && r1 ~== r2
+    x ~== y = x == y
+
 
 layers :: Functor f => LensLike' f KicadItem [KicadLayerT]
 layers f (KicadFpText t s a l h si th i) = (\ls' -> KicadFpText t s a (head ls') h si th i) `fmap` f [l]
@@ -95,16 +137,50 @@ data KicadAttribute = KicadLayer KicadLayerT
                                 }
     deriving (Show, Eq)
 
+instance AEq KicadAttribute where
+    (KicadAt        x) ~== (KicadAt        y) = x ~== y
+    (KicadSize      x) ~== (KicadSize      y) = x ~== y
+    (KicadThickness x) ~== (KicadThickness y) = x ~== y
+    (KicadStart     x) ~== (KicadStart     y) = x ~== y
+    (KicadEnd       x) ~== (KicadEnd       y) = x ~== y
+    (KicadWidth     x) ~== (KicadWidth     y) = x ~== y
+    (KicadDrill     x) ~== (KicadDrill     y) = x ~== y
+    (KicadRectDelta x) ~== (KicadRectDelta y) = x ~== y
+    (KicadFont s1 t1 i1) ~== (KicadFont s2 t2 i2) = s1 ~== s2 && t1 ~== t2 && i1 == i2
+    x ~== y = x == y
+
 defaultKicadFont :: KicadAttribute
 defaultKicadFont = KicadFont { kicadFontSize = (1.0, 1.0)
                              , kicadFontThickness = 1.0
                              , kicadFontItalic = False
                              }
 
+
 data KicadLayerT = FSilkS | FCu | FPaste | FMask
                  | BSilkS | BCu | BPaste | BMask
                  | FandBCu  | AllCu  | AllMask
-    deriving (Show, Eq)
+    deriving (Show, Eq, Enum, Bounded)
+
+strToLayerMap :: [(String, KicadLayerT)]
+strToLayerMap =
+    [ ("F.SilkS", FSilkS )
+    , ("F.Cu"   , FCu    )
+    , ("F.Paste", FPaste )
+    , ("F.Mask" , FMask  )
+    , ("B.SilkS", BSilkS )
+    , ("B.Cu"   , BCu    )
+    , ("B.Paste", BPaste )
+    , ("B.Mask" , BMask  )
+    , ("F&B.Cu" , FandBCu)
+    , ("*.Cu"   , AllCu  )
+    , ("*.Mask" , AllMask)
+    ]
+
+strToLayer :: String -> Maybe KicadLayerT
+strToLayer s = lookup s strToLayerMap
+
+layerToStr :: KicadLayerT -> Maybe String
+layerToStr l = lookup l $ map swap strToLayerMap
 
 itemsOn :: KicadLayerT -> [KicadItem] -> [KicadItem]
 itemsOn layer = filter ((layer `elem`) . view layers)
@@ -119,6 +195,9 @@ data KicadAtT = KicadAtT { kicadAtPoint :: (Double, Double)
                          , kicadAtOrientation :: Double
                          }
     deriving (Show, Eq)
+
+instance AEq KicadAtT where
+    (KicadAtT p1 o1) ~== (KicadAtT p2 o2) = p1 ~== p2 && o1 ~== o2
 
 defaultKicadAtT :: KicadAtT
 defaultKicadAtT = KicadAtT { kicadAtPoint = (0,0)

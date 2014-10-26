@@ -174,21 +174,10 @@ asKicadLayer [sx] = oneKicadLayer sx
 asKicadLayer x    = expecting "only one layer name" x
 
 oneKicadLayer :: SExpr -> Either String KicadAttribute
-oneKicadLayer (AtomStr n) = case n of
-    "F.SilkS" -> Right (KicadLayer FSilkS)
-    "F.Cu"    -> Right (KicadLayer FCu)
-    "F.Paste" -> Right (KicadLayer FPaste)
-    "F.Mask"  -> Right (KicadLayer FMask)
-    "B.SilkS" -> Right (KicadLayer BSilkS)
-    "B.Cu"    -> Right (KicadLayer BCu)
-    "B.Paste" -> Right (KicadLayer BPaste)
-    "B.Mask"  -> Right (KicadLayer BMask)
-    "F&B.Cu"  -> Right (KicadLayer FandBCu)
-    "*.Cu"    -> Right (KicadLayer AllCu)
-    "*.Mask"  -> Right (KicadLayer AllMask)
-    _         -> Left ("-> Unknown layer name: " ++ n)
+oneKicadLayer (AtomStr n) = case strToLayer n of
+    Just l  -> Right $ KicadLayer l
+    Nothing -> Left ("-> Unknown layer name: " ++ n)
 oneKicadLayer x = expecting "layer name" x
-
 
 asKicadAt :: [SExpr] -> Either String KicadAttribute
 asKicadAt (AtomDbl x:[AtomDbl y]) =

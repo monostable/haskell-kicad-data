@@ -7,4 +7,4 @@ import Data.Kicad.KicadExpr
 import Data.Kicad.Interpret
 
 parse :: String -> Either String KicadExpr
-parse = (either Left interpret) . parseSExpr
+parse = either Left interpret . parseSExpr
