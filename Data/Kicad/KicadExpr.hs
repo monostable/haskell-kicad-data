@@ -117,7 +117,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadAt KicadAtT
                     | KicadFpTextType KicadFpTextTypeT
                     | KicadSize (Double, Double)
-                    | KicadThickness  Double
+                    | KicadThickness Double
                     | KicadTEdit String
                     | KicadItalic
                     | KicadHide
@@ -155,7 +155,6 @@ defaultKicadFont = KicadFont { kicadFontSize = (1.0, 1.0)
                              , kicadFontItalic = False
                              }
 
-
 data KicadLayerT = FSilkS | FCu | FPaste | FMask
                  | BSilkS | BCu | BPaste | BMask
                  | FandBCu  | AllCu  | AllMask
@@ -186,10 +185,10 @@ itemsOn :: KicadLayerT -> [KicadItem] -> [KicadItem]
 itemsOn layer = filter ((layer `elem`) . view layers)
 
 data KicadPadTypeT = ThruHole | SMD | Connect | NPThruHole
-    deriving (Show, Eq)
+    deriving (Show, Eq, Enum, Bounded)
 
 data KicadPadShapeT = Circle | Oval | Rect | Trapezoid
-    deriving (Show, Eq)
+    deriving (Show, Eq, Enum, Bounded)
 
 data KicadAtT = KicadAtT { kicadAtPoint :: (Double, Double)
                          , kicadAtOrientation :: Double
@@ -205,4 +204,4 @@ defaultKicadAtT = KicadAtT { kicadAtPoint = (0,0)
                            }
 
 data KicadFpTextTypeT = FpTextReference | FpTextValue | FpTextUser
-    deriving (Show, Eq)
+    deriving (Show, Eq, Enum, Bounded)
