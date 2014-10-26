@@ -15,7 +15,7 @@ main = defaultMain [testGroup "Parse" tests]
 
 tests :: [Test]
 tests = [ testCase "parse fp_line correctly" (parse fp_line @=? fpLine)
-        , testProperty "parse all keywords" (parseAllKeywords)
+        , testProperty "parse all keywords" parseAllKeywords
         ]
     where
         fp_line = "(fp_line (start 3.302 -0.381) (end 3.302 0.381) (layer F.SilkS) (width 0.127))"
@@ -37,10 +37,10 @@ instance Arbitrary SExpr where
                            return $ List $ [AtomKey kw, AtomStr "a", AtomStr "b", AtomStr "c"] ++ ls
                       , do ls <- arbitrary
                            kw <- arbitrary
-                           return $ List $ [AtomKey kw] ++ ls
+                           return $ List $ AtomKey kw : ls
                       ]
 
 instance Arbitrary Keyword
     where arbitrary = elements $ filter notSpecial [KeyModule .. KeyRectDelta]
-            where notSpecial x = not $ elem x specialKeywords
+            where notSpecial x = notElem x specialKeywords
 

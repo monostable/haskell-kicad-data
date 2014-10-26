@@ -7,6 +7,7 @@ import Data.Either
 import Data.Maybe
 import Data.Kicad.SExpr
 import Data.Kicad.KicadExpr
+import Control.Applicative ((<$>))
 
 interpret :: SExpr -> Either String KicadExpr
 interpret (List (AtomKey kw:sxs)) =
@@ -15,26 +16,26 @@ interpret (List (AtomKey kw:sxs)) =
                         "' because:\n\t" ++ err
         Right expr -> Right expr
     where go = case kw of
-            KeyModule        -> fmap KicadExprModule    $ asKicadModule    sxs
-            KeyFpLine        -> fmap KicadExprItem      $ asKicadFpLine    sxs
-            KeyPad           -> fmap KicadExprItem      $ asKicadPad       sxs
-            KeyFpText        -> fmap KicadExprItem      $ asKicadFpText    sxs
-            KeyLayer         -> fmap KicadExprAttribute $ asKicadLayer     sxs
-            KeyAt            -> fmap KicadExprAttribute $ asKicadAt        sxs
-            KeyEffects       -> fmap KicadExprAttribute $ asKicadEffects   sxs
-            KeyFont          -> fmap KicadExprAttribute $ asKicadFont      sxs
-            KeySize          -> fmap KicadExprAttribute $ asKicadSize      sxs
-            KeyThickness     -> fmap KicadExprAttribute $ asKicadThickness sxs
-            KeyTEdit         -> fmap KicadExprAttribute $ asKicadTEdit     sxs
-            KeyStart         -> fmap KicadExprAttribute $ asKicadStart     sxs
-            KeyEnd           -> fmap KicadExprAttribute $ asKicadEnd       sxs
-            KeyWidth         -> fmap KicadExprAttribute $ asKicadWidth     sxs
-            KeyDescr         -> fmap KicadExprAttribute $ asString KicadDescr sxs
-            KeyTags          -> fmap KicadExprAttribute $ asString KicadTags  sxs
-            KeyAttr          -> fmap KicadExprAttribute $ asString KicadAttr  sxs
-            KeyLayers        -> fmap KicadExprAttribute $ asKicadLayers    sxs
-            KeyDrill         -> fmap KicadExprAttribute $ asKicadDrill     sxs
-            KeyRectDelta     -> fmap KicadExprAttribute $ asKicadRectDelta sxs
+            KeyModule        -> KicadExprModule    <$> asKicadModule    sxs
+            KeyFpLine        -> KicadExprItem      <$> asKicadFpLine    sxs
+            KeyPad           -> KicadExprItem      <$> asKicadPad       sxs
+            KeyFpText        -> KicadExprItem      <$> asKicadFpText    sxs
+            KeyLayer         -> KicadExprAttribute <$> asKicadLayer     sxs
+            KeyAt            -> KicadExprAttribute <$> asKicadAt        sxs
+            KeyEffects       -> KicadExprAttribute <$> asKicadEffects   sxs
+            KeyFont          -> KicadExprAttribute <$> asKicadFont      sxs
+            KeySize          -> KicadExprAttribute <$> asKicadSize      sxs
+            KeyThickness     -> KicadExprAttribute <$> asKicadThickness sxs
+            KeyTEdit         -> KicadExprAttribute <$> asKicadTEdit     sxs
+            KeyStart         -> KicadExprAttribute <$> asKicadStart     sxs
+            KeyEnd           -> KicadExprAttribute <$> asKicadEnd       sxs
+            KeyWidth         -> KicadExprAttribute <$> asKicadWidth     sxs
+            KeyDescr         -> KicadExprAttribute <$> asString KicadDescr sxs
+            KeyTags          -> KicadExprAttribute <$> asString KicadTags  sxs
+            KeyAttr          -> KicadExprAttribute <$> asString KicadAttr  sxs
+            KeyLayers        -> KicadExprAttribute <$> asKicadLayers    sxs
+            KeyDrill         -> KicadExprAttribute <$> asKicadDrill     sxs
+            KeyRectDelta     -> KicadExprAttribute <$> asKicadRectDelta sxs
 interpret (AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
@@ -43,11 +44,11 @@ interpret x = expecting "List with a key or a string atom" x
 
 asKicadModule :: [SExpr] -> Either String KicadModule
 asKicadModule (AtomStr n:l@(List _):sxs) =
-    case (interpret l) of
+    case interpret l of
         Left err -> Left ('\t':err)
         Right (KicadExprAttribute (KicadLayer layer)) ->
-            case (lefts expressions) of
-                [] -> Right $ KicadModule
+            case lefts expressions of
+                [] -> Right KicadModule
                     { kicadModuleName  = n
                     , kicadModuleLayer = layer
                     , kicadModuleItems = mapMaybe get_item $ rights expressions
@@ -109,7 +110,7 @@ asKicadFpLine (s:e:sxs) = interpretStart defaultKicadFpLine
             Right (KicadExprAttribute (KicadEnd end)) ->
                 interpretRest sxs fp_line {fpLineEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
-        interpretRest [] fp_line = Right $ fp_line
+        interpretRest [] fp_line = Right fp_line
         interpretRest (sx:sxs') fp_line = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs' fp_line {fpLineWidth = d}
@@ -160,12 +161,12 @@ asKicadPad (n:t:s:sxs) = interpretNumber
                 interpretRest sxs' (pad {padDrill = Just drill})
             Right (KicadExprAttribute (KicadRectDelta delta)) ->
                 interpretRest sxs' (pad {padRectDelta = Just delta})
-            _ -> expecting "at, size, drill, layers or nothing" $ sx
+            _ -> expecting "at, size, drill, layers or nothing" sx
 asKicadPad sxs = expecting "number, type and shape" $ List sxs
 
 
 asKicadTEdit :: [SExpr] -> Either String KicadAttribute
-asKicadTEdit [(AtomStr s)] = Right $ KicadTEdit s
+asKicadTEdit [AtomStr s] = Right $ KicadTEdit s
 asKicadTEdit x = expecting "timestamp only (String)" $ List x
 
 asKicadLayer :: [SExpr] -> Either String KicadAttribute
@@ -202,10 +203,10 @@ asKicadAt x =
     $ List x
 
 asKicadEffects :: [SExpr] -> Either String KicadAttribute
-asKicadEffects l@([e@(List _)]) =
-    case (interpret e) of
+asKicadEffects l@[e@(List _)] =
+    case interpret e of
         Left err -> Left ('\t':err)
-        Right (KicadExprAttribute font@(KicadFont _ _ _))
+        Right (KicadExprAttribute font@(KicadFont {}))
             -> Right $ KicadFpTextEffects font
         _ -> expecting "font-expression" l
 asKicadEffects x = expecting "one effects-expression (e.g. font)" $ List x
@@ -256,18 +257,18 @@ asKicadLayers sxs = let layers' = map oneKicadLayer sxs in case lefts layers' of
                     ++ unlines (map ("\t\t"++) (lefts layers'))
 
 asKicadDrill :: [SExpr] -> Either String KicadAttribute
-asKicadDrill [(AtomDbl d)] = Right $ KicadDrill d
+asKicadDrill [AtomDbl d] = Right $ KicadDrill d
 asKicadDrill x = expecting "one float (e.g. '1.0')" x
 
 asKicadRectDelta :: [SExpr] -> Either String KicadAttribute
-asKicadRectDelta [(AtomDbl y),(AtomDbl x)] --yes, y then x
+asKicadRectDelta [AtomDbl y, AtomDbl x] --yes, y then x
     = Right $ KicadRectDelta (y,x)
 asKicadRectDelta x = expecting "two floats (e.g '0 0.6')" x
 
 expecting :: Writable a => String -> a -> Either String b
 expecting x y =
     Left $ "-> Expecting " ++ x ++ " but got " ++
-        (nothing_or (strip_brackets (write y))) ++ " instead"
+        nothing_or (strip_brackets (write y)) ++ " instead"
     where
         nothing_or y' = case y' of
             "" -> "nothing"

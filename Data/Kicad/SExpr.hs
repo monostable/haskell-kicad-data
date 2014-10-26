@@ -6,7 +6,6 @@ module Data.Kicad.SExpr
 , Writable(..)
 )
 where
-import Data.List (intercalate)
 
 data SExpr = AtomKey Keyword
            | AtomStr String
@@ -22,7 +21,7 @@ instance Writable SExpr where
     write (List    sxs) = write sxs
 
 instance Writable [SExpr] where
-    write sxs = "(" ++ (intercalate " " $ map write sxs) ++ ")"
+    write sxs = "(" ++ unwords (map write sxs) ++ ")"
 
 data Keyword = KeyModule
              | KeyLayer

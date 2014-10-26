@@ -38,9 +38,9 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
     deriving (Show, Eq)
 
 layers :: Functor f => LensLike' f KicadItem [KicadLayerT]
-layers f (KicadFpText t s a l h si th i) = (\(l':_) -> KicadFpText t s a l' h si th i) `fmap` (f [l])
-layers f (KicadFpLine s e l w)           = (\(l':_) -> KicadFpLine s e l' w          ) `fmap` (f [l])
-layers f (KicadPad n t s a si ls d r)    = (\ls'   -> KicadPad n t s a si ls' d r   ) `fmap` (f ls )
+layers f (KicadFpText t s a l h si th i) = (\(l':_) -> KicadFpText t s a l' h si th i) `fmap` f [l]
+layers f (KicadFpLine s e l w)           = (\(l':_) -> KicadFpLine s e l' w          ) `fmap` f [l]
+layers f (KicadPad n t s a si ls d r)    = (\ls'    -> KicadPad n t s a si ls' d r   ) `fmap` f ls
 
 defaultKicadFpText :: KicadItem
 defaultKicadFpText = KicadFpText { fpTextType      = FpTextUser

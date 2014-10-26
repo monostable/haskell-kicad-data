@@ -90,9 +90,9 @@ parseDouble = do
     -- the Bool in floating3 is requireDigit which affects whether many (False)
     -- or many1 (True) is used
     x <- floating3 True
-    lookAhead (char ')' <|> space_char)
+    lookAhead (char ')' <|> spaceChar)
     return $ AtomDbl $ negate_or_id x
 
-spaces1 = skipMany1 space_char
-spaces = skipMany space_char
-space_char = newline <|> space
+spaces1 = skipMany1 spaceChar
+spaces = skipMany spaceChar
+spaceChar = newline <|> space
