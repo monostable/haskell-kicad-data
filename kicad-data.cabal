@@ -16,6 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
+  ghc-options: -Wall
   exposed-modules:
       Data.Kicad.KicadExpr
     , Data.Kicad.Parse
@@ -35,7 +36,7 @@ library
 test-suite kicad-data-tests
   type: exitcode-stdio-1.0
   x-uses-tf: true
-  ghc-options: -threaded -Wall -rtsopts -O
+  ghc-options: -Wall
   hs-source-dirs: tests, ./
   default-language: Haskell2010
   main-is: Test.hs

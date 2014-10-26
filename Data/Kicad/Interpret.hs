@@ -263,14 +263,14 @@ asKicadRectDelta [(AtomDbl y),(AtomDbl x)] --yes, y then x
     = Right $ KicadRectDelta (y,x)
 asKicadRectDelta x = expecting "two floats (e.g '0 0.6')" x
 
-expecting :: Show a => String -> a -> Either String b
+expecting :: Writable a => String -> a -> Either String b
 expecting x y =
     Left $ "-> Expecting " ++ x ++ " but got " ++
-        (nothing_or (strip_show y)) ++ " instead"
+        (nothing_or (strip_brackets (write y))) ++ " instead"
     where
         nothing_or y = case y of
             "" -> "nothing"
-            y  -> "'" ++ y ++ "'"
-        strip_show y = case (head (show y)) of
-                '(' -> tail . init $ show y
-                _   -> show y
+            _  -> "'" ++ y ++ "'"
+        strip_brackets y = case head y of
+                '(' -> tail . init $ y
+                _   -> y

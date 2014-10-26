@@ -13,6 +13,7 @@ import Data.Kicad.ParseSExpr
 main :: IO ()
 main = defaultMain [testGroup "Parse" tests]
 
+tests :: [Test]
 tests = [ testCase "parse fp_line correctly" (parse fp_line @=? fpLine)
         , testProperty "parse all keywords" (parseAllKeywords)
         ]
@@ -21,7 +22,7 @@ tests = [ testCase "parse fp_line correctly" (parse fp_line @=? fpLine)
         fpLine  = Right $ KicadExprItem $ KicadFpLine (3.302, -0.381) (3.302, 0.381) FSilkS 0.127
         parseAllKeywords :: Keyword -> Bool
         parseAllKeywords kw = case parseSExpr ("(" ++  write kw ++ ")") of
-            res@(Right val) -> res == parseSExpr (write val)
+            res@(Right sx) -> res == parseSExpr (write sx)
             Left _    -> False
 
 specialKeywords :: [Keyword]

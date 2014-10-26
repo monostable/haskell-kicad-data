@@ -85,7 +85,7 @@ parseString = liftM AtomStr (parseQuotedString <|> parseUnquotedString <?> "stri
 parseDouble :: Parser SExpr
 parseDouble = do
     negate_or_id <- sign
-    -- the Bool in floating3 is requireDigit which affects wether many (False)
+    -- the Bool in floating3 is requireDigit which affects whether many (False)
     -- or many1 (True) is used
     x <- floating3 True
     lookAhead (char ')' <|> space_char)
