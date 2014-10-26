@@ -42,6 +42,7 @@ layers f (KicadFpText t s a l h si th i) = (\(l':_) -> KicadFpText t s a l' h si
 layers f (KicadFpLine s e l w)           = (\(l':_) -> KicadFpLine s e l' w          ) `fmap` (f [l])
 layers f (KicadPad n t s a si ls d r)    = (\ls'   -> KicadPad n t s a si ls' d r   ) `fmap` (f ls )
 
+defaultKicadFpText :: KicadItem
 defaultKicadFpText = KicadFpText { fpTextType      = FpTextUser
                                  , fpTextStr       = ""
                                  , fpTextAt        = defaultKicadAtT
@@ -52,12 +53,14 @@ defaultKicadFpText = KicadFpText { fpTextType      = FpTextUser
                                  , fpTextItalic    = False
                                  }
 
+defaultKicadFpLine :: KicadItem
 defaultKicadFpLine = KicadFpLine { fpLineStart = (0,0)
                                  , fpLineEnd   = (0,0)
                                  , fpLineLayer = FSilkS
                                  , fpLineWidth = 0.15
                                  }
 
+defaultKicadPad :: KicadItem
 defaultKicadPad = KicadPad { padNumber     = ""
                            , padType       = ThruHole
                            , padShape      = Circle
@@ -92,6 +95,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                                 }
     deriving (Show, Eq)
 
+defaultKicadFont :: KicadAttribute
 defaultKicadFont = KicadFont { kicadFontSize = (1.0, 1.0)
                              , kicadFontThickness = 1.0
                              , kicadFontItalic = False
@@ -116,7 +120,7 @@ data KicadAtT = KicadAtT { kicadAtPoint :: (Double, Double)
                          }
     deriving (Show, Eq)
 
-
+defaultKicadAtT :: KicadAtT
 defaultKicadAtT = KicadAtT { kicadAtPoint = (0,0)
                            , kicadAtOrientation = 0
                            }
