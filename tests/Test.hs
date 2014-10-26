@@ -10,6 +10,7 @@ import Data.Kicad.KicadExpr
 import Data.Kicad.SExpr
 import Data.Kicad.ParseSExpr
 
+main :: IO ()
 main = defaultMain [testGroup "Parse" tests]
 
 tests = [ testCase "parse fp_line correctly" (parse fp_line @=? fpLine)
@@ -19,10 +20,11 @@ tests = [ testCase "parse fp_line correctly" (parse fp_line @=? fpLine)
         fp_line = "(fp_line (start 3.302 -0.381) (end 3.302 0.381) (layer F.SilkS) (width 0.127))"
         fpLine  = Right $ KicadExprItem $ KicadFpLine (3.302, -0.381) (3.302, 0.381) FSilkS 0.127
         parseAllKeywords :: Keyword -> Bool
-        parseAllKeywords kw = case parseSExpr ("(" ++  show kw ++ ")") of
-            res@(Right val) -> res == parseSExpr (show val)
+        parseAllKeywords kw = case parseSExpr ("(" ++  write kw ++ ")") of
+            res@(Right val) -> res == parseSExpr (write val)
             Left _    -> False
 
+specialKeywords :: [Keyword]
 specialKeywords = [KeyModule, KeyPad, KeyFpText]
 
 instance Arbitrary SExpr where

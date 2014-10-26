@@ -1,33 +1,23 @@
 module Data.Kicad.SExpr
 ( SExpr(..)
 , Keyword(..)
+, Writable(..)
 )
 where
+import Data.List (intercalate)
 
 data SExpr = AtomKey Keyword
            | AtomStr String
            | AtomDbl Double
            | List [SExpr]
-    deriving (Eq)
+    deriving (Show, Eq)
 
--- shows as a lisp-list hiding all the types
-instance Show SExpr where
-    show x = squareToBrackets  $ inner x
-        where
-            inner (AtomKey kw)  = show kw
-            inner (AtomStr atm) | (' ' `elem` atm) || (atm == "") = show atm
-                                | otherwise = read $ show atm :: String --don't show quotes
-            inner (AtomDbl atm) = show atm
-            inner (List    atm) = show atm
-
--- and everything, goes back to the beginning
-squareToBrackets :: String -> String
-squareToBrackets = map convert
-    where convert c = case c of
-            '[' -> '('
-            ']' -> ')'
-            ',' -> ' '
-            _   -> c
+instance Writable SExpr where
+    write (AtomKey kw)  = write kw
+    write (AtomStr atm) | (' ' `elem` atm) || (atm == "") = show atm
+                        | otherwise = atm
+    write (AtomDbl atm) = show atm
+    write (List    sxs) = "(" ++ (intercalate " " $ map write sxs) ++ ")"
 
 data Keyword = KeyModule
              | KeyLayer
@@ -49,10 +39,10 @@ data Keyword = KeyModule
              | KeyLayers
              | KeyDrill
              | KeyRectDelta
-    deriving (Eq, Enum, Bounded)
+    deriving (Show, Eq, Enum, Bounded)
 
-instance Show Keyword where
-    show x  = case x of
+instance Writable Keyword where
+    write x  = case x of
         KeyModule        -> "module"
         KeyLayer         -> "layer"
         KeyFpText        -> "fp_text"
@@ -74,3 +64,5 @@ instance Show Keyword where
         KeyDrill         -> "drill"
         KeyRectDelta     -> "rect_delta"
 
+class Writable a where
+    write :: a -> String
