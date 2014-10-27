@@ -36,7 +36,7 @@ instance Arbitrary SExpr where
 
 instance Arbitrary Keyword
     where arbitrary = elements $ filter notSpecial [minBound .. maxBound]
-            where notSpecial x = notElem x specialKeywords
+            where notSpecial x = x `notElem` specialKeywords
 
 specialKeywords :: [Keyword]
 specialKeywords = [KeyModule, KeyPad, KeyFpText]

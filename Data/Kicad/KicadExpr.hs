@@ -45,33 +45,33 @@ instance AEq KicadModule where
 
 data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                              , fpTextStr       :: String
-                             , fpTextAt        :: KicadAtT
-                             , fpTextLayer     :: KicadLayerT
+                             , itemAt         :: KicadAtT
+                             , itemLayer      :: KicadLayerT
                              , fpTextHide      :: Bool
-                             , fpTextSize      :: (Double, Double)
+                             , itemSize       :: (Double, Double)
                              , fpTextThickness :: Double
                              , fpTextItalic    :: Bool
                              }
-               | KicadFpLine { fpLineStart :: (Double, Double)
-                             , fpLineEnd   :: (Double, Double)
-                             , fpLineLayer :: KicadLayerT
+               | KicadFpLine { itemStart  :: (Double, Double)
+                             , itemEnd    :: (Double, Double)
+                             , itemLayer   :: KicadLayerT
                              , fpLineWidth :: Double
                              }
-               | KicadFpArc  { fpArcStart  :: (Double, Double)
-                             , fpArcEnd    :: (Double, Double)
-                             , fpArcAngle  :: Double
-                             , fpArcLayer  :: KicadLayerT
-                             , fpArcWidth  :: Double
+               | KicadFpArc  { itemStart  :: (Double, Double)
+                             , itemEnd    :: (Double, Double)
+                             , fpArcAngle :: Double
+                             , itemLayer  :: KicadLayerT
+                             , fpArcWidth :: Double
                              }
                | KicadFpPoly  { fpPolyPts   :: [(Double, Double)]
-                              , fpPolyLayer :: KicadLayerT
+                              , itemLayer :: KicadLayerT
                               , fpPolyWidth :: Double
                               }
                | KicadPad { padNumber     :: String
                           , padType       :: KicadPadTypeT
                           , padShape      :: KicadPadShapeT
-                          , padAt         :: KicadAtT
-                          , padSize       :: (Double, Double)
+                          , itemAt        :: KicadAtT
+                          , itemSize      :: (Double, Double)
                           , padLayers     :: [KicadLayerT]
                           , padDrill      :: Maybe Double
                           , padRectDelta  :: Maybe (Double, Double)
@@ -115,39 +115,39 @@ instance AEq KicadItem where
     x ~== y = x == y
 
 
-layers :: Functor f => LensLike' f KicadItem [KicadLayerT]
-layers f (KicadFpText t s a l h si th i) = (\ls' -> KicadFpText t s a (head ls') h si th i) `fmap` f [l]
-layers f (KicadFpLine s e l w)           = (\ls' -> KicadFpLine s e (head ls') w)           `fmap` f [l]
-layers f (KicadPad n t s a si ls d r)    = (\ls' -> KicadPad n t s a si ls' d r)            `fmap` f ls
+itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
+itemLayers f (KicadFpText t s a l h si th i) = (\ls' -> KicadFpText t s a (head ls') h si th i) `fmap` f [l]
+itemLayers f (KicadFpLine s e l w)           = (\ls' -> KicadFpLine s e (head ls') w)           `fmap` f [l]
+itemLayers f (KicadPad n t s a si ls d r)    = (\ls' -> KicadPad n t s a si ls' d r)            `fmap` f ls
 
 defaultKicadFpText :: KicadItem
 defaultKicadFpText = KicadFpText { fpTextType      = FpTextUser
                                  , fpTextStr       = ""
-                                 , fpTextAt        = defaultKicadAtT
-                                 , fpTextLayer     = FSilkS
+                                 , itemAt          = defaultKicadAtT
+                                 , itemLayer       = FSilkS
                                  , fpTextHide      = False
-                                 , fpTextSize      = (1.0, 1.0)
+                                 , itemSize      = (1.0, 1.0)
                                  , fpTextThickness = 1.0
                                  , fpTextItalic    = False
                                  }
 
 defaultKicadFpLine :: KicadItem
-defaultKicadFpLine = KicadFpLine { fpLineStart = (0,0)
-                                 , fpLineEnd   = (0,0)
-                                 , fpLineLayer = FSilkS
+defaultKicadFpLine = KicadFpLine { itemStart = (0,0)
+                                 , itemEnd   = (0,0)
+                                 , itemLayer = FSilkS
                                  , fpLineWidth = 0.15
                                  }
 
 defaultKicadFpArc :: KicadItem
-defaultKicadFpArc = KicadFpArc { fpArcStart = (0,0)
-                               , fpArcEnd   = (0,0)
+defaultKicadFpArc = KicadFpArc { itemStart = (0,0)
+                               , itemEnd   = (0,0)
                                , fpArcAngle = 0
-                               , fpArcLayer = FSilkS
+                               , itemLayer = FSilkS
                                , fpArcWidth = 0.15
                                }
 defaultKicadFpPoly :: KicadItem
 defaultKicadFpPoly = KicadFpPoly { fpPolyPts = []
-                                 , fpPolyLayer = FSilkS
+                                 , itemLayer = FSilkS
                                  , fpPolyWidth = 0.15
                                  }
 
@@ -155,8 +155,8 @@ defaultKicadPad :: KicadItem
 defaultKicadPad = KicadPad { padNumber     = ""
                            , padType       = ThruHole
                            , padShape      = Circle
-                           , padAt         = defaultKicadAtT
-                           , padSize       = (0,0)
+                           , itemAt        = defaultKicadAtT
+                           , itemSize      = (0,0)
                            , padLayers     = []
                            , padDrill      = Nothing
                            , padRectDelta  = Nothing
@@ -198,7 +198,7 @@ instance SExpressable KicadAttribute where
         List $ [ AtomKey KeyAt
                , AtomDbl x
                , AtomDbl y
-               ] ++ if o /= 0 then [AtomDbl o] else []
+               ] ++ [AtomDbl o | o /= 0]
     toSExpr (KicadFpTextType t)     = AtomStr $ fpTextTypeToStr t
     toSExpr (KicadSize (x,y))       = List [AtomKey KeySize, AtomDbl x, AtomDbl y]
     toSExpr (KicadThickness d)      = List [AtomKey KeyThickness, AtomDbl d]
@@ -220,7 +220,7 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadFont s t i)       =
         List $ [ AtomKey KeyFont, toSExpr (KicadSize s)
                , toSExpr (KicadThickness t)
-               ] ++ if i then [AtomStr "italic"] else []
+               ] ++ [AtomStr "italic" | i]
     toSExpr (KicadAngle d)          = List [AtomKey KeyAngle, AtomDbl d]
     toSExpr (KicadXy (x,y))         = List [AtomKey KeyXy, AtomDbl x, AtomDbl y]
     toSExpr (KicadPts xys)          =
@@ -274,7 +274,7 @@ layerToStr :: KicadLayerT -> String
 layerToStr l = fromMaybe "" $ lookup l $ map swap strToLayerMap
 
 itemsOn :: KicadLayerT -> [KicadItem] -> [KicadItem]
-itemsOn layer = filter ((layer `elem`) . view layers)
+itemsOn layer = filter ((layer `elem`) . view itemLayers)
 
 data KicadPadTypeT = ThruHole | SMD | Connect | NPThruHole
     deriving (Show, Eq, Enum, Bounded)

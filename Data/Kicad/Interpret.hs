@@ -83,16 +83,16 @@ asKicadFpText (t:s:a:xs) = interpretType
         interpretAt fp_text = case interpret a of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadAt at)) ->
-                interpretRest xs fp_text {fpTextAt = at}
+                interpretRest xs fp_text {itemAt = at}
             _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
         interpretRest [] fp_text = Right fp_text
         interpretRest (sx:sxs) fp_text = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadLayer layer)) ->
-                interpretRest sxs (fp_text {fpTextLayer = layer})
+                interpretRest sxs (fp_text {itemLayer = layer})
             Right (KicadExprAttribute (KicadFpTextEffects
                     (KicadFont size thickness italic))) ->
-                interpretRest sxs (fp_text { fpTextSize      = size
+                interpretRest sxs (fp_text {  itemSize        = size
                                             , fpTextThickness = thickness
                                             , fpTextItalic    = italic
                                             }
@@ -108,18 +108,18 @@ asKicadFpLine (s:e:xs) = interpretStart defaultKicadFpLine
         interpretStart fp_line = case interpret s of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadStart start)) ->
-                interpretEnd fp_line {fpLineStart = start}
+                interpretEnd fp_line {itemStart = start}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
         interpretEnd fp_line = case interpret e of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadEnd end)) ->
-                interpretRest xs fp_line {fpLineEnd = end}
+                interpretRest xs fp_line {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_line = Right fp_line
         interpretRest (sx:sxs) fp_line = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs fp_line {fpLineWidth = d}
-            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_line {fpLineLayer = d}
+            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_line {itemLayer = d}
             Right _ -> expecting "width or layer" sx
 
 asKicadFpLine x = expecting "fp_line start, end and attributes" x
@@ -130,18 +130,18 @@ asKicadFpArc (s:e:xs) = interpretStart defaultKicadFpArc
         interpretStart fp_arc = case interpret s of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadStart start)) ->
-                interpretEnd fp_arc {fpArcStart = start}
+                interpretEnd fp_arc {itemStart = start}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
         interpretEnd fp_arc = case interpret e of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadEnd end)) ->
-                interpretRest xs fp_arc {fpArcEnd = end}
+                interpretRest xs fp_arc {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_arc = Right fp_arc
         interpretRest (sx:sxs) fp_arc = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs fp_arc {fpArcWidth = d}
-            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_arc {fpArcLayer = d}
+            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_arc {itemLayer = d}
             Right (KicadExprAttribute (KicadAngle d)) -> interpretRest sxs fp_arc {fpArcAngle = d}
             Right _ -> expecting "width, layer or angle" sx
 asKicadFpArc x = expecting "fp_arc start, end and attributes" x
@@ -157,7 +157,7 @@ asKicadFpPoly xs = interpretRest xs defaultKicadFpPoly
             Right (KicadExprAttribute (KicadWidth d))
                 -> interpretRest sxs fp_poly {fpPolyWidth = d}
             Right (KicadExprAttribute (KicadLayer d))
-                -> interpretRest sxs fp_poly {fpPolyLayer = d}
+                -> interpretRest sxs fp_poly {itemLayer = d}
             Right _ -> expecting "width, layer or 'pts'" sx
 
 asKicadPad :: [SExpr] -> Either String KicadItem
@@ -193,11 +193,11 @@ asKicadPad (n:t:s:xs) = interpretNumber
         interpretRest (sx:sxs) pad = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadAt at) )->
-                interpretRest sxs (pad {padAt = at})
+                interpretRest sxs (pad {itemAt = at})
             Right (KicadExprAttribute (KicadLayers layers')) ->
                 interpretRest sxs (pad {padLayers = layers'})
             Right (KicadExprAttribute  (KicadSize size)) ->
-                interpretRest sxs (pad {padSize = size})
+                interpretRest sxs (pad {itemSize = size})
             Right (KicadExprAttribute (KicadDrill drill))     ->
                 interpretRest sxs (pad {padDrill = Just drill})
             Right (KicadExprAttribute (KicadRectDelta delta)) ->
@@ -276,11 +276,11 @@ asKicadXy [AtomDbl x, AtomDbl y] = Right $ KicadXy (x,y)
 asKicadXy x = asKicadStart x
 
 asKicadPts :: [SExpr] -> Either String KicadAttribute
-asKicadPts = either Left (Right . KicadPts) . foldr interpretXys (Right [])
+asKicadPts = fmap KicadPts . foldr interpretXys (Right [])
     where interpretXys sx z = case interpret sx of
                         Left err -> Left ('\t':err)
                         Right (KicadExprAttribute (KicadXy xy))
-                            -> (Right (xy:)) <*> z
+                            -> Right (xy:) <*> z
                         Right _ -> expecting "'xy' (e.g. '(xy 1.0 1.0)')" sx
 
 asKicadWidth :: [SExpr] -> Either String KicadAttribute

@@ -55,7 +55,7 @@ parseOneKeyword :: Keyword -> Parser SExpr
 parseOneKeyword kw = try $ string (write kw) >> return (AtomKey kw)
 
 parseKeyword :: Parser SExpr
-parseKeyword = (choice $ map parseOneKeyword [minBound..maxBound]) <?> "keyword"
+parseKeyword = choice (map parseOneKeyword [minBound..maxBound]) <?> "keyword"
 
 parseString :: Parser SExpr
 parseString = liftM AtomStr (parseQuotedString <|> parseUnquotedString <?> "string")
