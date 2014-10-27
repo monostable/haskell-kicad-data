@@ -21,7 +21,7 @@ parseList = do
     spaces
     first <- parseKeyword
     spaces
-    rest <- let parseRest = try parseAtom `sepEndBy` spaces1 in case first of
+    rest <- let parseRest = try parseAtom `sepEndBy` spaces in case first of
         AtomKey KeyFpText -> do t <- parseString
                                   <?> "string designating type e.g. 'user'"
                                 spaces1
@@ -42,7 +42,9 @@ parseList = do
                                 r <- parseRest
                                 return (n:t:s:r)
         _                 -> parseRest
+    spaces
     char ')'
+    spaces
     return $ List (first:rest)
 
 parseAtom :: Parser SExpr

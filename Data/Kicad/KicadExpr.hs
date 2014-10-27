@@ -7,7 +7,6 @@ import Data.Maybe
 
 import Data.Kicad.SExpr
 
-
 data KicadExpr = KicadExprModule KicadModule
                | KicadExprItem KicadItem
                | KicadExprAttribute KicadAttribute
@@ -78,6 +77,12 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                           }
     deriving (Show, Eq)
 
+itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
+itemLayers f item@(KicadPad { }) = (\ls -> item {padLayers = ls}) `fmap` f (padLayers item)
+itemLayers f item = update `fmap` f [itemLayer item]
+    where update [] = item
+          update ls = item {itemLayer = head ls}
+
 instance AEq KicadItem where
     (KicadFpText t1 s1 a1 l1 h1 si1 th1 i1) ~== (KicadFpText t2 s2 a2 l2 h2 si2 th2 i2) =
            t1   == t2
@@ -114,19 +119,13 @@ instance AEq KicadItem where
         && r1  ~== r2
     x ~== y = x == y
 
-
-itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
-itemLayers f (KicadFpText t s a l h si th i) = (\ls' -> KicadFpText t s a (head ls') h si th i) `fmap` f [l]
-itemLayers f (KicadFpLine s e l w)           = (\ls' -> KicadFpLine s e (head ls') w)           `fmap` f [l]
-itemLayers f (KicadPad n t s a si ls d r)    = (\ls' -> KicadPad n t s a si ls' d r)            `fmap` f ls
-
 defaultKicadFpText :: KicadItem
 defaultKicadFpText = KicadFpText { fpTextType      = FpTextUser
                                  , fpTextStr       = ""
                                  , itemAt          = defaultKicadAtT
                                  , itemLayer       = FSilkS
                                  , fpTextHide      = False
-                                 , itemSize      = (1.0, 1.0)
+                                 , itemSize        = (1.0, 1.0)
                                  , fpTextThickness = 1.0
                                  , fpTextItalic    = False
                                  }
@@ -139,27 +138,27 @@ defaultKicadFpLine = KicadFpLine { itemStart = (0,0)
                                  }
 
 defaultKicadFpArc :: KicadItem
-defaultKicadFpArc = KicadFpArc { itemStart = (0,0)
-                               , itemEnd   = (0,0)
+defaultKicadFpArc = KicadFpArc { itemStart  = (0,0)
+                               , itemEnd    = (0,0)
                                , fpArcAngle = 0
-                               , itemLayer = FSilkS
+                               , itemLayer  = FSilkS
                                , fpArcWidth = 0.15
                                }
 defaultKicadFpPoly :: KicadItem
-defaultKicadFpPoly = KicadFpPoly { fpPolyPts = []
-                                 , itemLayer = FSilkS
+defaultKicadFpPoly = KicadFpPoly { fpPolyPts   = []
+                                 , itemLayer   = FSilkS
                                  , fpPolyWidth = 0.15
                                  }
 
 defaultKicadPad :: KicadItem
-defaultKicadPad = KicadPad { padNumber     = ""
-                           , padType       = ThruHole
-                           , padShape      = Circle
-                           , itemAt        = defaultKicadAtT
-                           , itemSize      = (0,0)
-                           , padLayers     = []
-                           , padDrill      = Nothing
-                           , padRectDelta  = Nothing
+defaultKicadPad = KicadPad { padNumber    = ""
+                           , padType      = ThruHole
+                           , padShape     = Circle
+                           , itemAt       = defaultKicadAtT
+                           , itemSize     = (0,0)
+                           , padLayers    = []
+                           , padDrill     = Nothing
+                           , padRectDelta = Nothing
                            }
 
 data KicadAttribute = KicadLayer KicadLayerT
@@ -247,24 +246,26 @@ defaultKicadFont = KicadFont { kicadFontSize = (1.0, 1.0)
                              , kicadFontItalic = False
                              }
 
-data KicadLayerT = FSilkS | FCu | FPaste | FMask
-                 | BSilkS | BCu | BPaste | BMask
+data KicadLayerT = FSilkS   | FCu | FPaste | FMask
+                 | BSilkS   | BCu | BPaste | BMask
+                 | DwgsUser
                  | FandBCu  | AllCu  | AllMask
     deriving (Show, Eq, Enum, Bounded)
 
 strToLayerMap :: [(String, KicadLayerT)]
 strToLayerMap =
-    [ ("F.SilkS", FSilkS )
-    , ("F.Cu"   , FCu    )
-    , ("F.Paste", FPaste )
-    , ("F.Mask" , FMask  )
-    , ("B.SilkS", BSilkS )
-    , ("B.Cu"   , BCu    )
-    , ("B.Paste", BPaste )
-    , ("B.Mask" , BMask  )
-    , ("F&B.Cu" , FandBCu)
-    , ("*.Cu"   , AllCu  )
-    , ("*.Mask" , AllMask)
+    [ ("F.SilkS"   , FSilkS )
+    , ("F.Cu"      , FCu    )
+    , ("F.Paste"   , FPaste )
+    , ("F.Mask"    , FMask  )
+    , ("B.SilkS"   , BSilkS )
+    , ("B.Cu"      , BCu    )
+    , ("B.Paste"   , BPaste )
+    , ("B.Mask"    , BMask  )
+    , ("Dwgs.User" , DwgsUser)
+    , ("F&B.Cu"    , FandBCu)
+    , ("*.Cu"      , AllCu  )
+    , ("*.Mask"    , AllMask)
     ]
 
 strToLayer :: String -> Maybe KicadLayerT

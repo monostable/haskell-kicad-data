@@ -194,8 +194,8 @@ asKicadPad (n:t:s:xs) = interpretNumber
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadAt at) )->
                 interpretRest sxs (pad {itemAt = at})
-            Right (KicadExprAttribute (KicadLayers layers')) ->
-                interpretRest sxs (pad {padLayers = layers'})
+            Right (KicadExprAttribute (KicadLayers layers)) ->
+                interpretRest sxs (pad {padLayers = layers})
             Right (KicadExprAttribute  (KicadSize size)) ->
                 interpretRest sxs (pad {itemSize = size})
             Right (KicadExprAttribute (KicadDrill drill))     ->
@@ -293,10 +293,10 @@ asString _ x = expecting "string" x
 
 asKicadLayers :: [SExpr] -> Either String KicadAttribute
 asKicadLayers [] = Right $ KicadLayers []
-asKicadLayers xs = let layers' = map oneKicadLayer xs in case lefts layers' of
-    [] -> Right $ KicadLayers $ map (\(KicadLayer l) -> l) $ rights layers'
+asKicadLayers xs = let layers = map oneKicadLayer xs in case lefts layers of
+    [] -> Right $ KicadLayers $ map (\(KicadLayer l) -> l) $ rights layers
     _  -> Left $ "Could not interpret layers:\n"
-                    ++ unlines (map ("\t\t"++) (lefts layers'))
+                    ++ unlines (map ("\t\t"++) (lefts layers))
 
 asKicadDrill :: [SExpr] -> Either String KicadAttribute
 asKicadDrill [AtomDbl d] = Right $ KicadDrill d
