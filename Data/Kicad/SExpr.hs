@@ -15,7 +15,10 @@ data SExpr = AtomKey Keyword
 
 instance Writable SExpr where
     write (AtomKey kw)  = write kw
-    write (AtomStr atm) | (' ' `elem` atm) || (atm == "") = show atm
+    write (AtomStr atm) | (' ' `elem` atm)
+                        || (atm == "")
+                        || (foldr (\x _ -> elem x ['\0' .. '9']) False atm)
+                                    = show atm
                         | otherwise = atm
     write (AtomDbl atm) = show atm
     write (List    sxs) = write sxs

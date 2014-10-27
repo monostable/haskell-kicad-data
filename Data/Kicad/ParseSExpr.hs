@@ -79,7 +79,7 @@ parseString = liftM AtomStr (parseQuotedString <|> parseUnquotedString <?> "stri
         where
             parseQuotedString  = do
                 char '"'
-                x <- many (noneOf "\\\"" <|> (char '\\' >> char '\"')) -- XXX anyChar?
+                x <- many (noneOf "\\\"" <|> (char '\\' >> char '\"') <?> "only escaped quote" ) -- XXX anyChar?
                 char '"'
                 return x
             parseUnquotedString = many1 (noneOf "\" ()\r\n")

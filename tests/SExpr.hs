@@ -32,5 +32,5 @@ instance Arbitrary SExpr where
                       ]
 
 instance Arbitrary Keyword
-    where arbitrary = elements $ filter notSpecial [KeyModule .. KeyRectDelta]
+    where arbitrary = elements $ filter notSpecial [minBound .. maxBound]
             where notSpecial x = notElem x specialKeywords

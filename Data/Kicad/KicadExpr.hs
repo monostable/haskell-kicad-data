@@ -1,16 +1,32 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Data.Kicad.KicadExpr where
 import Lens.Family2
 import Data.AEq
 import Data.Tuple (swap)
+import Data.Maybe
+
+import Data.Kicad.SExpr
+
 
 data KicadExpr = KicadExprModule KicadModule
                | KicadExprItem KicadItem
                | KicadExprAttribute KicadAttribute
     deriving (Show, Eq)
 
+class SExpressable a where
+    toSExpr :: a -> SExpr
+
+instance SExpressable KicadItem where
+    toSExpr (KicadFpText t s a l h si th i) =
+        List $ [ AtomKey KeyFpText
+               , AtomStr $ fpTextTypeToStr t
+               , toSExpr (KicadAt a)
+               , toSExpr (KicadLayer l)
+               ]--  ++ if h then [AtomStr "hide"] else [] ++ [
+
 instance AEq KicadExpr where
-    KicadExprModule    x ~== KicadExprModule y = x ~== y
-    KicadExprItem      x ~== KicadExprItem   y = x ~== y
+    KicadExprModule    x ~== KicadExprModule    y = x ~== y
+    KicadExprItem      x ~== KicadExprItem      y = x ~== y
     KicadExprAttribute x ~== KicadExprAttribute y = x ~== y
     _ ~== _ = False
 
@@ -23,8 +39,8 @@ data KicadModule = KicadModule  { kicadModuleName  :: String
 
 instance AEq KicadModule where
     KicadModule n1 l1 is1 ~== KicadModule n2 l2 is2 =
-           n1 == n2
-        && l1 == l2
+           n1   == n2
+        && l1   == l2
         && is1 ~== is2
 
 data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
@@ -54,28 +70,28 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
 
 instance AEq KicadItem where
     (KicadFpText t1 s1 a1 l1 h1 si1 th1 i1) ~== (KicadFpText t2 s2 a2 l2 h2 si2 th2 i2) =
-           t1 == t2
-        && s1 == s2
-        && a1 ~== a2
-        && l1 == l2
-        && h1 == h2
+           t1   == t2
+        && s1   == s2
+        && a1  ~== a2
+        && l1   == l2
+        && h1   == h2
         && si1 ~== si2
         && th1 ~== th2
-        && i1 == i2
+        && i1   == i2
     (KicadFpLine s1 e1 l1 w1) ~== (KicadFpLine s2 e2 l2 w2) =
            s1 ~== s2
         && e1 ~== e2
-        && l1 == l2
+        && l1  == l2
         && w1 ~== w2
     (KicadPad n1 t1 s1 a1 si1 l1 d1 r1) ~== (KicadPad n2 t2 s2 a2 si2 l2 d2 r2) =
-           n1 == n2
-        && t1 == t2
-        && s1 == s2
-        && a1 ~== a2
+           n1   == n2
+        && t1   == t2
+        && s1   == s2
+        && a1  ~== a2
         && si1 ~== si2
-        && l1 == l2
-        && d1 ~== d2
-        && r1 ~== r2
+        && l1   == l2
+        && d1  ~== d2
+        && r1  ~== r2
     x ~== y = x == y
 
 
@@ -137,6 +153,39 @@ data KicadAttribute = KicadLayer KicadLayerT
                                 }
     deriving (Show, Eq)
 
+instance SExpressable KicadAttribute where
+    toSExpr (KicadLayer l)      =
+        List [ AtomKey KeyLayer
+             , AtomStr $ layerToStr l
+             ]
+    toSExpr (KicadAt (KicadAtT (x,y) o)) =
+        List $ [ AtomKey KeyAt
+               , AtomDbl x
+               , AtomDbl y
+               ] ++ if o /= 0 then [AtomDbl o] else []
+    toSExpr (KicadFpTextType t)     = AtomStr $ fpTextTypeToStr t
+    toSExpr (KicadSize (x,y))       = List [AtomKey KeySize, AtomDbl x, AtomDbl y]
+    toSExpr (KicadThickness d)      = List [AtomKey KeyThickness, AtomDbl d]
+    toSExpr (KicadTEdit s)          = List [AtomKey KeyTEdit, AtomStr s]
+    toSExpr KicadItalic             = AtomStr "italic"
+    toSExpr KicadHide               = AtomStr "hide"
+    toSExpr (KicadStart (x,y))      = List [AtomKey KeyStart, AtomDbl x, AtomDbl y]
+    toSExpr (KicadEnd   (x,y))      = List [AtomKey KeyEnd  , AtomDbl x, AtomDbl y]
+    toSExpr (KicadWidth d)          = List [AtomKey KeyWidth, AtomDbl d]
+    toSExpr (KicadDescr s)          = List [AtomKey KeyDescr, AtomStr s]
+    toSExpr (KicadTags s)           = List [AtomKey KeyTags , AtomStr s]
+    toSExpr (KicadAttr s)           = List [AtomKey KeyAttr , AtomStr s]
+    toSExpr (KicadLayers ls)        =
+        List (AtomKey KeyLayers : map (AtomStr . layerToStr) ls)
+    toSExpr (KicadDrill d)          = List [AtomKey KeyDrill, AtomDbl d]
+    toSExpr (KicadRectDelta (x,y))  =
+        List [AtomKey KeyRectDelta, AtomDbl x, AtomDbl y]
+    toSExpr (KicadFpTextEffects a)  = List [AtomKey KeyEffects, toSExpr a]
+    toSExpr (KicadFont s t i)       =
+        List $ [ AtomKey KeyFont, toSExpr (KicadSize s)
+               , toSExpr (KicadThickness t)
+               ] ++ if i then [AtomStr "italic"] else []
+
 instance AEq KicadAttribute where
     (KicadAt        x) ~== (KicadAt        y) = x ~== y
     (KicadSize      x) ~== (KicadSize      y) = x ~== y
@@ -178,8 +227,8 @@ strToLayerMap =
 strToLayer :: String -> Maybe KicadLayerT
 strToLayer s = lookup s strToLayerMap
 
-layerToStr :: KicadLayerT -> Maybe String
-layerToStr l = lookup l $ map swap strToLayerMap
+layerToStr :: KicadLayerT -> String
+layerToStr l = fromMaybe "" $ lookup l $ map swap strToLayerMap
 
 itemsOn :: KicadLayerT -> [KicadItem] -> [KicadItem]
 itemsOn layer = filter ((layer `elem`) . view layers)
@@ -205,3 +254,17 @@ defaultKicadAtT = KicadAtT { kicadAtPoint = (0,0)
 
 data KicadFpTextTypeT = FpTextReference | FpTextValue | FpTextUser
     deriving (Show, Eq, Enum, Bounded)
+
+
+strToFpTextTypeMap :: [(String, KicadFpTextTypeT)]
+strToFpTextTypeMap =
+    [ ("reference", FpTextReference)
+    , ("value"    , FpTextValue)
+    , ("user"     , FpTextUser)
+    ]
+
+strToFpTextType :: String -> Maybe KicadFpTextTypeT
+strToFpTextType s = lookup s strToFpTextTypeMap
+
+fpTextTypeToStr :: KicadFpTextTypeT -> String
+fpTextTypeToStr t = fromMaybe "" $ lookup t $ map swap strToFpTextTypeMap
