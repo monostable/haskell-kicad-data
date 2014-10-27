@@ -154,7 +154,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadFpTextType KicadFpTextTypeT
                     | KicadSize (Double, Double)
                     | KicadThickness Double
-                    | KicadTEdit String
+                    | KicadTedit String
                     | KicadItalic
                     | KicadHide
                     | KicadStart (Double, Double)
@@ -187,7 +187,7 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadFpTextType t)     = AtomStr $ fpTextTypeToStr t
     toSExpr (KicadSize (x,y))       = List [AtomKey KeySize, AtomDbl x, AtomDbl y]
     toSExpr (KicadThickness d)      = List [AtomKey KeyThickness, AtomDbl d]
-    toSExpr (KicadTEdit s)          = List [AtomKey KeyTEdit, AtomStr s]
+    toSExpr (KicadTedit s)          = List [AtomKey KeyTedit, AtomStr s]
     toSExpr KicadItalic             = AtomStr "italic"
     toSExpr KicadHide               = AtomStr "hide"
     toSExpr (KicadStart (x,y))      = List [AtomKey KeyStart, AtomDbl x, AtomDbl y]

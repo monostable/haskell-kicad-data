@@ -51,30 +51,11 @@ parseAtom =  try parseDouble
          <|> try parseList
          <?> "a double, string or s-expression"
 
+parseOneKeyword :: Keyword -> Parser SExpr
+parseOneKeyword kw = try $ string (write kw) >> return (AtomKey kw)
+
 parseKeyword :: Parser SExpr
-parseKeyword =  try (string "module"     >> return (AtomKey KeyModule   ))
-            <|> try (string "fp_text"    >> return (AtomKey KeyFpText   ))
-            <|> try (string "effects"    >> return (AtomKey KeyEffects  ))
-            <|> try (string "font"       >> return (AtomKey KeyFont     ))
-            <|> try (string "size"       >> return (AtomKey KeySize     ))
-            <|> try (string "thickness"  >> return (AtomKey KeyThickness))
-            <|> try (string "tedit"      >> return (AtomKey KeyTEdit    ))
-            <|> try (string "fp_line"    >> return (AtomKey KeyFpLine   ))
-            <|> try (string "start"      >> return (AtomKey KeyStart    ))
-            <|> try (string "end"        >> return (AtomKey KeyEnd      ))
-            <|> try (string "width"      >> return (AtomKey KeyWidth    ))
-            <|> try (string "descr"      >> return (AtomKey KeyDescr    ))
-            <|> try (string "tags"       >> return (AtomKey KeyTags     ))
-            <|> try (string "attr"       >> return (AtomKey KeyAttr     ))
-            <|> try (string "at"         >> return (AtomKey KeyAt       ))
-            <|> try (string "pad"        >> return (AtomKey KeyPad      ))
-            <|> try (string "layers"     >> return (AtomKey KeyLayers   ))
-            <|> try (string "layer"      >> return (AtomKey KeyLayer    ))
-            <|> try (string "drill"      >> return (AtomKey KeyDrill    ))
-            <|> try (string "rect_delta" >> return (AtomKey KeyRectDelta))
-            <|> try (string "angle"      >> return (AtomKey KeyAngle    ))
-            <|> try (string "fp_arc"     >> return (AtomKey KeyFpArc    ))
-            <?> "keyword"
+parseKeyword = (choice $ map parseOneKeyword [minBound..maxBound]) <?> "keyword"
 
 parseString :: Parser SExpr
 parseString = liftM AtomStr (parseQuotedString <|> parseUnquotedString <?> "string")

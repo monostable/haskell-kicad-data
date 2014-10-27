@@ -6,6 +6,8 @@ module Data.Kicad.SExpr
 , Writable(..)
 )
 where
+import Data.List (intercalate)
+import Data.Char (toLower, isLower)
 
 data SExpr = AtomKey Keyword
            | AtomStr String
@@ -26,54 +28,42 @@ instance Writable SExpr where
 instance Writable [SExpr] where
     write sxs = "(" ++ unwords (map write sxs) ++ ")"
 
-data Keyword = KeyModule
-             | KeyLayer
-             | KeyFpText
-             | KeyAt
-             | KeyEffects
-             | KeyFont
-             | KeySize
-             | KeyThickness
-             | KeyTEdit
-             | KeyFpLine
-             | KeyStart
-             | KeyEnd
-             | KeyWidth
-             | KeyDescr
-             | KeyTags
+{- The keywords must be "Key" ++ a camel-case version of the KiCad ones as the
+ - parser and writer use the derived 'Show' instance. The parser will also try
+ - them in the order they appear below so KeyAttr has to appear before KeyAt
+ - for instance. -}
+data Keyword = KeyAngle
              | KeyAttr
-             | KeyPad
-             | KeyLayers
+             | KeyAt
+             | KeyDescr
              | KeyDrill
-             | KeyRectDelta
-             | KeyAngle
+             | KeyEffects
+             | KeyEnd
+             | KeyFont
              | KeyFpArc
+             | KeyFpLine
+             | KeyFpText
+             | KeyLayers
+             | KeyLayer
+             | KeyModule
+             | KeyPad
+             | KeyRectDelta
+             | KeySize
+             | KeyStart
+             | KeyTags
+             | KeyTedit
+             | KeyThickness
+             | KeyWidth
     deriving (Show, Eq, Enum, Bounded)
 
 instance Writable Keyword where
-    write x  = case x of
-        KeyModule    -> "module"
-        KeyLayer     -> "layer"
-        KeyFpText    -> "fp_text"
-        KeyAt        -> "at"
-        KeyEffects   -> "effects"
-        KeyFont      -> "font"
-        KeySize      -> "size"
-        KeyThickness -> "thickness"
-        KeyTEdit     -> "tedit"
-        KeyFpLine    -> "fp_line"
-        KeyStart     -> "start"
-        KeyEnd       -> "end"
-        KeyWidth     -> "width"
-        KeyDescr     -> "descr"
-        KeyTags      -> "tags"
-        KeyAttr      -> "attr"
-        KeyPad       -> "pad"
-        KeyLayers    -> "layers"
-        KeyDrill     -> "drill"
-        KeyRectDelta -> "rect_delta"
-        KeyAngle     -> "angle"
-        KeyFpArc     -> "fp_arc"
+    -- KeyFpText -> fp_text
+    write = intercalate "_" . splitCapWords . drop 3 . show
+        where
+            splitCapWords "" = []
+            splitCapWords (x:xs) =
+                let (word, rest) = span isLower xs
+                in (toLower x : word) : splitCapWords rest
 
 class Writable a where
     write :: a -> String

@@ -26,7 +26,7 @@ interpret (List (AtomKey kw:sxs)) =
             KeyFont          -> KicadExprAttribute <$> asKicadFont      sxs
             KeySize          -> KicadExprAttribute <$> asKicadSize      sxs
             KeyThickness     -> KicadExprAttribute <$> asKicadThickness sxs
-            KeyTEdit         -> KicadExprAttribute <$> asKicadTEdit     sxs
+            KeyTedit         -> KicadExprAttribute <$> asKicadTedit     sxs
             KeyStart         -> KicadExprAttribute <$> asKicadStart     sxs
             KeyEnd           -> KicadExprAttribute <$> asKicadEnd       sxs
             KeyWidth         -> KicadExprAttribute <$> asKicadWidth     sxs
@@ -188,9 +188,9 @@ asKicadPad (n:t:s:xs) = interpretNumber
 asKicadPad xs = expecting "number, type and shape" $ List xs
 
 
-asKicadTEdit :: [SExpr] -> Either String KicadAttribute
-asKicadTEdit [AtomStr s] = Right $ KicadTEdit s
-asKicadTEdit x = expecting "timestamp only (String)" $ List x
+asKicadTedit :: [SExpr] -> Either String KicadAttribute
+asKicadTedit [AtomStr s] = Right $ KicadTedit s
+asKicadTedit x = expecting "timestamp only (String)" $ List x
 
 asKicadLayer :: [SExpr] -> Either String KicadAttribute
 asKicadLayer [sx] = oneKicadLayer sx

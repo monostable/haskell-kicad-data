@@ -64,7 +64,7 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadAt        arbitrary
                       , liftM KicadSize      arbitrary
                       , liftM KicadThickness arbitrary
-                      , liftM KicadTEdit     genSafeString
+                      , liftM KicadTedit     genSafeString
                       , liftM KicadStart     arbitrary
                       , liftM KicadEnd       arbitrary
                       , liftM KicadWidth     arbitrary
