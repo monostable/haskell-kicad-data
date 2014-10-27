@@ -45,7 +45,7 @@ interpret (AtomStr s) = case s of
 interpret x = expecting "List with a key or a string atom" x
 
 asKicadModule :: [SExpr] -> Either String KicadModule
-asKicadModule (AtomStr n:l@(List _):sxs) =
+asKicadModule (AtomStr n:l@(List _):xs) =
     case interpret l of
         Left err -> Left ('\t':err)
         Right (KicadExprAttribute (KicadLayer layer)) ->
@@ -57,14 +57,14 @@ asKicadModule (AtomStr n:l@(List _):sxs) =
                     }
                 _  -> Left $ "Could not interpret expressions:\n"
                         ++ unlines (map ("\t\t"++) (lefts expressions))
-            where expressions = map interpret sxs
+            where expressions = map interpret xs
                   get_item (KicadExprItem x) = Just x
                   get_item _ = Nothing
         _ -> expecting "layer (e.g. '(layer F.SilkS)')" $ List [l]
 asKicadModule x = expecting "module name, layer and items " x
 
 asKicadFpText :: [SExpr] -> Either String KicadItem
-asKicadFpText (t:s:a:sxs) = interpretType
+asKicadFpText (t:s:a:xs) = interpretType
     where
         interpretType = case t of
             (AtomStr "reference") ->
@@ -80,27 +80,27 @@ asKicadFpText (t:s:a:sxs) = interpretType
         interpretAt fp_text = case interpret a of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadAt at)) ->
-                interpretRest sxs fp_text {fpTextAt = at}
+                interpretRest xs fp_text {fpTextAt = at}
             _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
         interpretRest [] fp_text = Right fp_text
-        interpretRest (sx:sxs') fp_text = case interpret sx of
+        interpretRest (sx:sxs) fp_text = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadLayer layer)) ->
-                interpretRest sxs' (fp_text {fpTextLayer = layer})
+                interpretRest sxs (fp_text {fpTextLayer = layer})
             Right (KicadExprAttribute (KicadFpTextEffects
                     (KicadFont size thickness italic))) ->
-                interpretRest sxs' (fp_text { fpTextSize      = size
+                interpretRest sxs (fp_text { fpTextSize      = size
                                             , fpTextThickness = thickness
                                             , fpTextItalic    = italic
                                             }
                                    )
             Right (KicadExprAttribute KicadHide) ->
-                interpretRest sxs' (fp_text {fpTextHide = True})
+                interpretRest sxs (fp_text {fpTextHide = True})
             _ -> expecting "layer or effects expression or 'hide'" sx
 asKicadFpText x = expecting "a text-type, text, 'at' and layer" x
 
 asKicadFpLine :: [SExpr] -> Either String KicadItem
-asKicadFpLine (s:e:sxs) = interpretStart defaultKicadFpLine
+asKicadFpLine (s:e:xs) = interpretStart defaultKicadFpLine
     where
         interpretStart fp_line = case interpret s of
             Left err -> Left ('\t':err)
@@ -110,19 +110,19 @@ asKicadFpLine (s:e:sxs) = interpretStart defaultKicadFpLine
         interpretEnd fp_line = case interpret e of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadEnd end)) ->
-                interpretRest sxs fp_line {fpLineEnd = end}
+                interpretRest xs fp_line {fpLineEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_line = Right fp_line
-        interpretRest (sx:sxs') fp_line = case interpret sx of
+        interpretRest (sx:sxs) fp_line = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs' fp_line {fpLineWidth = d}
-            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs' fp_line {fpLineLayer = d}
+            Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs fp_line {fpLineWidth = d}
+            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_line {fpLineLayer = d}
             Right _ -> expecting "width or layer" sx
 
 asKicadFpLine x = expecting "fp_line start, end and attributes" x
 
 asKicadFpArc :: [SExpr] -> Either String KicadItem
-asKicadFpArc (s:e:sxs) = interpretStart defaultKicadFpArc
+asKicadFpArc (s:e:xs) = interpretStart defaultKicadFpArc
     where
         interpretStart fp_arc = case interpret s of
             Left err -> Left ('\t':err)
@@ -132,18 +132,18 @@ asKicadFpArc (s:e:sxs) = interpretStart defaultKicadFpArc
         interpretEnd fp_arc = case interpret e of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadEnd end)) ->
-                interpretRest sxs fp_arc {fpArcEnd = end}
+                interpretRest xs fp_arc {fpArcEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_arc = Right fp_arc
-        interpretRest (sx:sxs') fp_arc = case interpret sx of
+        interpretRest (sx:sxs) fp_arc = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs' fp_arc {fpArcWidth = d}
-            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs' fp_arc {fpArcLayer = d}
-            Right (KicadExprAttribute (KicadAngle d)) -> interpretRest sxs' fp_arc {fpArcAngle = d}
+            Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs fp_arc {fpArcWidth = d}
+            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_arc {fpArcLayer = d}
+            Right (KicadExprAttribute (KicadAngle d)) -> interpretRest sxs fp_arc {fpArcAngle = d}
             Right _ -> expecting "width, layer or angle" sx
 
 asKicadPad :: [SExpr] -> Either String KicadItem
-asKicadPad (n:t:s:sxs) = interpretNumber
+asKicadPad (n:t:s:xs) = interpretNumber
     where
         interpretNumber = case n of
             (AtomStr num) -> interpretType (defaultKicadPad {padNumber = num})
@@ -162,30 +162,30 @@ asKicadPad (n:t:s:sxs) = interpretNumber
         interpretShape :: KicadItem -> Either String KicadItem
         interpretShape pad = case s of
             (AtomStr "circle")    ->
-                interpretRest sxs (pad {padShape = Circle})
+                interpretRest xs (pad {padShape = Circle})
             (AtomStr "oval")      ->
-                interpretRest sxs (pad {padShape = Oval})
+                interpretRest xs (pad {padShape = Oval})
             (AtomStr "rect")      ->
-                interpretRest sxs (pad {padShape = Rect})
+                interpretRest xs (pad {padShape = Rect})
             (AtomStr "trapezoid") ->
-                interpretRest sxs (pad {padShape = Trapezoid})
+                interpretRest xs (pad {padShape = Trapezoid})
             x -> expecting "pad shape (e.g. 'circle')" x
         interpretRest :: [SExpr] -> KicadItem -> Either String KicadItem
         interpretRest [] pad = Right pad
-        interpretRest (sx:sxs') pad = case interpret sx of
+        interpretRest (sx:sxs) pad = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadAt at) )->
-                interpretRest sxs' (pad {padAt = at})
+                interpretRest sxs (pad {padAt = at})
             Right (KicadExprAttribute (KicadLayers layers')) ->
-                interpretRest sxs' (pad {padLayers = layers'})
+                interpretRest sxs (pad {padLayers = layers'})
             Right (KicadExprAttribute  (KicadSize size)) ->
-                interpretRest sxs' (pad {padSize = size})
+                interpretRest sxs (pad {padSize = size})
             Right (KicadExprAttribute (KicadDrill drill))     ->
-                interpretRest sxs' (pad {padDrill = Just drill})
+                interpretRest sxs (pad {padDrill = Just drill})
             Right (KicadExprAttribute (KicadRectDelta delta)) ->
-                interpretRest sxs' (pad {padRectDelta = Just delta})
+                interpretRest sxs (pad {padRectDelta = Just delta})
             _ -> expecting "at, size, drill, layers or nothing" sx
-asKicadPad sxs = expecting "number, type and shape" $ List sxs
+asKicadPad xs = expecting "number, type and shape" $ List xs
 
 
 asKicadTEdit :: [SExpr] -> Either String KicadAttribute
@@ -224,17 +224,17 @@ asKicadEffects l@[e@(List _)] =
 asKicadEffects x = expecting "one effects-expression (e.g. font)" $ List x
 
 asKicadFont :: [SExpr] -> Either String KicadAttribute
-asKicadFont sxs = interpretRest sxs defaultKicadFont
+asKicadFont xs = interpretRest xs defaultKicadFont
     where
         interpretRest [] font = Right font
-        interpretRest (sx:sxs') font = case interpret sx of
+        interpretRest (sx:sxs) font = case interpret sx of
             Left err -> Left ('\t':err)
             Right (KicadExprAttribute (KicadSize size)) ->
-                interpretRest sxs' font {kicadFontSize = size}
+                interpretRest sxs font {kicadFontSize = size}
             Right (KicadExprAttribute (KicadThickness t)) ->
-                interpretRest sxs' font {kicadFontThickness = t}
+                interpretRest sxs font {kicadFontThickness = t}
             Right (KicadExprAttribute KicadItalic) ->
-                interpretRest sxs' font {kicadFontItalic = True}
+                interpretRest sxs font {kicadFontItalic = True}
             Right _ -> expecting "size, thickness or 'italic'" sx
 
 asKicadSize :: [SExpr] -> Either String KicadAttribute
@@ -263,7 +263,7 @@ asString _ x = expecting "string" x
 
 asKicadLayers :: [SExpr] -> Either String KicadAttribute
 asKicadLayers [] = Right $ KicadLayers []
-asKicadLayers sxs = let layers' = map oneKicadLayer sxs in case lefts layers' of
+asKicadLayers xs = let layers' = map oneKicadLayer xs in case lefts layers' of
     [] -> Right $ KicadLayers $ map (\(KicadLayer l) -> l) $ rights layers'
     _  -> Left $ "Could not interpret layers:\n"
                     ++ unlines (map ("\t\t"++) (lefts layers'))
