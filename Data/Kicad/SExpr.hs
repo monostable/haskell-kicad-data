@@ -6,6 +6,7 @@ module Data.Kicad.SExpr
 , Writable(..)
 )
 where
+import Debug.Trace
 
 data SExpr = AtomKey Keyword
            | AtomStr String
@@ -15,11 +16,11 @@ data SExpr = AtomKey Keyword
 
 instance Writable SExpr where
     write (AtomKey kw)  = write kw
-    write (AtomStr atm) | (' ' `elem` atm)
-                        || (atm == "")
-                        || (foldr (\x _ -> elem x ['\0' .. '9']) False atm)
-                                    = show atm
-                        | otherwise = atm
+    write (AtomStr atm) |  (atm == "")
+                        || (head atm `elem` '.':'-':['0' .. '9'])
+                        || (foldr (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0' .. ' ']) False atm)
+                                       = show (traceShowId atm) -- escaped string with quotes
+                        | otherwise    = atm
     write (AtomDbl atm) = show atm
     write (List    sxs) = write sxs
 

@@ -12,7 +12,7 @@ import Control.Applicative ((<$>))
 interpret :: SExpr -> Either String KicadExpr
 interpret (List (AtomKey kw:sxs)) =
     case go of
-        Left err   -> Left $ "Could not interpret '" ++ show kw ++
+        Left err   -> Left $ "Could not interpret '" ++ write kw ++
                         "' because:\n\t" ++ err
         Right expr -> Right expr
     where go = case kw of
