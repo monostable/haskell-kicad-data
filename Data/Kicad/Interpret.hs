@@ -87,13 +87,13 @@ asKicadFpText (t:s:a:sxs) = interpretType
                 interpretRest sxs' (fp_text {fpTextLayer = layer})
             Right (KicadExprAttribute (KicadFpTextEffects
                     (KicadFont size thickness italic))) ->
-                interpretRest sxs (fp_text { fpTextSize      = size
+                interpretRest sxs' (fp_text { fpTextSize      = size
                                            , fpTextThickness = thickness
                                            , fpTextItalic    = italic
                                            }
                                   )
             Right (KicadExprAttribute KicadHide) ->
-                interpretRest sxs (fp_text {fpTextHide = True})
+                interpretRest sxs' (fp_text {fpTextHide = True})
             _ -> expecting "layer or effects expression or 'hide'" sx
 asKicadFpText x = expecting "a text-type, text, 'at' and layer" x
 
