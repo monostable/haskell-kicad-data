@@ -4,6 +4,7 @@ import Lens.Family2
 import Data.AEq
 import Data.Tuple (swap)
 import Data.Maybe
+import Data.Foldable (foldMap)
 
 import Data.Kicad.SExpr
 
@@ -12,23 +13,19 @@ data KicadExpr = KicadExprModule KicadModule
                | KicadExprAttribute KicadAttribute
     deriving (Show, Eq)
 
-class SExpressable a where
-    toSExpr :: a -> SExpr
-
-instance SExpressable KicadItem where
-    toSExpr (KicadFpText t s a l h si th i) =
-        List $ [ AtomKey KeyFpText
-               , AtomStr $ fpTextTypeToStr t
-               , toSExpr (KicadAt a)
-               , toSExpr (KicadLayer l)
-               ]--  ++ if h then [AtomStr "hide"] else [] ++ [
+--instance SExpressable KicadItem where
+--    toSExpr (KicadFpText t s a l h si th i) =
+--        List $ [ AtomKey KeyFpText
+--               , AtomStr $ fpTextTypeToStr t
+--               , toSExpr (KicadAt a)
+--               , toSExpr (KicadLayer l)
+--               ]--  ++ if h then [AtomStr "hide"] else [] ++ [
 
 instance AEq KicadExpr where
     KicadExprModule    x ~== KicadExprModule    y = x ~== y
     KicadExprItem      x ~== KicadExprItem      y = x ~== y
     KicadExprAttribute x ~== KicadExprAttribute y = x ~== y
     _ ~== _ = False
-
 
 data KicadModule = KicadModule  { kicadModuleName  :: String
                                 , kicadModuleLayer :: KicadLayerT
@@ -274,8 +271,10 @@ strToLayer s = lookup s strToLayerMap
 layerToStr :: KicadLayerT -> String
 layerToStr l = fromMaybe "" $ lookup l $ map swap strToLayerMap
 
-itemsOn :: KicadLayerT -> [KicadItem] -> [KicadItem]
-itemsOn layer = filter ((layer `elem`) . view itemLayers)
+itemsOn :: [KicadLayerT] -> [KicadItem] -> [KicadItem]
+itemsOn = foldMap itemsOn'
+    where itemsOn' :: KicadLayerT -> [KicadItem] -> [KicadItem]
+          itemsOn' layer = filter ((layer `elem`) . view itemLayers)
 
 data KicadPadTypeT = ThruHole | SMD | Connect | NPThruHole
     deriving (Show, Eq, Enum, Bounded)
@@ -312,3 +311,6 @@ strToFpTextType s = lookup s strToFpTextTypeMap
 
 fpTextTypeToStr :: KicadFpTextTypeT -> String
 fpTextTypeToStr t = fromMaybe "" $ lookup t $ map swap strToFpTextTypeMap
+
+class SExpressable a where
+    toSExpr :: a -> SExpr
