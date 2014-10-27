@@ -57,6 +57,12 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                              , fpLineLayer :: KicadLayerT
                              , fpLineWidth :: Double
                              }
+               | KicadFpArc  { fpArcStart  :: (Double, Double)
+                             , fpArcEnd    :: (Double, Double)
+                             , fpArcAngle  :: Double
+                             , fpArcLayer  :: KicadLayerT
+                             , fpArcWidth  :: Double
+                             }
                | KicadPad { padNumber     :: String
                           , padType       :: KicadPadTypeT
                           , padShape      :: KicadPadShapeT
@@ -81,6 +87,12 @@ instance AEq KicadItem where
     (KicadFpLine s1 e1 l1 w1) ~== (KicadFpLine s2 e2 l2 w2) =
            s1 ~== s2
         && e1 ~== e2
+        && l1  == l2
+        && w1 ~== w2
+    (KicadFpArc s1 e1 a1 l1 w1) ~== (KicadFpArc s2 e2 a2 l2 w2) =
+           s1 ~== s2
+        && e1 ~== e2
+        && a1 ~== a2
         && l1  == l2
         && w1 ~== w2
     (KicadPad n1 t1 s1 a1 si1 l1 d1 r1) ~== (KicadPad n2 t2 s2 a2 si2 l2 d2 r2) =
@@ -118,6 +130,14 @@ defaultKicadFpLine = KicadFpLine { fpLineStart = (0,0)
                                  , fpLineWidth = 0.15
                                  }
 
+defaultKicadFpArc :: KicadItem
+defaultKicadFpArc = KicadFpArc { fpArcStart = (0,0)
+                               , fpArcEnd   = (0,0)
+                               , fpArcAngle = 0
+                               , fpArcLayer = FSilkS
+                               , fpArcWidth = 0.15
+                               }
+
 defaultKicadPad :: KicadItem
 defaultKicadPad = KicadPad { padNumber     = ""
                            , padType       = ThruHole
@@ -151,6 +171,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                                 , kicadFontThickness :: Double
                                 , kicadFontItalic :: Bool
                                 }
+                    | KicadAngle Double
     deriving (Show, Eq)
 
 instance SExpressable KicadAttribute where
@@ -185,6 +206,7 @@ instance SExpressable KicadAttribute where
         List $ [ AtomKey KeyFont, toSExpr (KicadSize s)
                , toSExpr (KicadThickness t)
                ] ++ if i then [AtomStr "italic"] else []
+    toSExpr (KicadAngle d)          = List [AtomKey KeyAngle, AtomDbl d]
 
 instance AEq KicadAttribute where
     (KicadAt        x) ~== (KicadAt        y) = x ~== y
@@ -195,6 +217,7 @@ instance AEq KicadAttribute where
     (KicadWidth     x) ~== (KicadWidth     y) = x ~== y
     (KicadDrill     x) ~== (KicadDrill     y) = x ~== y
     (KicadRectDelta x) ~== (KicadRectDelta y) = x ~== y
+    (KicadAngle     x) ~== (KicadAngle     y) = x ~== y
     (KicadFont s1 t1 i1) ~== (KicadFont s2 t2 i2) = s1 ~== s2 && t1 ~== t2 && i1 == i2
     x ~== y = x == y
 

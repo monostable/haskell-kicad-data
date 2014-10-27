@@ -72,6 +72,8 @@ parseKeyword =  try (string "module"     >> return (AtomKey KeyModule   ))
             <|> try (string "layer"      >> return (AtomKey KeyLayer    ))
             <|> try (string "drill"      >> return (AtomKey KeyDrill    ))
             <|> try (string "rect_delta" >> return (AtomKey KeyRectDelta))
+            <|> try (string "angle"      >> return (AtomKey KeyAngle    ))
+            <|> try (string "fp_arc"     >> return (AtomKey KeyFpArc    ))
             <?> "keyword"
 
 parseString :: Parser SExpr

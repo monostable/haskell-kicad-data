@@ -6,7 +6,6 @@ module Data.Kicad.SExpr
 , Writable(..)
 )
 where
-import Debug.Trace
 
 data SExpr = AtomKey Keyword
            | AtomStr String
@@ -19,7 +18,7 @@ instance Writable SExpr where
     write (AtomStr atm) |  (atm == "")
                         || (head atm `elem` '.':'-':['0' .. '9'])
                         || (foldr (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0' .. ' ']) False atm)
-                                       = show (traceShowId atm) -- escaped string with quotes
+                                       = show atm -- escaped string with quotes
                         | otherwise    = atm
     write (AtomDbl atm) = show atm
     write (List    sxs) = write sxs
@@ -47,6 +46,8 @@ data Keyword = KeyModule
              | KeyLayers
              | KeyDrill
              | KeyRectDelta
+             | KeyAngle
+             | KeyFpArc
     deriving (Show, Eq, Enum, Bounded)
 
 instance Writable Keyword where
@@ -71,6 +72,8 @@ instance Writable Keyword where
         KeyLayers    -> "layers"
         KeyDrill     -> "drill"
         KeyRectDelta -> "rect_delta"
+        KeyAngle     -> "angle"
+        KeyFpArc     -> "fp_arc"
 
 class Writable a where
     write :: a -> String

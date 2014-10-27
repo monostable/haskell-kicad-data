@@ -36,6 +36,8 @@ interpret (List (AtomKey kw:sxs)) =
             KeyLayers        -> KicadExprAttribute <$> asKicadLayers    sxs
             KeyDrill         -> KicadExprAttribute <$> asKicadDrill     sxs
             KeyRectDelta     -> KicadExprAttribute <$> asKicadRectDelta sxs
+            KeyAngle         -> KicadExprAttribute <$> asKicadAngle     sxs
+            KeyFpArc         -> KicadExprItem      <$> asKicadFpArc     sxs
 interpret (AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
@@ -88,10 +90,10 @@ asKicadFpText (t:s:a:sxs) = interpretType
             Right (KicadExprAttribute (KicadFpTextEffects
                     (KicadFont size thickness italic))) ->
                 interpretRest sxs' (fp_text { fpTextSize      = size
-                                           , fpTextThickness = thickness
-                                           , fpTextItalic    = italic
-                                           }
-                                  )
+                                            , fpTextThickness = thickness
+                                            , fpTextItalic    = italic
+                                            }
+                                   )
             Right (KicadExprAttribute KicadHide) ->
                 interpretRest sxs' (fp_text {fpTextHide = True})
             _ -> expecting "layer or effects expression or 'hide'" sx
@@ -118,6 +120,27 @@ asKicadFpLine (s:e:sxs) = interpretStart defaultKicadFpLine
             Right _ -> expecting "width or layer" sx
 
 asKicadFpLine x = expecting "fp_line start, end and attributes" x
+
+asKicadFpArc :: [SExpr] -> Either String KicadItem
+asKicadFpArc (s:e:sxs) = interpretStart defaultKicadFpArc
+    where
+        interpretStart fp_arc = case interpret s of
+            Left err -> Left ('\t':err)
+            Right (KicadExprAttribute (KicadStart start)) ->
+                interpretEnd fp_arc {fpArcStart = start}
+            Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
+        interpretEnd fp_arc = case interpret e of
+            Left err -> Left ('\t':err)
+            Right (KicadExprAttribute (KicadEnd end)) ->
+                interpretRest sxs fp_arc {fpArcEnd = end}
+            Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
+        interpretRest [] fp_arc = Right fp_arc
+        interpretRest (sx:sxs') fp_arc = case interpret sx of
+            Left err -> Left ('\t':err)
+            Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs' fp_arc {fpArcWidth = d}
+            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs' fp_arc {fpArcLayer = d}
+            Right (KicadExprAttribute (KicadAngle d)) -> interpretRest sxs' fp_arc {fpArcAngle = d}
+            Right _ -> expecting "width, layer or angle" sx
 
 asKicadPad :: [SExpr] -> Either String KicadItem
 asKicadPad (n:t:s:sxs) = interpretNumber
@@ -253,6 +276,10 @@ asKicadRectDelta :: [SExpr] -> Either String KicadAttribute
 asKicadRectDelta [AtomDbl y, AtomDbl x] --yes, y then x
     = Right $ KicadRectDelta (y,x)
 asKicadRectDelta x = expecting "two floats (e.g '0 0.6')" x
+
+asKicadAngle :: [SExpr] -> Either String KicadAttribute
+asKicadAngle [AtomDbl d] = Right $ KicadAngle d
+asKicadAngle x = expecting "one float (e.g. '1.0')" x
 
 expecting :: Writable a => String -> a -> Either String b
 expecting x y =

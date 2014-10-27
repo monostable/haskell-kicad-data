@@ -14,13 +14,15 @@ import Debug.Trace
 
 tests :: [Test]
 tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
+        , testProperty "parse fp_arc correctly" parseFpArcCorrectly
         , testProperty "parse and write any attribute" parseAndWriteAnyAttribute
         ]
     where
         parseFpLineCorrectly :: (Double, Double, Double, Double, Double)
                              -> KicadLayerT
                              -> Bool
-        parseFpLineCorrectly (d1, d2, d3, d4, d5) l = tracedPropAEq (parse fp_line) fpLine
+        parseFpLineCorrectly (d1, d2, d3, d4, d5) l =
+            tracedPropAEq (parse fp_line) fpLine
             where
                 fp_line =
                     "(fp_line (start " ++ show d1 ++ " "
@@ -28,7 +30,21 @@ tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
                      ++ show d4 ++ ") (layer "
                      ++ layerToStr l
                      ++ ") (width " ++ show d5 ++ "))"
-                fpLine  = Right $ KicadExprItem $ KicadFpLine (d1, d2) (d3, d4) l d5
+                fpLine  = Right $ KicadExprItem
+                                $ KicadFpLine (d1, d2) (d3, d4) l d5
+        parseFpArcCorrectly :: (Double, Double, Double, Double, Double) -> Double
+                             -> KicadLayerT
+                             -> Bool
+        parseFpArcCorrectly (d1, d2, d3, d4, d5) d6 l =
+            tracedPropAEq (parse fp_arc) fpArc
+            where
+                fp_arc =
+                    "(fp_arc (start " ++ show d1 ++ " "
+                    ++ show d2 ++ ") (end " ++ show d3 ++ " "
+                    ++ show d4 ++ ") (angle " ++ show d5
+                    ++ ") (layer " ++ layerToStr l ++ ") (width "
+                    ++ show d6 ++ "))"
+                fpArc = Right $ KicadExprItem $ KicadFpArc (d1, d2) (d3, d4) d5 l d6
         parseAndWriteAnyAttribute :: KicadAttribute -> Bool
         parseAndWriteAnyAttribute a = tracedPropAEq t1 t2
             where t1 = parse $ write $ toSExpr a
@@ -57,6 +73,7 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadAttr      genSafeString
                       , liftM KicadLayers    arbitrary
                       , liftM KicadDrill     arbitrary
+                      , liftM KicadAngle     arbitrary
                       , do s <- arbitrary
                            t <- arbitrary
                            i <- arbitrary
