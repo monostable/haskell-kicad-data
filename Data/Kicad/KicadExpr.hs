@@ -63,6 +63,10 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                              , fpArcLayer  :: KicadLayerT
                              , fpArcWidth  :: Double
                              }
+               | KicadFpPoly  { fpPolyPts   :: [(Double, Double)]
+                              , fpPolyLayer :: KicadLayerT
+                              , fpPolyWidth :: Double
+                              }
                | KicadPad { padNumber     :: String
                           , padType       :: KicadPadTypeT
                           , padShape      :: KicadPadShapeT
@@ -95,6 +99,10 @@ instance AEq KicadItem where
         && a1 ~== a2
         && l1  == l2
         && w1 ~== w2
+    (KicadFpPoly ps1 l1 w1) ~== (KicadFpPoly ps2 l2 w2) =
+           ps1 ~== ps2
+        && l1   == l2
+        && w1  ~== w2
     (KicadPad n1 t1 s1 a1 si1 l1 d1 r1) ~== (KicadPad n2 t2 s2 a2 si2 l2 d2 r2) =
            n1   == n2
         && t1   == t2
@@ -137,6 +145,11 @@ defaultKicadFpArc = KicadFpArc { fpArcStart = (0,0)
                                , fpArcLayer = FSilkS
                                , fpArcWidth = 0.15
                                }
+defaultKicadFpPoly :: KicadItem
+defaultKicadFpPoly = KicadFpPoly { fpPolyPts = []
+                                 , fpPolyLayer = FSilkS
+                                 , fpPolyWidth = 0.15
+                                 }
 
 defaultKicadPad :: KicadItem
 defaultKicadPad = KicadPad { padNumber     = ""
@@ -172,6 +185,8 @@ data KicadAttribute = KicadLayer KicadLayerT
                                 , kicadFontItalic :: Bool
                                 }
                     | KicadAngle Double
+                    | KicadXy (Double, Double)
+                    | KicadPts [(Double, Double)]
     deriving (Show, Eq)
 
 instance SExpressable KicadAttribute where
@@ -207,6 +222,9 @@ instance SExpressable KicadAttribute where
                , toSExpr (KicadThickness t)
                ] ++ if i then [AtomStr "italic"] else []
     toSExpr (KicadAngle d)          = List [AtomKey KeyAngle, AtomDbl d]
+    toSExpr (KicadXy (x,y))         = List [AtomKey KeyXy, AtomDbl x, AtomDbl y]
+    toSExpr (KicadPts xys)          =
+        List $ [AtomKey KeyPts] ++  map (toSExpr . KicadXy) xys
 
 instance AEq KicadAttribute where
     (KicadAt        x) ~== (KicadAt        y) = x ~== y
@@ -218,6 +236,8 @@ instance AEq KicadAttribute where
     (KicadDrill     x) ~== (KicadDrill     y) = x ~== y
     (KicadRectDelta x) ~== (KicadRectDelta y) = x ~== y
     (KicadAngle     x) ~== (KicadAngle     y) = x ~== y
+    (KicadXy        x) ~== (KicadXy        y) = x ~== y
+    (KicadPts       x) ~== (KicadPts       y) = x ~== y
     (KicadFont s1 t1 i1) ~== (KicadFont s2 t2 i2) = s1 ~== s2 && t1 ~== t2 && i1 == i2
     x ~== y = x == y
 

@@ -43,6 +43,7 @@ data Keyword = KeyAngle
              | KeyFpArc
              | KeyFpLine
              | KeyFpText
+             | KeyFpPoly
              | KeyLayers
              | KeyLayer
              | KeyModule
@@ -54,6 +55,8 @@ data Keyword = KeyAngle
              | KeyTedit
              | KeyThickness
              | KeyWidth
+             | KeyXy
+             | KeyPts
     deriving (Show, Eq, Enum, Bounded)
 
 instance Writable Keyword where

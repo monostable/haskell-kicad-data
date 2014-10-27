@@ -15,6 +15,7 @@ import Debug.Trace
 tests :: [Test]
 tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
         , testProperty "parse fp_arc correctly" parseFpArcCorrectly
+        , testProperty "parse fp_poly correctly" parseFpPolyCorrectly
         , testProperty "parse and write any attribute" parseAndWriteAnyAttribute
         ]
     where
@@ -45,6 +46,18 @@ tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
                     ++ ") (layer " ++ layerToStr l ++ ") (width "
                     ++ show d6 ++ "))"
                 fpArc = Right $ KicadExprItem $ KicadFpArc (d1, d2) (d3, d4) d5 l d6
+        parseFpPolyCorrectly :: [(Double, Double)] -> Double
+                             -> KicadLayerT
+                             -> Bool
+        parseFpPolyCorrectly ds w l =
+            tracedPropAEq (parse fp_poly) fpPoly
+            where
+                fp_poly =
+                    "(fp_poly (pts "
+                    ++ unwords (map (\(d1,d2) -> "(xy " ++ show d1 ++ " " ++ show d2 ++ ")") ds)
+                    ++ ") (layer " ++ layerToStr l ++ ") (width "
+                    ++ show w ++ "))"
+                fpPoly = Right $ KicadExprItem $ KicadFpPoly ds l w
         parseAndWriteAnyAttribute :: KicadAttribute -> Bool
         parseAndWriteAnyAttribute a = tracedPropAEq t1 t2
             where t1 = parse $ write $ toSExpr a
@@ -74,6 +87,8 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadLayers    arbitrary
                       , liftM KicadDrill     arbitrary
                       , liftM KicadAngle     arbitrary
+                      , liftM KicadXy        arbitrary
+                      , liftM KicadPts       arbitrary
                       , do s <- arbitrary
                            t <- arbitrary
                            i <- arbitrary
