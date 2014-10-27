@@ -15,8 +15,6 @@ import Debug.Trace
 tests :: [Test]
 tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
         , testProperty "parse attributes"        parseAttribute
-        --, testProperty "parse layer"             parseLayer
-        --, testProperty "parse size"              parseSize
         ]
     where
         parseFpLineCorrectly :: (Double, Double, Double, Double, Double)
@@ -33,32 +31,9 @@ tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
                 fpLine  (d1, d2, d3, d4, d5) l = Right $ KicadExprItem
                                                $ KicadFpLine (d1, d2) (d3, d4) l d5
         parseAttribute :: KicadAttribute -> Bool
-        parseAttribute a = if not (t1 ~== t2) then trace (either id show t1 ++ "\n\tDOES NOT EQUAL\n" ++  either id show t2) False else True
-            where t1 = parse (write (toSExpr a))
-                  t2 = Right (KicadExprAttribute a)
-        --parseLayer :: KicadLayerT -> Bool
-        --parseLayer x =
-        --    parse (write (toSExpr x)) ~== Right (KicadExprAttribute $ KicadLayer x)
-        --parseAt :: KicadAtT -> Bool
-        --parseAt x =
-        --    parse (write (toSExpr x)) ~== Right (KicadExprAttribute $ KicadAt x)
-        --parseSize :: (Double, Double) -> Bool
-        --parseSize x =
-        --    parse (write (toSExpr (KicadSize x))) ~== Right (KicadExprAttribute $ KicadSize x)
-        --parseFpTextCorrectly :: KicadFpTextTypeT
-        --                     -> String
-        --                     -> KicadAtT
-        --                     -> KicadLayerT
-        --                     -> (Bool, Bool)
-        --                     -> (Double, Double, Double)
-        --                     -> Bool
-        --parseFpTextCorrectly t s a l bs ds = parse fp_text ~== fpText
-        --    where
-        --        fp_text = "(fp_text " ++ fpTextTypeToStr t
-        --                ++ "\"" ++ s ++ "\"" ++ " (at 0 -3.048) (layer F.SilkS) hid
-
-        --        fpLine  (d1, d2, d3, d4, d5) l = Right $ KicadExprItem
-        --                                       $ KicadFpLine (d1, d2) (d3, d4) l d5
+        parseAttribute a = tracedProp (~==) t1 t2
+            where t1 = parse $ write $ toSExpr a
+                  t2 = Right $ KicadExprAttribute a
 
 instance Arbitrary KicadLayerT where
     arbitrary = arbitraryBoundedEnum
@@ -102,3 +77,16 @@ instance Arbitrary KicadAtT where
     arbitrary = do p <- arbitrary
                    o <- arbitrary
                    return $ KicadAtT p o
+
+tracedProp :: (Show a, Show b) => (a -> b -> Bool) -> a -> b -> Bool
+tracedProp fn t1 t2 = if not (fn t1 t2)
+                      then trace ( "==========================================================================\n"
+                                 ++ show t1 ++ "\n"
+                                 ++ case fn of
+                                        (~==) -> " - DOES NOT APPROXIMATELY EQUAL -"
+                                        (==)  -> " - DOES NOT EQUAL -"
+                                        _     -> " - DOES NOT COMPARE CORRECTLY WITH -"
+                                 ++ "\n" ++ show t2
+                                 ++ "\n=========================================================================="
+                                 ) False
+                      else True
