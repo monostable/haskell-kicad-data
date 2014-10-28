@@ -79,6 +79,7 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadTedit     genSafeString
                       , liftM KicadStart     arbitrary
                       , liftM KicadEnd       arbitrary
+                      , liftM KicadCenter    arbitrary
                       , liftM KicadWidth     arbitrary
                       , liftM KicadDescr     genSafeString
                       , liftM KicadTags      genSafeString

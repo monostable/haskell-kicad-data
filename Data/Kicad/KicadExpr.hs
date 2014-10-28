@@ -41,28 +41,33 @@ instance AEq KicadModule where
 
 data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                              , fpTextStr       :: String
-                             , itemAt         :: KicadAtT
-                             , itemLayer      :: KicadLayerT
+                             , itemAt          :: KicadAtT
+                             , itemLayer       :: KicadLayerT
                              , fpTextHide      :: Bool
-                             , itemSize       :: (Double, Double)
+                             , itemSize        :: (Double, Double)
                              , fpTextThickness :: Double
                              , fpTextItalic    :: Bool
                              }
-               | KicadFpLine { itemStart  :: (Double, Double)
-                             , itemEnd    :: (Double, Double)
-                             , itemLayer   :: KicadLayerT
-                             , fpLineWidth :: Double
+               | KicadFpLine { itemStart :: (Double, Double)
+                             , itemEnd   :: (Double, Double)
+                             , itemLayer :: KicadLayerT
+                             , itemWidth :: Double
                              }
-               | KicadFpArc  { itemStart  :: (Double, Double)
-                             , itemEnd    :: (Double, Double)
-                             , fpArcAngle :: Double
-                             , itemLayer  :: KicadLayerT
-                             , fpArcWidth :: Double
+               | KicadFpCircle { itemStart  :: (Double, Double)
+                               , itemEnd    :: (Double, Double)
+                               , itemLayer  :: KicadLayerT
+                               , itemWidth  :: Double
+                               }
+               | KicadFpArc { itemStart  :: (Double, Double)
+                            , itemEnd    :: (Double, Double)
+                            , fpArcAngle :: Double
+                            , itemLayer  :: KicadLayerT
+                            , itemWidth  :: Double
+                            }
+               | KicadFpPoly { fpPolyPts :: [(Double, Double)]
+                             , itemLayer :: KicadLayerT
+                             , itemWidth :: Double
                              }
-               | KicadFpPoly  { fpPolyPts   :: [(Double, Double)]
-                              , itemLayer :: KicadLayerT
-                              , fpPolyWidth :: Double
-                              }
                | KicadPad { padNumber     :: String
                           , padType       :: KicadPadTypeT
                           , padShape      :: KicadPadShapeT
@@ -91,6 +96,11 @@ instance AEq KicadItem where
         && th1 ~== th2
         && i1   == i2
     (KicadFpLine s1 e1 l1 w1) ~== (KicadFpLine s2 e2 l2 w2) =
+           s1 ~== s2
+        && e1 ~== e2
+        && l1  == l2
+        && w1 ~== w2
+    (KicadFpCircle s1 e1 l1 w1) ~== (KicadFpCircle s2 e2 l2 w2) =
            s1 ~== s2
         && e1 ~== e2
         && l1  == l2
@@ -131,20 +141,27 @@ defaultKicadFpLine :: KicadItem
 defaultKicadFpLine = KicadFpLine { itemStart = (0,0)
                                  , itemEnd   = (0,0)
                                  , itemLayer = FSilkS
-                                 , fpLineWidth = 0.15
+                                 , itemWidth = 0.15
                                  }
+
+defaultKicadFpCircle :: KicadItem
+defaultKicadFpCircle = KicadFpCircle { itemStart = (0,0)
+                                     , itemEnd   = (0,0)
+                                     , itemLayer = FSilkS
+                                     , itemWidth = 0.15
+                                     }
 
 defaultKicadFpArc :: KicadItem
 defaultKicadFpArc = KicadFpArc { itemStart  = (0,0)
                                , itemEnd    = (0,0)
                                , fpArcAngle = 0
                                , itemLayer  = FSilkS
-                               , fpArcWidth = 0.15
+                               , itemWidth = 0.15
                                }
 defaultKicadFpPoly :: KicadItem
 defaultKicadFpPoly = KicadFpPoly { fpPolyPts   = []
                                  , itemLayer   = FSilkS
-                                 , fpPolyWidth = 0.15
+                                 , itemWidth = 0.15
                                  }
 
 defaultKicadPad :: KicadItem
@@ -192,6 +209,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadModelScale  KicadAttribute
                     | KicadModelRotate KicadAttribute
                     | KicadXyz         KicadXyzT
+                    | KicadCenter (Double, Double)
     deriving (Show, Eq)
 
 type KicadXyzT = (Double, Double, Double)
@@ -214,6 +232,7 @@ instance SExpressable KicadAttribute where
     toSExpr KicadHide               = AtomStr "hide"
     toSExpr (KicadStart (x,y))      = List [AtomKey KeyStart, AtomDbl x, AtomDbl y]
     toSExpr (KicadEnd   (x,y))      = List [AtomKey KeyEnd  , AtomDbl x, AtomDbl y]
+    toSExpr (KicadCenter (x,y))     = List [AtomKey KeyCenter, AtomDbl x, AtomDbl y]
     toSExpr (KicadWidth d)          = List [AtomKey KeyWidth, AtomDbl d]
     toSExpr (KicadDescr s)          = List [AtomKey KeyDescr, AtomStr s]
     toSExpr (KicadTags s)           = List [AtomKey KeyTags , AtomStr s]

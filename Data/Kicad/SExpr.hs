@@ -52,12 +52,14 @@ data Keyword = KeyXyz
              | KeyFpText
              | KeyFpPoly
              | KeyFpLine
+             | KeyFpCircle
              | KeyFpArc
              | KeyFont
              | KeyEnd
              | KeyEffects
              | KeyDrill
              | KeyDescr
+             | KeyCenter
              | KeyAttr
              | KeyAt
              | KeyAngle
