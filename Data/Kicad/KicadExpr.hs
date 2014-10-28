@@ -33,6 +33,11 @@ data KicadModule = KicadModule  { kicadModuleName  :: String
                                 }
     deriving (Show, Eq)
 
+defaultKicadModule = KicadModule "" FCu []
+
+moduleItems :: Functor f => LensLike' f KicadModule [KicadItem]
+moduleItems f (KicadModule n l i) = (\i' -> KicadModule n l i') `fmap` f i
+
 instance AEq KicadModule where
     KicadModule n1 l1 is1 ~== KicadModule n2 l2 is2 =
            n1   == n2
@@ -207,6 +212,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadTedit String
                     | KicadItalic
                     | KicadHide
+                    | KicadLocked
                     | KicadStart (Double, Double)
                     | KicadEnd (Double, Double)
                     | KicadWidth Double
@@ -303,6 +309,7 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadAttr  s)       = toSxStr KeyAttr  s
     toSExpr KicadItalic = AtomStr "italic"
     toSExpr KicadHide   = AtomStr "hide"
+    toSExpr KicadLocked = AtomStr "locked"
     toSExpr (KicadAutoplaceCost90  i) = toSxD KeyAutoplaceCost90 (fromIntegral i)
     toSExpr (KicadAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)
 

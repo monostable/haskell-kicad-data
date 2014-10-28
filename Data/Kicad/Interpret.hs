@@ -4,10 +4,10 @@ module Data.Kicad.Interpret
 where
 
 import Data.Either
-import Data.Maybe
 import Data.Kicad.SExpr
 import Data.Kicad.KicadExpr
 import Control.Applicative
+import Lens.Family2 (over)
 
 interpret :: SExpr -> Either String KicadExpr
 interpret (List (AtomKey kw:sxs)) =
@@ -65,27 +65,25 @@ interpret (List (AtomKey kw:sxs)) =
 interpret (AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
+    "locked" -> Right $ KicadExprAttribute KicadLocked
     x -> expecting "'italic' or 'hide'" x
 interpret x = expecting "List with a key or a string atom" x
 
 asKicadModule :: [SExpr] -> Either String KicadModule
-asKicadModule (AtomStr n:l@(List _):xs) =
-    case interpret l of
-        Left err -> Left ('\t':err)
-        Right (KicadExprAttribute (KicadLayer layer)) ->
-            case lefts expressions of
-                [] -> Right KicadModule
-                    { kicadModuleName  = n
-                    , kicadModuleLayer = layer
-                    , kicadModuleItems = mapMaybe get_item $ rights expressions
-                    }
-                _  -> Left $ "Could not interpret expressions:\n"
-                        ++ unlines (map ("\t\t"++) (lefts expressions))
-            where expressions = map interpret xs
-                  get_item (KicadExprItem x) = Just x
-                  get_item _ = Nothing
-        _ -> expecting "layer (e.g. '(layer F.SilkS)')" $ List [l]
-asKicadModule x = expecting "module name, layer and items " x
+asKicadModule (AtomStr n:xs) =
+    interpretRest xs defaultKicadModule { kicadModuleName = n }
+    where
+        interpretRest [] m = Right m
+        interpretRest (sx:sxs) m = case interpret sx of
+            Left err -> Left ('\t':err)
+            Right (KicadExprAttribute (KicadLayer layer)) ->
+                interpretRest sxs m {kicadModuleLayer = layer}
+            Right (KicadExprItem item) ->
+                interpretRest sxs (over moduleItems (item:) m)
+            Right (KicadExprAttribute (KicadLocked)) -> interpretRest sxs m
+            Right _ -> interpretRest sxs m
+asKicadModule (x:_) = expecting "module name" x
+asKicadModule x = expecting "module name" x
 
 asKicadFpText :: [SExpr] -> Either String KicadItem
 asKicadFpText (t:s:a:xs) = interpretType

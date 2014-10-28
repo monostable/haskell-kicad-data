@@ -39,4 +39,4 @@ instance Arbitrary Keyword
             where notSpecial x = x `notElem` specialKeywords
 
 specialKeywords :: [Keyword]
-specialKeywords = [KeyModule, KeyPad, KeyFpText]
+specialKeywords = [KeyModule, KeyPad, KeyFpText, KeyDescr]
