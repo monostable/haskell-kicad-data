@@ -187,18 +187,17 @@ defaultKicadPad = KicadPad { padNumber    = ""
                            , padClearance        = Nothing
                            }
 
-data KicadDrillT = KicadDrillT { kicadDrillX :: Maybe Double
-                               , kicadDrillY :: Maybe Double
-                               , kicadDrillOval :: Bool
+data KicadDrillT = KicadDrillT { kicadDrillSize   :: Maybe (Double, Double)
+                               , kicadDrillOval   :: Bool
                                , kicadDrillOffset :: Maybe (Double, Double)
                                }
     deriving (Show, Eq)
 
-defaultKicadDrillT  = KicadDrillT Nothing Nothing False Nothing
+defaultKicadDrillT  = KicadDrillT Nothing False Nothing
 
 instance AEq KicadDrillT where
-    KicadDrillT x1 y1 o1 off1 ~== KicadDrillT x2 y2 o2 off2
-        = x1 ~== x2 && y1 ~== y2 && o1 == o2 && off1 ~== off2
+    KicadDrillT s1 o1 off1 ~== KicadDrillT s2 o2 off2
+        = s1 ~== s2 && o1 == o2 && off1 ~== off2
 
 data KicadAttribute = KicadLayer KicadLayerT
                     | KicadAt KicadAtT
@@ -268,11 +267,12 @@ instance SExpressable KicadAttribute where
              , toSExpr (KicadModelScale  (KicadXyz s))
              , toSExpr (KicadModelRotate (KicadXyz r))
              ]
-    toSExpr (KicadDrill (KicadDrillT x y o off)) =
+    toSExpr (KicadDrill (KicadDrillT s o off)) =
         List $ [AtomKey KeyDrill]
              ++ [AtomStr "oval" | o]
-             ++ map AtomDbl (maybeToList x)
-             ++ map AtomDbl (maybeToList y)
+             ++ (if o && isJust s
+                then [AtomDbl (fst (fromJust s)), AtomDbl (snd (fromJust s))]
+                else [AtomDbl (fst (fromJust s)) | isJust s])
              ++ [toSExpr (KicadOffset (fromJust off)) | isJust off]
     toSExpr (KicadXyz (x,y,z)) =
         List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
@@ -309,6 +309,7 @@ toSxStr kw s      = List [AtomKey kw, AtomStr s]
 instance AEq KicadAttribute where
     (KicadAt        x) ~== (KicadAt        y) = x ~== y
     (KicadSize      x) ~== (KicadSize      y) = x ~== y
+    (KicadCenter    x) ~== (KicadCenter    y) = x ~== y
     (KicadThickness x) ~== (KicadThickness y) = x ~== y
     (KicadStart     x) ~== (KicadStart     y) = x ~== y
     (KicadEnd       x) ~== (KicadEnd       y) = x ~== y

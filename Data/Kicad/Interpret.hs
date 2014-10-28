@@ -311,9 +311,11 @@ asKicadDrill xs = interpretRest xs defaultKicadDrillT
     where
         interpretRest [] drill = Right $ KicadDrill drill
         interpretRest (sx:sxs) drill = case sx of
-            AtomDbl d  -> if kicadDrillX drill == Nothing
-                          then interpretRest sxs drill {kicadDrillX = Just d}
-                          else interpretRest sxs drill {kicadDrillY = Just d}
+            AtomDbl d  -> if kicadDrillSize drill == Nothing
+                          then interpretRest sxs drill {kicadDrillSize = Just (d,d)}
+                          else interpretRest sxs drill {
+                                kicadDrillSize = fmap (\(x,_) -> (x,d)) (kicadDrillSize drill)
+                                }
             AtomStr "oval"  -> interpretRest sxs drill {kicadDrillOval = True}
             (List _) -> case interpret sx of
                 Left err -> Left ('\t':err)

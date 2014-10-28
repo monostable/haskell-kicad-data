@@ -97,9 +97,10 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadPasteMarginRatio  arbitrary
                       , do a <- arbitrary
                            b <- arbitrary
-                           c <- arbitrary
-                           d <- arbitrary
-                           return $ KicadDrill $ KicadDrillT a b c d
+                           return $ KicadDrill $ KicadDrillT a True b
+                      , do a <- suchThatMaybe arbitrary (\(x,y) -> x == y)
+                           b <- arbitrary
+                           return $ KicadDrill $ KicadDrillT a False b
                       , do s <- arbitrary
                            t <- arbitrary
                            i <- arbitrary
