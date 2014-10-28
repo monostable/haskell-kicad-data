@@ -41,6 +41,10 @@ interpret (List (AtomKey kw:sxs)) =
             KeyAngle     -> KicadExprAttribute <$> asKicadAngle     sxs
             KeyXy        -> KicadExprAttribute <$> asKicadXy        sxs
             KeyPts       -> KicadExprAttribute <$> asKicadPts       sxs
+            KeyXyz       -> KicadExprAttribute <$> asKicadXyz       sxs
+            KeyScale     -> KicadExprAttribute <$> asXyz KicadModelScale  sxs
+            KeyRotate    -> KicadExprAttribute <$> asXyz KicadModelRotate sxs
+            KeyModel     -> KicadExprAttribute <$> asKicadModel     sxs
 interpret (AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
@@ -224,12 +228,10 @@ asKicadAt :: [SExpr] -> Either String KicadAttribute
 asKicadAt (AtomDbl x:[AtomDbl y]) =
     Right $ KicadAt $ defaultKicadAtT {kicadAtPoint = (x,y)}
 asKicadAt (AtomDbl x:AtomDbl y:[AtomDbl o]) =
-    Right $ KicadAt $ defaultKicadAtT
-        { kicadAtPoint = (x,y)
-        , kicadAtOrientation = o
-        }
+    Right $ KicadAt $ KicadAtT (x,y) o
+asKicadAt l@[List _] = asXyz KicadModelAt l
 asKicadAt x =
-    expecting "two floats (e.g. 1.0 1.0) and maybe an orientation (e.g. 90)"
+    expecting "two or three floats or an 'xyz' expression"
     $ List x
 
 asKicadEffects :: [SExpr] -> Either String KicadAttribute
@@ -310,6 +312,32 @@ asKicadRectDelta x = expecting "two floats (e.g '0 0.6')" x
 asKicadAngle :: [SExpr] -> Either String KicadAttribute
 asKicadAngle [AtomDbl d] = Right $ KicadAngle d
 asKicadAngle x = expecting "one float (e.g. '1.0')" x
+
+asKicadXyz :: [SExpr] -> Either String KicadAttribute
+asKicadXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =
+    Right $ KicadXyz (x,y,z)
+asKicadXyz x = expecting "three floats" x
+
+asXyz :: (KicadAttribute -> a) -> [SExpr] -> Either String a
+asXyz constructor [l@(List _)] = case interpret l of
+    Left err -> Left ('\t':err)
+    Right (KicadExprAttribute xyz) -> Right $ constructor xyz
+    Right _ -> expecting "xyz (e.g. '(xyz 1 1 1)')" l
+asXyz _ x = expecting "xyz (e.g. '(xyz 1 1 1)')" x
+
+asKicadModel :: [SExpr] -> Either String KicadAttribute
+asKicadModel (AtomStr p:xs) = interpretRest xs defaultKicadModel {kicadModelPath = p}
+    where
+        interpretRest [] model = Right model
+        interpretRest (sx:sxs) model = case interpret sx of
+            Left err -> Left ('\t':err)
+            Right (KicadExprAttribute (KicadModelAt (KicadXyz xyz))) ->
+                interpretRest sxs model {kicadModelAt = xyz}
+            Right (KicadExprAttribute (KicadModelScale (KicadXyz xyz))) ->
+                interpretRest sxs model {kicadModelScale = xyz}
+            Right (KicadExprAttribute (KicadModelRotate (KicadXyz xyz))) ->
+                interpretRest sxs model {kicadModelRotate = xyz}
+asKicadModel x = expecting "model path, at, scale and rotate" x
 
 expecting :: Writable a => String -> a -> Either String b
 expecting x y =

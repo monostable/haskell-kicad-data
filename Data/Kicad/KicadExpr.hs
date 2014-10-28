@@ -183,7 +183,18 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadAngle Double
                     | KicadXy (Double, Double)
                     | KicadPts [(Double, Double)]
+                    | KicadModel { kicadModelPath   :: String
+                                 , kicadModelAt     :: KicadXyzT
+                                 , kicadModelScale  :: KicadXyzT
+                                 , kicadModelRotate :: KicadXyzT
+                                 }
+                    | KicadModelAt     KicadAttribute
+                    | KicadModelScale  KicadAttribute
+                    | KicadModelRotate KicadAttribute
+                    | KicadXyz         KicadXyzT
     deriving (Show, Eq)
+
+type KicadXyzT = (Double, Double, Double)
 
 instance SExpressable KicadAttribute where
     toSExpr (KicadLayer l)      =
@@ -221,6 +232,18 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadXy (x,y))         = List [AtomKey KeyXy, AtomDbl x, AtomDbl y]
     toSExpr (KicadPts xys)          =
         List $ [AtomKey KeyPts] ++  map (toSExpr . KicadXy) xys
+    toSExpr (KicadModel p a s r)    =
+        List [AtomKey KeyModel
+             , AtomStr p
+             , toSExpr (KicadModelAt     (KicadXyz a))
+             , toSExpr (KicadModelScale  (KicadXyz s))
+             , toSExpr (KicadModelRotate (KicadXyz r))
+             ]
+    toSExpr (KicadModelAt     xyz)  = List [AtomKey KeyAt    , toSExpr xyz]
+    toSExpr (KicadModelScale  xyz)  = List [AtomKey KeyScale , toSExpr xyz]
+    toSExpr (KicadModelRotate xyz)  = List [AtomKey KeyRotate, toSExpr xyz]
+    toSExpr (KicadXyz (x,y,z))      =
+        List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
 
 instance AEq KicadAttribute where
     (KicadAt        x) ~== (KicadAt        y) = x ~== y
@@ -234,7 +257,14 @@ instance AEq KicadAttribute where
     (KicadAngle     x) ~== (KicadAngle     y) = x ~== y
     (KicadXy        x) ~== (KicadXy        y) = x ~== y
     (KicadPts       x) ~== (KicadPts       y) = x ~== y
-    (KicadFont s1 t1 i1) ~== (KicadFont s2 t2 i2) = s1 ~== s2 && t1 ~== t2 && i1 == i2
+    (KicadXyz       x) ~== (KicadXyz       y) = x ~== y
+    (KicadModelAt x)         ~== (KicadModelAt y)     = x ~== y
+    (KicadModelScale x)      ~== (KicadModelScale y)  = x ~== y
+    (KicadModelRotate x)     ~== (KicadModelRotate y) = x ~== y
+    (KicadModel p1 a1 s1 r1) ~== (KicadModel p2 a2 s2 r2) =
+        p1 == p2 && a1 ~== a2 && s1 ~== s2 && r1 ~== r2
+    (KicadFont s1 t1 i1) ~== (KicadFont s2 t2 i2) =
+        s1 ~== s2 && t1 ~== t2 && i1 == i2
     x ~== y = x == y
 
 defaultKicadFont :: KicadAttribute
@@ -242,6 +272,13 @@ defaultKicadFont = KicadFont { kicadFontSize = (1.0, 1.0)
                              , kicadFontThickness = 1.0
                              , kicadFontItalic = False
                              }
+
+defaultKicadModel :: KicadAttribute
+defaultKicadModel = KicadModel { kicadModelPath   = ""
+                               , kicadModelAt     = (0,0,0)
+                               , kicadModelScale  = (0,0,0)
+                               , kicadModelRotate = (0,0,0)
+                               }
 
 data KicadLayerT = FSilkS   | FCu | FPaste | FMask
                  | BSilkS   | BCu | BPaste | BMask

@@ -32,31 +32,35 @@ instance Writable [SExpr] where
  - parser and writer use the derived 'Show' instance. The parser will also try
  - them in the order they appear below so KeyAttr has to appear before KeyAt
  - for instance. -}
-data Keyword = KeyAngle
-             | KeyAttr
-             | KeyAt
-             | KeyDescr
-             | KeyDrill
-             | KeyEffects
-             | KeyEnd
-             | KeyFont
-             | KeyFpArc
-             | KeyFpLine
-             | KeyFpText
-             | KeyFpPoly
+data Keyword = KeyXyz
+             | KeyXy
+             | KeyWidth
+             | KeyThickness
+             | KeyTedit
+             | KeyTags
+             | KeyStart
+             | KeySize
+             | KeyScale
+             | KeyRotate
+             | KeyRectDelta
+             | KeyPts
+             | KeyPad
+             | KeyModule
+             | KeyModel
              | KeyLayers
              | KeyLayer
-             | KeyModule
-             | KeyPad
-             | KeyRectDelta
-             | KeySize
-             | KeyStart
-             | KeyTags
-             | KeyTedit
-             | KeyThickness
-             | KeyWidth
-             | KeyXy
-             | KeyPts
+             | KeyFpText
+             | KeyFpPoly
+             | KeyFpLine
+             | KeyFpArc
+             | KeyFont
+             | KeyEnd
+             | KeyEffects
+             | KeyDrill
+             | KeyDescr
+             | KeyAttr
+             | KeyAt
+             | KeyAngle
     deriving (Show, Eq, Enum, Bounded)
 
 instance Writable Keyword where

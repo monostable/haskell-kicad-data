@@ -88,10 +88,18 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadAngle     arbitrary
                       , liftM KicadXy        arbitrary
                       , liftM KicadPts       arbitrary
+                      , liftM KicadXyz       arbitrary
+                      , liftM KicadModelScale arbitrary
+                      , liftM KicadModelRotate arbitrary
                       , do s <- arbitrary
                            t <- arbitrary
                            i <- arbitrary
                            return $ KicadFont s t i
+                      , do p <- genSafeString
+                           a <- arbitrary
+                           s <- arbitrary
+                           r <- arbitrary
+                           return $ KicadModel p a s r
                       ]
 
 instance Arbitrary KicadLayerT where
