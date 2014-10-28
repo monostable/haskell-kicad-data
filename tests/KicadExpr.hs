@@ -89,11 +89,14 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadXy        arbitrary
                       , liftM KicadPts       arbitrary
                       , liftM KicadXyz       arbitrary
-                      , liftM KicadModelScale arbitrary
-                      , liftM KicadModelRotate arbitrary
-                      , liftM KicadClearance   arbitrary
-                      , liftM KicadMaskMargin  arbitrary
-                      , liftM KicadPasteMargin arbitrary
+                      , liftM KicadZoneConnect  arbitrary
+                      , liftM KicadThermalGap   arbitrary
+                      , liftM KicadThermalWidth arbitrary
+                      , liftM KicadModelScale   arbitrary
+                      , liftM KicadModelRotate  arbitrary
+                      , liftM KicadClearance    arbitrary
+                      , liftM KicadMaskMargin   arbitrary
+                      , liftM KicadPasteMargin  arbitrary
                       , liftM KicadPasteMarginRatio  arbitrary
                       , liftM KicadAutoplaceCost90   arbitrary
                       , liftM KicadAutoplaceCost180  arbitrary

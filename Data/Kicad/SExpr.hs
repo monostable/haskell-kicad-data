@@ -32,10 +32,13 @@ instance Writable [SExpr] where
  - parser and writer use the derived 'Show' instance. The parser will also try
  - them in the order they appear below so KeyAttr has to appear before KeyAt
  - for instance. -}
-data Keyword = KeyXyz
+data Keyword = KeyZoneConnect
+             | KeyXyz
              | KeyXy
              | KeyWidth
              | KeyThickness
+             | KeyThermalWidth
+             | KeyThermalGap
              | KeyTedit
              | KeyTags
              | KeyStart

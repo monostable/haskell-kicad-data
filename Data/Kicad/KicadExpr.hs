@@ -91,8 +91,7 @@ itemLayers f item = update `fmap` f [itemLayer item]
           update ls = item {itemLayer = head ls}
 
 padAttributes :: Functor f => LensLike' f KicadItem [KicadAttribute]
-padAttributes f i@(KicadPad {}) =
-    (\as -> i {padAttributes_ = as}) `fmap` f (padAttributes_ i)
+padAttributes f i = (\as -> i {padAttributes_ = as}) `fmap` f (padAttributes_ i)
 
 instance AEq KicadItem where
     (KicadFpText t1 s1 a1 l1 h1 si1 th1 i1) ~== (KicadFpText t2 s2 a2 l2 h2 si2 th2 i2) =
@@ -238,6 +237,9 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadOffset (Double, Double)
                     | KicadAutoplaceCost90 Int
                     | KicadAutoplaceCost180 Int
+                    | KicadZoneConnect Int
+                    | KicadThermalWidth Double
+                    | KicadThermalGap Double
     deriving (Show, Eq)
 
 type KicadXyzT = (Double, Double, Double)
@@ -287,6 +289,8 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadThickness   d) = toSxD KeyThickness              d
     toSExpr (KicadWidth       d) = toSxD KeyWidth                  d
     toSExpr (KicadAngle       d) = toSxD KeyAngle                  d
+    toSExpr (KicadThermalWidth d) = toSxD KeyThermalWidth          d
+    toSExpr (KicadThermalGap   d) = toSxD KeyThermalGap            d
     toSExpr (KicadSize      xy)  = toSxDD KeySize      xy
     toSExpr (KicadStart     xy)  = toSxDD KeyStart     xy
     toSExpr (KicadCenter    xy)  = toSxDD KeyCenter    xy
@@ -301,8 +305,9 @@ instance SExpressable KicadAttribute where
     toSExpr KicadItalic = AtomStr "italic"
     toSExpr KicadHide   = AtomStr "hide"
     toSExpr KicadLocked = AtomStr "locked"
-    toSExpr (KicadAutoplaceCost90  i) = toSxD KeyAutoplaceCost90 (fromIntegral i)
+    toSExpr (KicadAutoplaceCost90  i) = toSxD KeyAutoplaceCost90  (fromIntegral i)
     toSExpr (KicadAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)
+    toSExpr (KicadZoneConnect      i) = toSxD KeyZoneConnect      (fromIntegral i)
 
 toSxD   kw d      = List [AtomKey kw, AtomDbl d]
 toSxDD  kw (x,y)  = List [AtomKey kw, AtomDbl x, AtomDbl y]
@@ -327,6 +332,8 @@ instance AEq KicadAttribute where
     (KicadMaskMargin  x)       ~== (KicadMaskMargin  y)       = x ~== y
     (KicadPasteMargin x)       ~== (KicadPasteMargin y)       = x ~== y
     (KicadPasteMarginRatio  x) ~== (KicadPasteMarginRatio  y) = x ~== y
+    (KicadThermalWidth    x) ~== (KicadThermalWidth    y) = x ~== y
+    (KicadThermalGap      x) ~== (KicadThermalGap      y) = x ~== y
     (KicadModelAt x)         ~== (KicadModelAt y)     = x ~== y
     (KicadModelScale x)      ~== (KicadModelScale y)  = x ~== y
     (KicadModelRotate x)     ~== (KicadModelRotate y) = x ~== y

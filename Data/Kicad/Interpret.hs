@@ -46,6 +46,10 @@ interpret (List (AtomKey kw:sxs)) =
             KeyAngle     -> KicadExprAttribute <$> asDouble KicadAngle     sxs
             KeyThickness -> KicadExprAttribute <$> asDouble KicadThickness sxs
             KeyWidth     -> KicadExprAttribute <$> asDouble KicadWidth     sxs
+            KeyThermalGap
+                -> KicadExprAttribute <$> asDouble KicadThermalGap sxs
+            KeyThermalWidth
+                -> KicadExprAttribute <$> asDouble KicadThermalWidth sxs
             KeySolderPasteMarginRatio
                 -> KicadExprAttribute <$> asDouble KicadPasteMarginRatio  sxs
             KeySolderPasteMargin
@@ -62,6 +66,8 @@ interpret (List (AtomKey kw:sxs)) =
                 -> KicadExprAttribute <$> asInt KicadAutoplaceCost180 sxs
             KeyAutoplaceCost90
                 -> KicadExprAttribute <$> asInt KicadAutoplaceCost90 sxs
+            KeyZoneConnect
+                -> KicadExprAttribute <$> asInt KicadZoneConnect sxs
 interpret (AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
@@ -235,7 +241,13 @@ asKicadPad (n:t:s:xs) = interpretNumber
                 -> pushToAttrs sxs a pad
             Right (KicadExprAttribute a@(KicadClearance _))
                 -> pushToAttrs sxs a pad
-            _ -> expecting "at, size, drill, layers , margins or nothing" sx
+            Right (KicadExprAttribute a@(KicadZoneConnect _))
+                -> pushToAttrs sxs a pad
+            Right (KicadExprAttribute a@(KicadThermalWidth _))
+                -> pushToAttrs sxs a pad
+            Right (KicadExprAttribute a@(KicadThermalGap _))
+                -> pushToAttrs sxs a pad
+            _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (a:) pad)
 asKicadPad xs = expecting "number, type and shape" $ List xs
 
