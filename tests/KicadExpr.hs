@@ -85,7 +85,6 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadTags      genSafeString
                       , liftM KicadAttr      genSafeString
                       , liftM KicadLayers    arbitrary
-                      , liftM KicadDrill     arbitrary
                       , liftM KicadAngle     arbitrary
                       , liftM KicadXy        arbitrary
                       , liftM KicadPts       arbitrary
@@ -96,6 +95,8 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadMaskMargin  arbitrary
                       , liftM KicadPasteMargin arbitrary
                       , liftM KicadPasteMarginRatio  arbitrary
+                      , liftM (KicadDrill . KicadDrillOval) arbitrary
+                      , liftM (KicadDrill . KicadDrillRound) arbitrary
                       , do s <- arbitrary
                            t <- arbitrary
                            i <- arbitrary

@@ -74,7 +74,7 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                           , itemAt        :: KicadAtT
                           , itemSize      :: (Double, Double)
                           , padLayers     :: [KicadLayerT]
-                          , padDrill      :: Maybe Double
+                          , padDrill      :: Maybe KicadDrillT
                           , padRectDelta  :: Maybe (Double, Double)
                           , padPasteMargin      :: Maybe Double
                           , padPasteMarginRatio :: Maybe Double
@@ -187,6 +187,14 @@ defaultKicadPad = KicadPad { padNumber    = ""
                            , padClearance        = Nothing
                            }
 
+data KicadDrillT = KicadDrillRound Double | KicadDrillOval (Double, Double)
+    deriving (Show, Eq)
+
+instance AEq KicadDrillT where
+    KicadDrillRound x ~== KicadDrillRound y = x ~== y
+    KicadDrillOval x ~== KicadDrillOval y = x ~== y
+    _ ~== _ = False
+
 data KicadAttribute = KicadLayer KicadLayerT
                     | KicadAt KicadAtT
                     | KicadFpTextType KicadFpTextTypeT
@@ -202,7 +210,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadTags String
                     | KicadAttr String
                     | KicadLayers [KicadLayerT]
-                    | KicadDrill Double
+                    | KicadDrill KicadDrillT
                     | KicadRectDelta (Double, Double)
                     | KicadFpTextEffects KicadAttribute
                     | KicadFont { kicadFontSize :: (Double, Double)
@@ -256,6 +264,9 @@ instance SExpressable KicadAttribute where
              ]
     toSExpr (KicadXyz (x,y,z)) =
         List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
+    toSExpr (KicadDrill (KicadDrillRound d )) = toSxD KeyDrill     d
+    toSExpr (KicadDrill (KicadDrillOval (x,y))) =
+        List [AtomKey KeyDrill, AtomStr "oval", AtomDbl x, AtomDbl y]
     toSExpr (KicadFpTextEffects a)  = List [AtomKey KeyEffects, toSExpr a]
     toSExpr (KicadFpTextType t)     = AtomStr $ fpTextTypeToStr t
     toSExpr (KicadModelAt     xyz)  = List [AtomKey KeyAt    , toSExpr xyz]
@@ -267,7 +278,6 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadPasteMarginRatio  d) = toSxD KeySolderPasteMarginRatio d
     toSExpr (KicadThickness   d) = toSxD KeyThickness              d
     toSExpr (KicadWidth       d) = toSxD KeyWidth                  d
-    toSExpr (KicadDrill       d) = toSxD KeyDrill                  d
     toSExpr (KicadAngle       d) = toSxD KeyAngle                  d
     toSExpr (KicadSize      xy)  = toSxDD KeySize      xy
     toSExpr (KicadStart     xy)  = toSxDD KeyStart     xy

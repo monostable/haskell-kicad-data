@@ -29,6 +29,7 @@ interpret (List (AtomKey kw:sxs)) =
             KeyPts       -> KicadExprAttribute <$> asKicadPts              sxs
             KeyXyz       -> KicadExprAttribute <$> asKicadXyz              sxs
             KeyModel     -> KicadExprAttribute <$> asKicadModel            sxs
+            KeyDrill     -> KicadExprAttribute <$> asKicadDrill            sxs
             KeySize      -> KicadExprAttribute <$> asXy KicadSize          sxs
             KeyStart     -> KicadExprAttribute <$> asXy KicadStart         sxs
             KeyEnd       -> KicadExprAttribute <$> asXy KicadEnd           sxs
@@ -41,7 +42,6 @@ interpret (List (AtomKey kw:sxs)) =
             KeyTags      -> KicadExprAttribute <$> asString KicadTags      sxs
             KeyAttr      -> KicadExprAttribute <$> asString KicadAttr      sxs
             KeyTedit     -> KicadExprAttribute <$> asString KicadTedit     sxs
-            KeyDrill     -> KicadExprAttribute <$> asDouble KicadDrill     sxs
             KeyAngle     -> KicadExprAttribute <$> asDouble KicadAngle     sxs
             KeyThickness -> KicadExprAttribute <$> asDouble KicadThickness sxs
             KeyWidth     -> KicadExprAttribute <$> asDouble KicadWidth     sxs
@@ -304,6 +304,14 @@ asKicadLayers xs = let layers = map oneKicadLayer xs in case lefts layers of
 asDouble :: (Double -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
 asDouble constructor [AtomDbl d] = Right $ constructor d
 asDouble _ x = expecting "one float (e.g. '1.0')" x
+
+asKicadDrill :: [SExpr] -> Either String KicadAttribute
+asKicadDrill [AtomStr "oval", AtomDbl x, AtomDbl y] =
+    Right $ KicadDrill $ KicadDrillOval (x,y)
+asKicadDrill [AtomDbl x] =
+    Right $ KicadDrill $ KicadDrillRound x
+asKicadDrill x =
+    expecting "one float (e.g. 1.0) or 'oval' (e.g. 'oval 1.0 1.0')" x
 
 asKicadXyz :: [SExpr] -> Either String KicadAttribute
 asKicadXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =
