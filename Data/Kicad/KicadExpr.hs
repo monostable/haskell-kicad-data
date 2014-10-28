@@ -73,26 +73,26 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                              , itemLayer :: KicadLayerT
                              , itemWidth :: Double
                              }
-               | KicadPad { padNumber     :: String
-                          , padType       :: KicadPadTypeT
-                          , padShape      :: KicadPadShapeT
-                          , itemAt        :: KicadAtT
-                          , itemSize      :: (Double, Double)
-                          , padLayers     :: [KicadLayerT]
-                          , padDrill      :: Maybe KicadDrillT
-                          , padRectDelta  :: Maybe (Double, Double)
-                          , padPasteMargin      :: Maybe Double
-                          , padPasteMarginRatio :: Maybe Double
-                          , padMaskMargin       :: Maybe Double
-                          , padClearance        :: Maybe Double
+               | KicadPad { padNumber      :: String
+                          , padType        :: KicadPadTypeT
+                          , padShape       :: KicadPadShapeT
+                          , itemAt         :: KicadAtT
+                          , itemSize       :: (Double, Double)
+                          , padLayers      :: [KicadLayerT]
+                          , padAttributes_ :: [KicadAttribute]
                           }
     deriving (Show, Eq)
 
 itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
-itemLayers f item@(KicadPad { }) = (\ls -> item {padLayers = ls}) `fmap` f (padLayers item)
+itemLayers f item@(KicadPad { }) =
+    (\ls -> item {padLayers = ls}) `fmap` f (padLayers item)
 itemLayers f item = update `fmap` f [itemLayer item]
     where update [] = item
           update ls = item {itemLayer = head ls}
+
+padAttributes :: Functor f => LensLike' f KicadItem [KicadAttribute]
+padAttributes f i@(KicadPad {}) =
+    (\as -> i {padAttributes_ = as}) `fmap` f (padAttributes_ i)
 
 instance AEq KicadItem where
     (KicadFpText t1 s1 a1 l1 h1 si1 th1 i1) ~== (KicadFpText t2 s2 a2 l2 h2 si2 th2 i2) =
@@ -124,19 +124,15 @@ instance AEq KicadItem where
            ps1 ~== ps2
         && l1   == l2
         && w1  ~== w2
-    (KicadPad n1 t1 s1 a1 si1 l1 d1 r1 pm1 pmr1 mm1 c1) ~== (KicadPad n2 t2 s2 a2 si2 l2 d2 r2 pm2 pmr2 mm2 c2) =
+    (KicadPad n1 t1 s1 a1 si1 l1 attrs1)
+        ~== (KicadPad n2 t2 s2 a2 si2 l2 attrs2) =
            n1   == n2
         && t1   == t2
         && s1   == s2
         && a1  ~== a2
         && si1 ~== si2
         && l1   == l2
-        && d1  ~== d2
-        && r1  ~== r2
-        && pm1   ~== pm2
-        && pmr1  ~== pmr2
-        && mm1   ~== mm2
-        && c1    ~== c2
+        && attrs1 ~== attrs2
     x ~== y = x == y
 
 defaultKicadFpText :: KicadItem
@@ -184,12 +180,7 @@ defaultKicadPad = KicadPad { padNumber    = ""
                            , itemAt       = defaultKicadAtT
                            , itemSize     = (0,0)
                            , padLayers    = []
-                           , padDrill     = Nothing
-                           , padRectDelta = Nothing
-                           , padPasteMargin      = Nothing
-                           , padPasteMarginRatio = Nothing
-                           , padMaskMargin       = Nothing
-                           , padClearance        = Nothing
+                           , padAttributes_ = []
                            }
 
 data KicadDrillT = KicadDrillT { kicadDrillSize   :: Maybe (Double, Double)

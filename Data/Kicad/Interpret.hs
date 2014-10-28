@@ -223,19 +223,20 @@ asKicadPad (n:t:s:xs) = interpretNumber
                 -> interpretRest sxs pad {padLayers = d}
             Right (KicadExprAttribute  (KicadSize d))
                 -> interpretRest sxs pad {itemSize = d}
-            Right (KicadExprAttribute (KicadDrill d))
-                -> interpretRest sxs pad {padDrill = Just d}
-            Right (KicadExprAttribute (KicadRectDelta d))
-                -> interpretRest sxs pad {padRectDelta = Just d}
-            Right (KicadExprAttribute (KicadMaskMargin d))
-                -> interpretRest sxs pad {padMaskMargin = Just d}
-            Right (KicadExprAttribute (KicadPasteMarginRatio d))
-                -> interpretRest sxs pad {padPasteMarginRatio = Just d}
-            Right (KicadExprAttribute (KicadPasteMargin d))
-                -> interpretRest sxs pad {padPasteMargin = Just d}
-            Right (KicadExprAttribute (KicadClearance d))
-                -> interpretRest sxs pad {padClearance = Just d}
+            Right (KicadExprAttribute a@(KicadDrill _))
+                -> pushToAttrs sxs a pad
+            Right (KicadExprAttribute a@(KicadRectDelta _))
+                -> pushToAttrs sxs a pad
+            Right (KicadExprAttribute a@(KicadMaskMargin _))
+                -> pushToAttrs sxs a pad
+            Right (KicadExprAttribute a@(KicadPasteMarginRatio _))
+                -> pushToAttrs sxs a pad
+            Right (KicadExprAttribute a@(KicadPasteMargin _))
+                -> pushToAttrs sxs a pad
+            Right (KicadExprAttribute a@(KicadClearance _))
+                -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins or nothing" sx
+        pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (a:) pad)
 asKicadPad xs = expecting "number, type and shape" $ List xs
 
 asKicadLayer :: [SExpr] -> Either String KicadAttribute
