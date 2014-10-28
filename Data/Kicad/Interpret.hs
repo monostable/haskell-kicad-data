@@ -58,6 +58,10 @@ interpret (List (AtomKey kw:sxs)) =
                 -> KicadExprItem <$> asFp defaultKicadFpLine        sxs
             KeyFpCircle
                 -> KicadExprItem <$> asFp defaultKicadFpCircle      sxs
+            KeyAutoplaceCost180
+                -> KicadExprAttribute <$> asInt KicadAutoplaceCost180 sxs
+            KeyAutoplaceCost90
+                -> KicadExprAttribute <$> asInt KicadAutoplaceCost90 sxs
 interpret (AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
@@ -263,7 +267,7 @@ asKicadEffects l@[e@(List _)] =
         Right (KicadExprAttribute font@(KicadFont {}))
             -> Right $ KicadFpTextEffects font
         _ -> expecting "font-expression" l
-asKicadEffects x = expecting "one effects-expression (e.g. font)" $ List x
+asKicadEffects x = expecting "one effects-expression (e.g. font)" x
 
 asKicadFont :: [SExpr] -> Either String KicadAttribute
 asKicadFont xs = interpretRest xs defaultKicadFont
@@ -305,6 +309,10 @@ asKicadLayers xs = let layers = map oneKicadLayer xs in case lefts layers of
 asDouble :: (Double -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
 asDouble constructor [AtomDbl d] = Right $ constructor d
 asDouble _ x = expecting "one float (e.g. '1.0')" x
+
+asInt :: (Int -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
+asInt constructor [AtomDbl d] = Right $ constructor $ round d
+asInt _ x = expecting "one int (e.g. '1')" x
 
 asKicadDrill :: [SExpr] -> Either String KicadAttribute
 asKicadDrill xs = interpretRest xs defaultKicadDrillT

@@ -239,6 +239,8 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadPasteMargin Double
                     | KicadPasteMarginRatio  Double
                     | KicadOffset (Double, Double)
+                    | KicadAutoplaceCost90 Int
+                    | KicadAutoplaceCost180 Int
     deriving (Show, Eq)
 
 type KicadXyzT = (Double, Double, Double)
@@ -301,6 +303,8 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadAttr  s)       = toSxStr KeyAttr  s
     toSExpr KicadItalic = AtomStr "italic"
     toSExpr KicadHide   = AtomStr "hide"
+    toSExpr (KicadAutoplaceCost90  i) = toSxD KeyAutoplaceCost90 (fromIntegral i)
+    toSExpr (KicadAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)
 
 toSxD   kw d      = List [AtomKey kw, AtomDbl d]
 toSxDD  kw (x,y)  = List [AtomKey kw, AtomDbl x, AtomDbl y]

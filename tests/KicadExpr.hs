@@ -95,6 +95,8 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadMaskMargin  arbitrary
                       , liftM KicadPasteMargin arbitrary
                       , liftM KicadPasteMarginRatio  arbitrary
+                      , liftM KicadAutoplaceCost90   arbitrary
+                      , liftM KicadAutoplaceCost180  arbitrary
                       , do a <- arbitrary
                            b <- arbitrary
                            return $ KicadDrill $ KicadDrillT a True b

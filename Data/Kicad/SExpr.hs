@@ -7,7 +7,7 @@ module Data.Kicad.SExpr
 )
 where
 import Data.List (intercalate)
-import Data.Char (toLower, isLower)
+import Data.Char (toLower, isLower, isNumber)
 
 data SExpr = AtomKey Keyword
            | AtomStr String
@@ -65,6 +65,8 @@ data Keyword = KeyXyz
              | KeyDescr
              | KeyClearance
              | KeyCenter
+             | KeyAutoplaceCost90
+             | KeyAutoplaceCost180
              | KeyAttr
              | KeyAt
              | KeyAngle
@@ -76,7 +78,7 @@ instance Writable Keyword where
         where
             splitCapWords "" = []
             splitCapWords (x:xs) =
-                let (word, rest) = span isLower xs
+                let (word, rest) = span (\c -> isLower c || isNumber c) xs
                 in (toLower x : word) : splitCapWords rest
 
 class Writable a where
