@@ -16,37 +16,47 @@ interpret (List (AtomKey kw:sxs)) =
                         "' because:\n\t" ++ err
         Right expr -> Right expr
     where go = case kw of
-            KeyModule    -> KicadExprModule    <$> asKicadModule    sxs
-            KeyFpLine    -> KicadExprItem      <$> asFp defaultKicadFpLine  sxs
-            KeyFpCircle  -> KicadExprItem      <$> asFp defaultKicadFpCircle sxs
-            KeyPad       -> KicadExprItem      <$> asKicadPad       sxs
-            KeyFpText    -> KicadExprItem      <$> asKicadFpText    sxs
-            KeyFpArc     -> KicadExprItem      <$> asKicadFpArc     sxs
-            KeyFpPoly    -> KicadExprItem      <$> asKicadFpPoly    sxs
-            KeyLayer     -> KicadExprAttribute <$> asKicadLayer     sxs
-            KeyAt        -> KicadExprAttribute <$> asKicadAt        sxs
-            KeyEffects   -> KicadExprAttribute <$> asKicadEffects   sxs
-            KeyFont      -> KicadExprAttribute <$> asKicadFont      sxs
-            KeySize      -> KicadExprAttribute <$> asXy KicadSize   sxs
-            KeyThickness -> KicadExprAttribute <$> asKicadThickness sxs
-            KeyTedit     -> KicadExprAttribute <$> asKicadTedit     sxs
-            KeyStart     -> KicadExprAttribute <$> asXy KicadStart  sxs
-            KeyEnd       -> KicadExprAttribute <$> asXy KicadEnd    sxs
-            KeyCenter    -> KicadExprAttribute <$> asXy KicadCenter sxs
-            KeyWidth     -> KicadExprAttribute <$> asKicadWidth     sxs
-            KeyDescr     -> KicadExprAttribute <$> asString KicadDescr sxs
-            KeyTags      -> KicadExprAttribute <$> asString KicadTags  sxs
-            KeyAttr      -> KicadExprAttribute <$> asString KicadAttr  sxs
-            KeyLayers    -> KicadExprAttribute <$> asKicadLayers    sxs
-            KeyDrill     -> KicadExprAttribute <$> asKicadDrill     sxs
-            KeyRectDelta -> KicadExprAttribute <$> asKicadRectDelta sxs
-            KeyAngle     -> KicadExprAttribute <$> asKicadAngle     sxs
-            KeyXy        -> KicadExprAttribute <$> asXy KicadXy     sxs
-            KeyPts       -> KicadExprAttribute <$> asKicadPts       sxs
-            KeyXyz       -> KicadExprAttribute <$> asKicadXyz       sxs
-            KeyScale     -> KicadExprAttribute <$> asXyz KicadModelScale  sxs
-            KeyRotate    -> KicadExprAttribute <$> asXyz KicadModelRotate sxs
-            KeyModel     -> KicadExprAttribute <$> asKicadModel     sxs
+            KeyModule    -> KicadExprModule    <$> asKicadModule           sxs
+            KeyPad       -> KicadExprItem      <$> asKicadPad              sxs
+            KeyFpText    -> KicadExprItem      <$> asKicadFpText           sxs
+            KeyFpArc     -> KicadExprItem      <$> asKicadFpArc            sxs
+            KeyFpPoly    -> KicadExprItem      <$> asKicadFpPoly           sxs
+            KeyLayer     -> KicadExprAttribute <$> asKicadLayer            sxs
+            KeyAt        -> KicadExprAttribute <$> asKicadAt               sxs
+            KeyEffects   -> KicadExprAttribute <$> asKicadEffects          sxs
+            KeyFont      -> KicadExprAttribute <$> asKicadFont             sxs
+            KeyLayers    -> KicadExprAttribute <$> asKicadLayers           sxs
+            KeyPts       -> KicadExprAttribute <$> asKicadPts              sxs
+            KeyXyz       -> KicadExprAttribute <$> asKicadXyz              sxs
+            KeyModel     -> KicadExprAttribute <$> asKicadModel            sxs
+            KeySize      -> KicadExprAttribute <$> asXy KicadSize          sxs
+            KeyStart     -> KicadExprAttribute <$> asXy KicadStart         sxs
+            KeyEnd       -> KicadExprAttribute <$> asXy KicadEnd           sxs
+            KeyCenter    -> KicadExprAttribute <$> asXy KicadCenter        sxs
+            KeyRectDelta -> KicadExprAttribute <$> asXy KicadRectDelta     sxs
+            KeyXy        -> KicadExprAttribute <$> asXy KicadXy            sxs
+            KeyScale     -> KicadExprAttribute <$> asXyz KicadModelScale   sxs
+            KeyRotate    -> KicadExprAttribute <$> asXyz KicadModelRotate  sxs
+            KeyDescr     -> KicadExprAttribute <$> asString KicadDescr     sxs
+            KeyTags      -> KicadExprAttribute <$> asString KicadTags      sxs
+            KeyAttr      -> KicadExprAttribute <$> asString KicadAttr      sxs
+            KeyTedit     -> KicadExprAttribute <$> asString KicadTedit     sxs
+            KeyDrill     -> KicadExprAttribute <$> asDouble KicadDrill     sxs
+            KeyAngle     -> KicadExprAttribute <$> asDouble KicadAngle     sxs
+            KeyThickness -> KicadExprAttribute <$> asDouble KicadThickness sxs
+            KeyWidth     -> KicadExprAttribute <$> asDouble KicadWidth     sxs
+            KeySolderPasteMarginRatio
+                -> KicadExprAttribute <$> asDouble KicadPasteMarginRatio  sxs
+            KeySolderPasteMargin
+                -> KicadExprAttribute <$> asDouble KicadPasteMargin sxs
+            KeySolderMaskMargin
+                -> KicadExprAttribute <$> asDouble KicadMaskMargin  sxs
+            KeyClearance
+                -> KicadExprAttribute <$> asDouble KicadClearance   sxs
+            KeyFpLine
+                -> KicadExprItem <$> asFp defaultKicadFpLine        sxs
+            KeyFpCircle
+                -> KicadExprItem <$> asFp defaultKicadFpCircle      sxs
 interpret (AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
@@ -126,10 +136,11 @@ asFp defaultFp (s:e:xs) = interpretStart defaultFp
         interpretRest [] fp_shape = Right fp_shape
         interpretRest (sx:sxs) fp_shape = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs fp_shape {itemWidth = d}
-            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_shape {itemLayer = d}
+            Right (KicadExprAttribute (KicadWidth d))
+                -> interpretRest sxs fp_shape {itemWidth = d}
+            Right (KicadExprAttribute (KicadLayer d))
+                -> interpretRest sxs fp_shape {itemLayer = d}
             Right _ -> expecting "width or layer" sx
-
 asFp _ x = expecting "fp_line (or fp_circle) start (center), end and attributes" x
 
 asKicadFpArc :: [SExpr] -> Either String KicadItem
@@ -148,9 +159,12 @@ asKicadFpArc (s:e:xs) = interpretStart defaultKicadFpArc
         interpretRest [] fp_arc = Right fp_arc
         interpretRest (sx:sxs) fp_arc = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadWidth d)) -> interpretRest sxs fp_arc {itemWidth = d}
-            Right (KicadExprAttribute (KicadLayer d)) -> interpretRest sxs fp_arc {itemLayer = d}
-            Right (KicadExprAttribute (KicadAngle d)) -> interpretRest sxs fp_arc {fpArcAngle = d}
+            Right (KicadExprAttribute (KicadWidth d))
+                -> interpretRest sxs fp_arc {itemWidth = d}
+            Right (KicadExprAttribute (KicadLayer d))
+                -> interpretRest sxs fp_arc {itemLayer = d}
+            Right (KicadExprAttribute (KicadAngle d))
+                -> interpretRest sxs fp_arc {fpArcAngle = d}
             Right _ -> expecting "width, layer or angle" sx
 asKicadFpArc x = expecting "fp_arc start, end and attributes" x
 
@@ -200,23 +214,26 @@ asKicadPad (n:t:s:xs) = interpretNumber
         interpretRest [] pad = Right pad
         interpretRest (sx:sxs) pad = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadAt at) )->
-                interpretRest sxs (pad {itemAt = at})
-            Right (KicadExprAttribute (KicadLayers layers)) ->
-                interpretRest sxs (pad {padLayers = layers})
-            Right (KicadExprAttribute  (KicadSize size)) ->
-                interpretRest sxs (pad {itemSize = size})
-            Right (KicadExprAttribute (KicadDrill drill))     ->
-                interpretRest sxs (pad {padDrill = Just drill})
-            Right (KicadExprAttribute (KicadRectDelta delta)) ->
-                interpretRest sxs (pad {padRectDelta = Just delta})
-            _ -> expecting "at, size, drill, layers or nothing" sx
+            Right (KicadExprAttribute (KicadAt d))
+                -> interpretRest sxs pad {itemAt = d}
+            Right (KicadExprAttribute (KicadLayers d))
+                -> interpretRest sxs pad {padLayers = d}
+            Right (KicadExprAttribute  (KicadSize d))
+                -> interpretRest sxs pad {itemSize = d}
+            Right (KicadExprAttribute (KicadDrill d))
+                -> interpretRest sxs pad {padDrill = Just d}
+            Right (KicadExprAttribute (KicadRectDelta d))
+                -> interpretRest sxs pad {padRectDelta = Just d}
+            Right (KicadExprAttribute (KicadMaskMargin d))
+                -> interpretRest sxs pad {padMaskMargin = Just d}
+            Right (KicadExprAttribute (KicadPasteMarginRatio d))
+                -> interpretRest sxs pad {padPasteMarginRatio = Just d}
+            Right (KicadExprAttribute (KicadPasteMargin d))
+                -> interpretRest sxs pad {padPasteMargin = Just d}
+            Right (KicadExprAttribute (KicadClearance d))
+                -> interpretRest sxs pad {padClearance = Just d}
+            _ -> expecting "at, size, drill, layers , margins or nothing" sx
 asKicadPad xs = expecting "number, type and shape" $ List xs
-
-
-asKicadTedit :: [SExpr] -> Either String KicadAttribute
-asKicadTedit [AtomStr s] = Right $ KicadTedit s
-asKicadTedit x = expecting "timestamp only (String)" $ List x
 
 asKicadLayer :: [SExpr] -> Either String KicadAttribute
 asKicadLayer [sx] = oneKicadLayer sx
@@ -261,10 +278,6 @@ asKicadFont xs = interpretRest xs defaultKicadFont
                 interpretRest sxs font {kicadFontItalic = True}
             Right _ -> expecting "size, thickness or 'italic'" sx
 
-asKicadThickness :: [SExpr] -> Either String KicadAttribute
-asKicadThickness [AtomDbl thickness] = Right $ KicadThickness thickness
-asKicadThickness x = expecting "one float only (e.g. '1.0')" x
-
 asXy :: ((Double, Double) -> a) -> [SExpr] -> Either String a
 asXy constructor [AtomDbl x, AtomDbl y] = Right $ constructor (x,y)
 asXy _ x = expecting "two floats (e.g. 1.0 1.0)" x
@@ -277,10 +290,6 @@ asKicadPts = fmap KicadPts . foldr interpretXys (Right [])
                             -> Right (xy:) <*> z
                         Right _ -> expecting "'xy' (e.g. '(xy 1.0 1.0)')" sx
 
-asKicadWidth :: [SExpr] -> Either String KicadAttribute
-asKicadWidth [AtomDbl x] = Right $ KicadWidth x
-asKicadWidth x = expecting "one float (e.g. 1.0)" x
-
 asString :: (String -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
 asString kicad [AtomStr s] =  Right $ kicad s
 asString _ x = expecting "string" x
@@ -292,18 +301,9 @@ asKicadLayers xs = let layers = map oneKicadLayer xs in case lefts layers of
     _  -> Left $ "Could not interpret layers:\n"
                     ++ unlines (map ("\t\t"++) (lefts layers))
 
-asKicadDrill :: [SExpr] -> Either String KicadAttribute
-asKicadDrill [AtomDbl d] = Right $ KicadDrill d
-asKicadDrill x = expecting "one float (e.g. '1.0')" x
-
-asKicadRectDelta :: [SExpr] -> Either String KicadAttribute
-asKicadRectDelta [AtomDbl y, AtomDbl x] --yes, y then x
-    = Right $ KicadRectDelta (y,x)
-asKicadRectDelta x = expecting "two floats (e.g '0 0.6')" x
-
-asKicadAngle :: [SExpr] -> Either String KicadAttribute
-asKicadAngle [AtomDbl d] = Right $ KicadAngle d
-asKicadAngle x = expecting "one float (e.g. '1.0')" x
+asDouble :: (Double -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
+asDouble constructor [AtomDbl d] = Right $ constructor d
+asDouble _ x = expecting "one float (e.g. '1.0')" x
 
 asKicadXyz :: [SExpr] -> Either String KicadAttribute
 asKicadXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =

@@ -39,6 +39,9 @@ data Keyword = KeyXyz
              | KeyTedit
              | KeyTags
              | KeyStart
+             | KeySolderPasteMarginRatio
+             | KeySolderPasteMargin
+             | KeySolderMaskMargin
              | KeySize
              | KeyScale
              | KeyRotate
@@ -59,6 +62,7 @@ data Keyword = KeyXyz
              | KeyEffects
              | KeyDrill
              | KeyDescr
+             | KeyClearance
              | KeyCenter
              | KeyAttr
              | KeyAt

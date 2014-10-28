@@ -36,6 +36,7 @@ parseList = do
         AtomKey KeyPad    -> do n <- parseString
                                 spaces1
                                 t <- parseString
+                                  <?> "string designating type e.g. 'smd'"
                                 spaces1
                                 s <- parseString
                                 spaces1

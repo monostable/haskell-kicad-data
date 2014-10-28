@@ -92,6 +92,10 @@ instance Arbitrary KicadAttribute where
                       , liftM KicadXyz       arbitrary
                       , liftM KicadModelScale arbitrary
                       , liftM KicadModelRotate arbitrary
+                      , liftM KicadClearance   arbitrary
+                      , liftM KicadMaskMargin  arbitrary
+                      , liftM KicadPasteMargin arbitrary
+                      , liftM KicadPasteMarginRatio  arbitrary
                       , do s <- arbitrary
                            t <- arbitrary
                            i <- arbitrary

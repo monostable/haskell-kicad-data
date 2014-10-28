@@ -76,6 +76,10 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                           , padLayers     :: [KicadLayerT]
                           , padDrill      :: Maybe Double
                           , padRectDelta  :: Maybe (Double, Double)
+                          , padPasteMargin      :: Maybe Double
+                          , padPasteMarginRatio :: Maybe Double
+                          , padMaskMargin       :: Maybe Double
+                          , padClearance        :: Maybe Double
                           }
     deriving (Show, Eq)
 
@@ -115,7 +119,7 @@ instance AEq KicadItem where
            ps1 ~== ps2
         && l1   == l2
         && w1  ~== w2
-    (KicadPad n1 t1 s1 a1 si1 l1 d1 r1) ~== (KicadPad n2 t2 s2 a2 si2 l2 d2 r2) =
+    (KicadPad n1 t1 s1 a1 si1 l1 d1 r1 pm1 pmr1 mm1 c1) ~== (KicadPad n2 t2 s2 a2 si2 l2 d2 r2 pm2 pmr2 mm2 c2) =
            n1   == n2
         && t1   == t2
         && s1   == s2
@@ -124,6 +128,10 @@ instance AEq KicadItem where
         && l1   == l2
         && d1  ~== d2
         && r1  ~== r2
+        && pm1   ~== pm2
+        && pmr1  ~== pmr2
+        && mm1   ~== mm2
+        && c1    ~== c2
     x ~== y = x == y
 
 defaultKicadFpText :: KicadItem
@@ -150,7 +158,6 @@ defaultKicadFpCircle = KicadFpCircle { itemStart = (0,0)
                                      , itemLayer = FSilkS
                                      , itemWidth = 0.15
                                      }
-
 defaultKicadFpArc :: KicadItem
 defaultKicadFpArc = KicadFpArc { itemStart  = (0,0)
                                , itemEnd    = (0,0)
@@ -158,6 +165,7 @@ defaultKicadFpArc = KicadFpArc { itemStart  = (0,0)
                                , itemLayer  = FSilkS
                                , itemWidth = 0.15
                                }
+
 defaultKicadFpPoly :: KicadItem
 defaultKicadFpPoly = KicadFpPoly { fpPolyPts   = []
                                  , itemLayer   = FSilkS
@@ -173,6 +181,10 @@ defaultKicadPad = KicadPad { padNumber    = ""
                            , padLayers    = []
                            , padDrill     = Nothing
                            , padRectDelta = Nothing
+                           , padPasteMargin      = Nothing
+                           , padPasteMarginRatio = Nothing
+                           , padMaskMargin       = Nothing
+                           , padClearance        = Nothing
                            }
 
 data KicadAttribute = KicadLayer KicadLayerT
@@ -210,59 +222,69 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadModelRotate KicadAttribute
                     | KicadXyz         KicadXyzT
                     | KicadCenter (Double, Double)
+                    | KicadClearance   Double
+                    | KicadMaskMargin  Double
+                    | KicadPasteMargin Double
+                    | KicadPasteMarginRatio  Double
     deriving (Show, Eq)
 
 type KicadXyzT = (Double, Double, Double)
 
 instance SExpressable KicadAttribute where
-    toSExpr (KicadLayer l)      =
-        List [ AtomKey KeyLayer
-             , AtomStr $ layerToStr l
-             ]
+    toSExpr (KicadLayer l) = List [ AtomKey KeyLayer
+                                  , AtomStr $ layerToStr l
+                                  ]
     toSExpr (KicadAt (KicadAtT (x,y) o)) =
         List $ [ AtomKey KeyAt
                , AtomDbl x
                , AtomDbl y
                ] ++ [AtomDbl o | o /= 0]
-    toSExpr (KicadFpTextType t)     = AtomStr $ fpTextTypeToStr t
-    toSExpr (KicadSize (x,y))       = List [AtomKey KeySize, AtomDbl x, AtomDbl y]
-    toSExpr (KicadThickness d)      = List [AtomKey KeyThickness, AtomDbl d]
-    toSExpr (KicadTedit s)          = List [AtomKey KeyTedit, AtomStr s]
-    toSExpr KicadItalic             = AtomStr "italic"
-    toSExpr KicadHide               = AtomStr "hide"
-    toSExpr (KicadStart (x,y))      = List [AtomKey KeyStart, AtomDbl x, AtomDbl y]
-    toSExpr (KicadEnd   (x,y))      = List [AtomKey KeyEnd  , AtomDbl x, AtomDbl y]
-    toSExpr (KicadCenter (x,y))     = List [AtomKey KeyCenter, AtomDbl x, AtomDbl y]
-    toSExpr (KicadWidth d)          = List [AtomKey KeyWidth, AtomDbl d]
-    toSExpr (KicadDescr s)          = List [AtomKey KeyDescr, AtomStr s]
-    toSExpr (KicadTags s)           = List [AtomKey KeyTags , AtomStr s]
-    toSExpr (KicadAttr s)           = List [AtomKey KeyAttr , AtomStr s]
-    toSExpr (KicadLayers ls)        =
+    toSExpr (KicadLayers ls) =
         List (AtomKey KeyLayers : map (AtomStr . layerToStr) ls)
-    toSExpr (KicadDrill d)          = List [AtomKey KeyDrill, AtomDbl d]
-    toSExpr (KicadRectDelta (x,y))  =
-        List [AtomKey KeyRectDelta, AtomDbl x, AtomDbl y]
-    toSExpr (KicadFpTextEffects a)  = List [AtomKey KeyEffects, toSExpr a]
-    toSExpr (KicadFont s t i)       =
+    toSExpr (KicadFont s t i) =
         List $ [ AtomKey KeyFont, toSExpr (KicadSize s)
                , toSExpr (KicadThickness t)
                ] ++ [AtomStr "italic" | i]
-    toSExpr (KicadAngle d)          = List [AtomKey KeyAngle, AtomDbl d]
-    toSExpr (KicadXy (x,y))         = List [AtomKey KeyXy, AtomDbl x, AtomDbl y]
-    toSExpr (KicadPts xys)          =
+    toSExpr (KicadPts xys) =
         List $ [AtomKey KeyPts] ++  map (toSExpr . KicadXy) xys
-    toSExpr (KicadModel p a s r)    =
+    toSExpr (KicadModel p a s r) =
         List [AtomKey KeyModel
              , AtomStr p
              , toSExpr (KicadModelAt     (KicadXyz a))
              , toSExpr (KicadModelScale  (KicadXyz s))
              , toSExpr (KicadModelRotate (KicadXyz r))
              ]
+    toSExpr (KicadXyz (x,y,z)) =
+        List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
+    toSExpr (KicadFpTextEffects a)  = List [AtomKey KeyEffects, toSExpr a]
+    toSExpr (KicadFpTextType t)     = AtomStr $ fpTextTypeToStr t
     toSExpr (KicadModelAt     xyz)  = List [AtomKey KeyAt    , toSExpr xyz]
     toSExpr (KicadModelScale  xyz)  = List [AtomKey KeyScale , toSExpr xyz]
     toSExpr (KicadModelRotate xyz)  = List [AtomKey KeyRotate, toSExpr xyz]
-    toSExpr (KicadXyz (x,y,z))      =
-        List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
+    toSExpr (KicadClearance   d) = toSxD KeyClearance              d
+    toSExpr (KicadMaskMargin  d) = toSxD KeySolderMaskMargin       d
+    toSExpr (KicadPasteMargin d) = toSxD KeySolderPasteMargin      d
+    toSExpr (KicadPasteMarginRatio  d) = toSxD KeySolderPasteMarginRatio d
+    toSExpr (KicadThickness   d) = toSxD KeyThickness              d
+    toSExpr (KicadWidth       d) = toSxD KeyWidth                  d
+    toSExpr (KicadDrill       d) = toSxD KeyDrill                  d
+    toSExpr (KicadAngle       d) = toSxD KeyAngle                  d
+    toSExpr (KicadSize      xy)  = toSxDD KeySize      xy
+    toSExpr (KicadStart     xy)  = toSxDD KeyStart     xy
+    toSExpr (KicadCenter    xy)  = toSxDD KeyCenter    xy
+    toSExpr (KicadRectDelta xy)  = toSxDD KeyRectDelta xy
+    toSExpr (KicadEnd       xy)  = toSxDD KeyEnd       xy
+    toSExpr (KicadXy        xy)  = toSxDD KeyXy        xy
+    toSExpr (KicadTedit s)       = toSxStr KeyTedit s
+    toSExpr (KicadDescr s)       = toSxStr KeyDescr s
+    toSExpr (KicadTags  s)       = toSxStr KeyTags  s
+    toSExpr (KicadAttr  s)       = toSxStr KeyAttr  s
+    toSExpr KicadItalic = AtomStr "italic"
+    toSExpr KicadHide   = AtomStr "hide"
+
+toSxD   kw d      = List [AtomKey kw, AtomDbl d]
+toSxDD  kw (x,y)  = List [AtomKey kw, AtomDbl x, AtomDbl y]
+toSxStr kw s      = List [AtomKey kw, AtomStr s]
 
 instance AEq KicadAttribute where
     (KicadAt        x) ~== (KicadAt        y) = x ~== y
@@ -277,6 +299,10 @@ instance AEq KicadAttribute where
     (KicadXy        x) ~== (KicadXy        y) = x ~== y
     (KicadPts       x) ~== (KicadPts       y) = x ~== y
     (KicadXyz       x) ~== (KicadXyz       y) = x ~== y
+    (KicadClearance   x)       ~== (KicadClearance   y)       = x ~== y
+    (KicadMaskMargin  x)       ~== (KicadMaskMargin  y)       = x ~== y
+    (KicadPasteMargin x)       ~== (KicadPasteMargin y)       = x ~== y
+    (KicadPasteMarginRatio  x) ~== (KicadPasteMarginRatio  y) = x ~== y
     (KicadModelAt x)         ~== (KicadModelAt y)     = x ~== y
     (KicadModelScale x)      ~== (KicadModelScale y)  = x ~== y
     (KicadModelRotate x)     ~== (KicadModelRotate y) = x ~== y
