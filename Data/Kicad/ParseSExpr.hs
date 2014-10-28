@@ -26,11 +26,11 @@ parseList = do
                                   <?> "string designating type e.g. 'user'"
                                 spaces1
                                 s <- parseString
-                                spaces1
+                                spaces
                                 r <- parseRest
                                 return (t:s:r)
         AtomKey KeyModule -> do t <- parseString
-                                spaces1
+                                spaces
                                 r <- parseRest
                                 return (t:r)
         AtomKey KeyPad    -> do n <- parseString
@@ -39,7 +39,7 @@ parseList = do
                                   <?> "string designating type e.g. 'smd'"
                                 spaces1
                                 s <- parseString
-                                spaces1
+                                spaces
                                 r <- parseRest
                                 return (n:t:s:r)
         _                 -> parseRest
