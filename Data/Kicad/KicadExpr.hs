@@ -325,10 +325,17 @@ defaultKicadModel = KicadModel { kicadModelPath   = ""
                                , kicadModelRotate = (0,0,0)
                                }
 
-data KicadLayerT = FSilkS   | FCu | FPaste | FMask
-                 | BSilkS   | BCu | BPaste | BMask
-                 | DwgsUser
-                 | FandBCu  | AllCu  | AllMask
+data KicadLayerT = FSilkS    | FCu       | FPaste    | FMask
+                 | BSilkS    | BCu       | BPaste    | BMask
+                 | DwgsUser  | CmtsUser  | FAdhes    | AllSilk
+                 | FandBCu   | AllCu     | AllMask
+                 | Inner1Cu  | Inner2Cu  | Inner3Cu  | Inner4Cu  | Inner5Cu
+                 | Inner6Cu  | Inner7Cu  | Inner8Cu  | Inner9Cu  | Inner10Cu
+                 | Inner11Cu | Inner12Cu | Inner13Cu | Inner14Cu | Inner15Cu
+                 | Inner16Cu | Inner17Cu | Inner18Cu | Inner19Cu | Inner20Cu
+                 | Inner21Cu | Inner22Cu | Inner23Cu | Inner24Cu | Inner25Cu
+                 | Inner26Cu | Inner27Cu | Inner28Cu | Inner29Cu | Inner30Cu
+                 | Inner31Cu | Inner32Cu
     deriving (Show, Eq, Enum, Bounded)
 
 strToLayerMap :: [(String, KicadLayerT)]
@@ -342,9 +349,44 @@ strToLayerMap =
     , ("B.Paste"   , BPaste )
     , ("B.Mask"    , BMask  )
     , ("Dwgs.User" , DwgsUser)
+    , ("Cmts.User" , CmtsUser)
+    , ("F.Adhes"   , FAdhes)
     , ("F&B.Cu"    , FandBCu)
     , ("*.Cu"      , AllCu  )
     , ("*.Mask"    , AllMask)
+    , ("*.SilkS"   , AllSilk)
+    , ("Inner1.Cu" , Inner1Cu)
+    , ("Inner2.Cu" , Inner2Cu)
+    , ("Inner3.Cu" , Inner3Cu)
+    , ("Inner4.Cu" , Inner4Cu)
+    , ("Inner5.Cu" , Inner5Cu)
+    , ("Inner6.Cu" , Inner6Cu)
+    , ("Inner7.Cu" , Inner7Cu)
+    , ("Inner8.Cu" , Inner8Cu)
+    , ("Inner9.Cu" , Inner9Cu)
+    , ("Inner10.Cu", Inner10Cu)
+    , ("Inner11.Cu", Inner11Cu)
+    , ("Inner12.Cu", Inner12Cu)
+    , ("Inner13.Cu", Inner13Cu)
+    , ("Inner14.Cu", Inner14Cu)
+    , ("Inner15.Cu", Inner15Cu)
+    , ("Inner16.Cu", Inner16Cu)
+    , ("Inner17.Cu", Inner17Cu)
+    , ("Inner18.Cu", Inner18Cu)
+    , ("Inner19.Cu", Inner19Cu)
+    , ("Inner20.Cu", Inner20Cu)
+    , ("Inner21.Cu", Inner21Cu)
+    , ("Inner22.Cu", Inner22Cu)
+    , ("Inner23.Cu", Inner23Cu)
+    , ("Inner24.Cu", Inner24Cu)
+    , ("Inner25.Cu", Inner25Cu)
+    , ("Inner26.Cu", Inner26Cu)
+    , ("Inner27.Cu", Inner27Cu)
+    , ("Inner28.Cu", Inner28Cu)
+    , ("Inner29.Cu", Inner29Cu)
+    , ("Inner30.Cu", Inner30Cu)
+    , ("Inner31.Cu", Inner31Cu)
+    , ("Inner32.Cu", Inner32Cu)
     ]
 
 strToLayer :: String -> Maybe KicadLayerT
