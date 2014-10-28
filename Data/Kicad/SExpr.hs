@@ -48,6 +48,7 @@ data Keyword = KeyXyz
              | KeyRectDelta
              | KeyPts
              | KeyPad
+             | KeyOffset
              | KeyModule
              | KeyModel
              | KeyLayers

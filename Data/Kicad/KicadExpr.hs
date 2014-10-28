@@ -187,13 +187,18 @@ defaultKicadPad = KicadPad { padNumber    = ""
                            , padClearance        = Nothing
                            }
 
-data KicadDrillT = KicadDrillRound Double | KicadDrillOval (Double, Double)
+data KicadDrillT = KicadDrillT { kicadDrillX :: Maybe Double
+                               , kicadDrillY :: Maybe Double
+                               , kicadDrillOval :: Bool
+                               , kicadDrillOffset :: Maybe (Double, Double)
+                               }
     deriving (Show, Eq)
 
+defaultKicadDrillT  = KicadDrillT Nothing Nothing False Nothing
+
 instance AEq KicadDrillT where
-    KicadDrillRound x ~== KicadDrillRound y = x ~== y
-    KicadDrillOval x ~== KicadDrillOval y = x ~== y
-    _ ~== _ = False
+    KicadDrillT x1 y1 o1 off1 ~== KicadDrillT x2 y2 o2 off2
+        = x1 ~== x2 && y1 ~== y2 && o1 == o2 && off1 ~== off2
 
 data KicadAttribute = KicadLayer KicadLayerT
                     | KicadAt KicadAtT
@@ -234,6 +239,7 @@ data KicadAttribute = KicadLayer KicadLayerT
                     | KicadMaskMargin  Double
                     | KicadPasteMargin Double
                     | KicadPasteMarginRatio  Double
+                    | KicadOffset (Double, Double)
     deriving (Show, Eq)
 
 type KicadXyzT = (Double, Double, Double)
@@ -262,11 +268,14 @@ instance SExpressable KicadAttribute where
              , toSExpr (KicadModelScale  (KicadXyz s))
              , toSExpr (KicadModelRotate (KicadXyz r))
              ]
+    toSExpr (KicadDrill (KicadDrillT x y o off)) =
+        List $ [AtomKey KeyDrill]
+             ++ [AtomStr "oval" | o]
+             ++ map AtomDbl (maybeToList x)
+             ++ map AtomDbl (maybeToList y)
+             ++ [toSExpr (KicadOffset (fromJust off)) | isJust off]
     toSExpr (KicadXyz (x,y,z)) =
         List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
-    toSExpr (KicadDrill (KicadDrillRound d )) = toSxD KeyDrill     d
-    toSExpr (KicadDrill (KicadDrillOval (x,y))) =
-        List [AtomKey KeyDrill, AtomStr "oval", AtomDbl x, AtomDbl y]
     toSExpr (KicadFpTextEffects a)  = List [AtomKey KeyEffects, toSExpr a]
     toSExpr (KicadFpTextType t)     = AtomStr $ fpTextTypeToStr t
     toSExpr (KicadModelAt     xyz)  = List [AtomKey KeyAt    , toSExpr xyz]
@@ -285,6 +294,7 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadRectDelta xy)  = toSxDD KeyRectDelta xy
     toSExpr (KicadEnd       xy)  = toSxDD KeyEnd       xy
     toSExpr (KicadXy        xy)  = toSxDD KeyXy        xy
+    toSExpr (KicadOffset    xy)  = toSxDD KeyOffset    xy
     toSExpr (KicadTedit s)       = toSxStr KeyTedit s
     toSExpr (KicadDescr s)       = toSxStr KeyDescr s
     toSExpr (KicadTags  s)       = toSxStr KeyTags  s
@@ -309,6 +319,7 @@ instance AEq KicadAttribute where
     (KicadXy        x) ~== (KicadXy        y) = x ~== y
     (KicadPts       x) ~== (KicadPts       y) = x ~== y
     (KicadXyz       x) ~== (KicadXyz       y) = x ~== y
+    (KicadOffset    x) ~== (KicadOffset    y) = x ~== y
     (KicadClearance   x)       ~== (KicadClearance   y)       = x ~== y
     (KicadMaskMargin  x)       ~== (KicadMaskMargin  y)       = x ~== y
     (KicadPasteMargin x)       ~== (KicadPasteMargin y)       = x ~== y

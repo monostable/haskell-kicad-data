@@ -36,6 +36,7 @@ interpret (List (AtomKey kw:sxs)) =
             KeyCenter    -> KicadExprAttribute <$> asXy KicadCenter        sxs
             KeyRectDelta -> KicadExprAttribute <$> asXy KicadRectDelta     sxs
             KeyXy        -> KicadExprAttribute <$> asXy KicadXy            sxs
+            KeyOffset    -> KicadExprAttribute <$> asXy KicadOffset        sxs
             KeyScale     -> KicadExprAttribute <$> asXyz KicadModelScale   sxs
             KeyRotate    -> KicadExprAttribute <$> asXyz KicadModelRotate  sxs
             KeyDescr     -> KicadExprAttribute <$> asString KicadDescr     sxs
@@ -306,12 +307,20 @@ asDouble constructor [AtomDbl d] = Right $ constructor d
 asDouble _ x = expecting "one float (e.g. '1.0')" x
 
 asKicadDrill :: [SExpr] -> Either String KicadAttribute
-asKicadDrill [AtomStr "oval", AtomDbl x, AtomDbl y] =
-    Right $ KicadDrill $ KicadDrillOval (x,y)
-asKicadDrill [AtomDbl x] =
-    Right $ KicadDrill $ KicadDrillRound x
-asKicadDrill x =
-    expecting "one float (e.g. 1.0) or 'oval' (e.g. 'oval 1.0 1.0')" x
+asKicadDrill xs = interpretRest xs defaultKicadDrillT
+    where
+        interpretRest [] drill = Right $ KicadDrill drill
+        interpretRest (sx:sxs) drill = case sx of
+            AtomDbl d  -> if kicadDrillX drill == Nothing
+                          then interpretRest sxs drill {kicadDrillX = Just d}
+                          else interpretRest sxs drill {kicadDrillY = Just d}
+            AtomStr "oval"  -> interpretRest sxs drill {kicadDrillOval = True}
+            (List _) -> case interpret sx of
+                Left err -> Left ('\t':err)
+                Right (KicadExprAttribute (KicadOffset xy))
+                    -> interpretRest sxs drill {kicadDrillOffset = Just xy}
+                Right _ -> expecting "offset or nothing" sx
+            _ -> expecting "float, 'oval' or offset" sx
 
 asKicadXyz :: [SExpr] -> Either String KicadAttribute
 asKicadXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =
