@@ -18,8 +18,10 @@ data SExpr = AtomKey Keyword
 instance Writable SExpr where
     write (AtomKey kw)  = write kw
     write (AtomStr atm) |  (atm == "")
-                        || head atm `elem` '.':'-':['0' .. '9']
-                        || (foldr (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0' .. ' ']) False atm)
+                        || head atm `elem` '.':'-':['0'..'9']
+                        || foldr
+                            (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0'..' '])
+                                False atm
                                        = show atm -- escaped string with quotes
                         | otherwise    = atm
     write (AtomDbl atm) = show atm

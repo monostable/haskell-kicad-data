@@ -4,6 +4,7 @@ module Data.Kicad.Interpret
 where
 
 import Data.Either
+import Data.Maybe
 import Data.Kicad.SExpr
 import Data.Kicad.KicadExpr
 import Control.Applicative
@@ -86,7 +87,7 @@ asKicadModule (AtomStr n:xs) =
                 interpretRest sxs m {kicadModuleLayer = layer}
             Right (KicadExprItem item) ->
                 interpretRest sxs (over moduleItems (item:) m)
-            Right (KicadExprAttribute (KicadLocked)) -> interpretRest sxs m
+            Right (KicadExprAttribute KicadLocked) -> interpretRest sxs m
             Right _ -> interpretRest sxs m
 asKicadModule (x:_) = expecting "module name" x
 asKicadModule x = expecting "module name" x
@@ -330,11 +331,13 @@ asKicadDrill xs = interpretRest xs defaultKicadDrillT
     where
         interpretRest [] drill = Right $ KicadDrill drill
         interpretRest (sx:sxs) drill = case sx of
-            AtomDbl d  -> if kicadDrillSize drill == Nothing
-                          then interpretRest sxs drill {kicadDrillSize = Just (d,d)}
-                          else interpretRest sxs drill {
-                                kicadDrillSize = fmap (\(x,_) -> (x,d)) (kicadDrillSize drill)
-                                }
+            AtomDbl d  -> if isNothing (kicadDrillSize drill)
+                          then interpretRest sxs drill
+                                { kicadDrillSize = Just (d,d) }
+                          else interpretRest sxs drill
+                               { kicadDrillSize =
+                                    fmap (\(x,_) -> (x,d)) (kicadDrillSize drill)
+                               }
             AtomStr "oval"  -> interpretRest sxs drill {kicadDrillOval = True}
             (List _) -> case interpret sx of
                 Left err -> Left ('\t':err)

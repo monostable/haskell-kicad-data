@@ -103,7 +103,7 @@ instance Arbitrary KicadAttribute where
                       , do a <- arbitrary
                            b <- arbitrary
                            return $ KicadDrill $ KicadDrillT a True b
-                      , do a <- suchThatMaybe arbitrary (\(x,y) -> x == y)
+                      , do a <- suchThatMaybe arbitrary (uncurry (==))
                            b <- arbitrary
                            return $ KicadDrill $ KicadDrillT a False b
                       , do s <- arbitrary

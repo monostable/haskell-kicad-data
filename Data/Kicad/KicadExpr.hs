@@ -36,7 +36,7 @@ data KicadModule = KicadModule  { kicadModuleName  :: String
 defaultKicadModule = KicadModule "" FCu []
 
 moduleItems :: Functor f => LensLike' f KicadModule [KicadItem]
-moduleItems f (KicadModule n l i) = (\i' -> KicadModule n l i') `fmap` f i
+moduleItems f (KicadModule n l i) = KicadModule n l `fmap` f i
 
 instance AEq KicadModule where
     KicadModule n1 l1 is1 ~== KicadModule n2 l2 is2 =
@@ -260,7 +260,7 @@ instance SExpressable KicadAttribute where
                , toSExpr (KicadThickness t)
                ] ++ [AtomStr "italic" | i]
     toSExpr (KicadPts xys) =
-        List $ [AtomKey KeyPts] ++  map (toSExpr . KicadXy) xys
+        List $ AtomKey KeyPts : map (toSExpr . KicadXy) xys
     toSExpr (KicadModel p a s r) =
         List [AtomKey KeyModel
              , AtomStr p
