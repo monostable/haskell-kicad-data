@@ -33,6 +33,9 @@ parseList = do
                                 spaces
                                 r <- parseRest
                                 return (t:r)
+        AtomKey KeyTedit  -> do s <- parseString
+                                spaces
+                                return [s]
         AtomKey KeyDescr  -> do s <- parseString
                                 spaces
                                 return [s]

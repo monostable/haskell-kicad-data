@@ -356,10 +356,10 @@ defaultKicadModel = KicadModel { kicadModelPath   = ""
                                , kicadModelRotate = (0,0,0)
                                }
 
-data KicadLayerT = FSilkS    | FCu       | FPaste    | FMask
-                 | BSilkS    | BCu       | BPaste    | BMask
-                 | DwgsUser  | CmtsUser  | FAdhes    | AllSilk
-                 | FandBCu   | AllCu     | AllMask   | EdgeCuts
+data KicadLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS
+                 | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
+                 | FAdhes    | AllSilk   | FandBCu   | AllCu     | AllMask
+                 | EdgeCuts  | FCrtYd    | BCrtYd
                  | Inner1Cu  | Inner2Cu  | Inner3Cu  | Inner4Cu  | Inner5Cu
                  | Inner6Cu  | Inner7Cu  | Inner8Cu  | Inner9Cu  | Inner10Cu
                  | Inner11Cu | Inner12Cu | Inner13Cu | Inner14Cu | Inner15Cu
@@ -386,6 +386,8 @@ strToLayerMap =
     , ("*.Cu"      , AllCu  )
     , ("*.Mask"    , AllMask)
     , ("*.SilkS"   , AllSilk)
+    , ("F.CrtYd"   , FCrtYd)
+    , ("B.CrtYd"   , BCrtYd)
     , ("Edge.Cuts" , EdgeCuts)
     , ("Inner1.Cu" , Inner1Cu)
     , ("Inner2.Cu" , Inner2Cu)
