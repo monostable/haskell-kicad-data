@@ -104,53 +104,74 @@ instance Arbitrary KicadItem where
                            l  <- arbitrary
                            w  <- arbitrary
                            return $ KicadFpPoly ps l w
+                      , do n  <- genSafeString
+                           t  <- arbitrary
+                           s  <- arbitrary
+                           a  <- arbitrary
+                           si <- arbitrary
+                           l  <- arbitrary
+                           attrs <- listOf genPadAttrs
+                           return $ KicadPad n t s a si l attrs
                       ]
 
+genPadAttrs :: Gen KicadAttribute
+genPadAttrs = oneof [ liftM KicadRectDelta        arbitrary
+                    , liftM KicadMaskMargin       arbitrary
+                    , liftM KicadPasteMarginRatio arbitrary
+                    , liftM KicadPasteMargin      arbitrary
+                    , liftM KicadClearance        arbitrary
+                    , liftM KicadZoneConnect      arbitrary
+                    , liftM KicadThermalWidth     arbitrary
+                    , liftM KicadThermalGap       arbitrary
+                    , do a <- arbitrary
+                         b <- arbitrary
+                         return $ KicadDrill $ KicadDrillT a True b
+                    , do a <- suchThatMaybe arbitrary (uncurry (==))
+                         b <- arbitrary
+                         return $ KicadDrill $ KicadDrillT a False b
+                    ]
+
 instance Arbitrary KicadAttribute where
-    arbitrary = oneof [ liftM KicadLayer     arbitrary
-                      , liftM KicadAt        arbitrary
-                      , liftM KicadSize      arbitrary
-                      , liftM KicadThickness arbitrary
-                      , liftM KicadTedit     genSafeString
-                      , liftM KicadStart     arbitrary
-                      , liftM KicadEnd       arbitrary
-                      , liftM KicadCenter    arbitrary
-                      , liftM KicadWidth     arbitrary
-                      , liftM KicadDescr     genSafeString
-                      , liftM KicadTags      genSafeString
-                      , liftM KicadAttr      genSafeString
-                      , liftM KicadLayers    arbitrary
-                      , liftM KicadAngle     arbitrary
-                      , liftM KicadXy        arbitrary
-                      , liftM KicadPts       arbitrary
-                      , liftM KicadXyz       arbitrary
-                      , liftM KicadZoneConnect  arbitrary
-                      , liftM KicadThermalGap   arbitrary
-                      , liftM KicadThermalWidth arbitrary
-                      , liftM KicadModelScale   arbitrary
-                      , liftM KicadModelRotate  arbitrary
-                      , liftM KicadClearance    arbitrary
-                      , liftM KicadMaskMargin   arbitrary
-                      , liftM KicadPasteMargin  arbitrary
-                      , liftM KicadPasteMarginRatio  arbitrary
-                      , liftM KicadAutoplaceCost90   arbitrary
-                      , liftM KicadAutoplaceCost180  arbitrary
-                      , do a <- arbitrary
-                           b <- arbitrary
-                           return $ KicadDrill $ KicadDrillT a True b
-                      , do a <- suchThatMaybe arbitrary (uncurry (==))
-                           b <- arbitrary
-                           return $ KicadDrill $ KicadDrillT a False b
-                      , do s <- arbitrary
-                           t <- arbitrary
-                           i <- arbitrary
-                           return $ KicadFont s t i
-                      , do p <- genSafeString
-                           a <- arbitrary
-                           s <- arbitrary
-                           r <- arbitrary
-                           return $ KicadModel p a s r
-                      ]
+    arbitrary = oneof [ genPadAttrs
+                      , oneof [ liftM KicadLayer     arbitrary
+                              , liftM KicadAt        arbitrary
+                              , liftM KicadSize      arbitrary
+                              , liftM KicadThickness arbitrary
+                              , liftM KicadTedit     genSafeString
+                              , liftM KicadStart     arbitrary
+                              , liftM KicadEnd       arbitrary
+                              , liftM KicadCenter    arbitrary
+                              , liftM KicadWidth     arbitrary
+                              , liftM KicadDescr     genSafeString
+                              , liftM KicadTags      genSafeString
+                              , liftM KicadAttr      genSafeString
+                              , liftM KicadLayers    arbitrary
+                              , liftM KicadAngle     arbitrary
+                              , liftM KicadXy        arbitrary
+                              , liftM KicadPts       arbitrary
+                              , liftM KicadXyz       arbitrary
+                              , liftM KicadZoneConnect  arbitrary
+                              , liftM KicadThermalGap   arbitrary
+                              , liftM KicadThermalWidth arbitrary
+                              , liftM KicadModelScale   arbitrary
+                              , liftM KicadModelRotate  arbitrary
+                              , liftM KicadClearance    arbitrary
+                              , liftM KicadMaskMargin   arbitrary
+                              , liftM KicadPasteMargin  arbitrary
+                              , liftM KicadPasteMarginRatio  arbitrary
+                              , liftM KicadAutoplaceCost90   arbitrary
+                              , liftM KicadAutoplaceCost180  arbitrary
+                              , do s <- arbitrary
+                                   t <- arbitrary
+                                   i <- arbitrary
+                                   return $ KicadFont s t i
+                              , do p <- genSafeString
+                                   a <- arbitrary
+                                   s <- arbitrary
+                                   r <- arbitrary
+                                   return $ KicadModel p a s r
+                             ]
+                    ]
 
 instance Arbitrary KicadLayerT where
     arbitrary = arbitraryBoundedEnum

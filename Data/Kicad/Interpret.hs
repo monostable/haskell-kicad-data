@@ -86,7 +86,7 @@ asKicadModule (AtomStr n:xs) =
             Right (KicadExprAttribute (KicadLayer layer)) ->
                 interpretRest sxs m {kicadModuleLayer = layer}
             Right (KicadExprItem item) ->
-                interpretRest sxs (over moduleItems (item:) m)
+                interpretRest sxs (over moduleItems (++[item]) m)
             Right (KicadExprAttribute KicadLocked) -> interpretRest sxs m
             Right _ -> interpretRest sxs m
 asKicadModule (x:_) = expecting "module name" x
@@ -241,7 +241,7 @@ asKicadPad (n:t:s:xs) = interpretNumber
             Right (KicadExprAttribute a@(KicadThermalGap _))
                 -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
-        pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (a:) pad)
+        pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)
 asKicadPad xs = expecting "number, type and shape" $ List xs
 
 asKicadLayer :: [SExpr] -> Either String KicadAttribute

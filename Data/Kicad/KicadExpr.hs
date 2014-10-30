@@ -113,12 +113,15 @@ instance SExpressable KicadItem where
              , toSExpr (KicadLayer l)
              , toSExpr (KicadWidth w)
              ]
-    --toSExpr (KicadPad n t s a si l attrs) =
-    --    List [ AtomKey KeyPad
-    --         , AtomStr n
-    --         , AtomStr $
-
-
+    toSExpr (KicadPad n t s a si l attrs) =
+        List $ [ AtomKey KeyPad
+               , AtomStr n
+               , AtomStr $ fpPadTypeToStr t
+               , AtomStr $ fpPadShapeToStr s
+               , toSExpr $ KicadAt a
+               , toSExpr $ KicadSize si
+               , toSExpr $ KicadLayers l
+               ] ++ map toSExpr attrs
 
 itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
 itemLayers f item@(KicadPad { }) =
