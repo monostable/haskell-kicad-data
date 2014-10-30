@@ -88,6 +88,18 @@ instance Arbitrary KicadItem where
                            th <- arbitrary
                            i  <- arbitrary
                            return $ KicadFpText t s a l h si th i
+                      , do s <- arbitrary
+                           e <- arbitrary
+                           l <- arbitrary
+                           w <- arbitrary
+                           fp <- elements [KicadFpLine, KicadFpCircle]
+                           return $ fp s e l w
+                      , do s <- arbitrary
+                           e <- arbitrary
+                           a <- arbitrary
+                           l <- arbitrary
+                           w <- arbitrary
+                           return $ KicadFpArc s e a l w
                       ]
 
 instance Arbitrary KicadAttribute where

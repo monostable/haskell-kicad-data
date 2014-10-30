@@ -85,6 +85,28 @@ instance SExpressable KicadItem where
                , toSExpr (KicadLayer l)
                ] ++ [AtomStr "hide" | h] ++
                [toSExpr $ KicadFpTextEffects $ KicadFont si th i]
+    toSExpr (KicadFpLine s e l w) =
+        List [ AtomKey KeyFpLine
+             , toSExpr (KicadStart s)
+             , toSExpr (KicadEnd   e)
+             , toSExpr (KicadLayer l)
+             , toSExpr (KicadWidth w)
+             ]
+    toSExpr (KicadFpCircle s e l w) =
+        List [ AtomKey KeyFpCircle
+             , toSExpr (KicadStart s)
+             , toSExpr (KicadEnd   e)
+             , toSExpr (KicadLayer l)
+             , toSExpr (KicadWidth w)
+             ]
+    toSExpr (KicadFpArc s e a l w) =
+        List [ AtomKey KeyFpArc
+             , toSExpr (KicadStart s)
+             , toSExpr (KicadEnd   e)
+             , toSExpr (KicadAngle a)
+             , toSExpr (KicadLayer l)
+             , toSExpr (KicadWidth w)
+             ]
 
 
 itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
