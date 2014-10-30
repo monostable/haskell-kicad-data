@@ -107,6 +107,12 @@ instance SExpressable KicadItem where
              , toSExpr (KicadLayer l)
              , toSExpr (KicadWidth w)
              ]
+    toSExpr (KicadFpPoly ps l w) =
+        List [ AtomKey KeyFpPoly
+             , toSExpr (KicadPts ps)
+             , toSExpr (KicadLayer l)
+             , toSExpr (KicadWidth w)
+             ]
 
 
 itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]

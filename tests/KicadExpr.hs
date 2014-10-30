@@ -100,6 +100,10 @@ instance Arbitrary KicadItem where
                            l <- arbitrary
                            w <- arbitrary
                            return $ KicadFpArc s e a l w
+                      , do ps <- arbitrary
+                           l  <- arbitrary
+                           w  <- arbitrary
+                           return $ KicadFpPoly ps l w
                       ]
 
 instance Arbitrary KicadAttribute where
