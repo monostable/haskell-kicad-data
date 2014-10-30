@@ -19,6 +19,7 @@ tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
         , testProperty "parse fp_arc correctly" parseFpArcCorrectly
         , testProperty "parse fp_poly correctly" parseFpPolyCorrectly
         , testProperty "parse and write any attribute" parseAndWriteAnyAttribute
+        , testProperty "parse and write any item" parseAndWriteAnyItem
         ]
 
 parseFpLineCorrectly :: (Double, Double, Double, Double, Double)
@@ -66,10 +67,28 @@ parseFpPolyCorrectly ds w l =
             ++ ") (layer " ++ layerToStr l ++ ") (width "
             ++ show w ++ "))"
         fpPoly = Right $ KicadExprItem $ KicadFpPoly ds l w
+
 parseAndWriteAnyAttribute :: KicadAttribute -> Bool
 parseAndWriteAnyAttribute a = tracedPropAEq t1 t2
     where t1 = parse $ write $ toSExpr a
           t2 = Right $ KicadExprAttribute a
+
+parseAndWriteAnyItem :: KicadItem -> Bool
+parseAndWriteAnyItem a = tracedPropAEq t1 t2
+    where t1 = parse $ write $ toSExpr a
+          t2 = Right $ KicadExprItem a
+
+instance Arbitrary KicadItem where
+    arbitrary = oneof [ do t  <- arbitrary
+                           s  <- genSafeString
+                           a  <- arbitrary
+                           l  <- arbitrary
+                           h  <- arbitrary
+                           si <- arbitrary
+                           th <- arbitrary
+                           i  <- arbitrary
+                           return $ KicadFpText t s a l h si th i
+                      ]
 
 instance Arbitrary KicadAttribute where
     arbitrary = oneof [ liftM KicadLayer     arbitrary

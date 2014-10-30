@@ -13,13 +13,6 @@ data KicadExpr = KicadExprModule KicadModule
                | KicadExprAttribute KicadAttribute
     deriving (Show, Eq)
 
---instance SExpressable KicadItem where
---    toSExpr (KicadFpText t s a l h si th i) =
---        List $ [ AtomKey KeyFpText
---               , AtomStr $ fpTextTypeToStr t
---               , toSExpr (KicadAt a)
---               , toSExpr (KicadLayer l)
---               ]--  ++ if h then [AtomStr "hide"] else [] ++ [
 
 instance AEq KicadExpr where
     KicadExprModule    x ~== KicadExprModule    y = x ~== y
@@ -82,6 +75,17 @@ data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT
                           , padAttributes_ :: [KicadAttribute]
                           }
     deriving (Show, Eq)
+
+instance SExpressable KicadItem where
+    toSExpr (KicadFpText t s a l h si th i) =
+        List $ [ AtomKey KeyFpText
+               , AtomStr $ fpTextTypeToStr t
+               , AtomStr s
+               , toSExpr (KicadAt a)
+               , toSExpr (KicadLayer l)
+               ] ++ [AtomStr "hide" | h] ++
+               [toSExpr $ KicadFpTextEffects $ KicadFont si th i]
+
 
 itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
 itemLayers f item@(KicadPad { }) =
