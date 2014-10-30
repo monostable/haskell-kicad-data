@@ -20,21 +20,34 @@ instance AEq KicadExpr where
     KicadExprAttribute x ~== KicadExprAttribute y = x ~== y
     _ ~== _ = False
 
-data KicadModule = KicadModule  { kicadModuleName  :: String
-                                , kicadModuleLayer :: KicadLayerT
-                                , kicadModuleItems :: [KicadItem]
-                                }
+data KicadModule = KicadModule { kicadModuleName  :: String
+                               , kicadModuleLayer :: KicadLayerT
+                               , kicadModuleAttrs :: [KicadAttribute]
+                               , kicadModuleItems :: [KicadItem]
+                               }
     deriving (Show, Eq)
 
-defaultKicadModule = KicadModule "" FCu []
+instance SExpressable KicadModule where
+    toSExpr (KicadModule name l attrs items) =
+        List $ [ AtomKey KeyModule
+               , AtomStr name
+               , toSExpr (KicadLayer l)
+               ] ++ map toSExpr attrs
+               ++ map toSExpr items
+
+defaultKicadModule = KicadModule "" FCu [] []
 
 moduleItems :: Functor f => LensLike' f KicadModule [KicadItem]
-moduleItems f (KicadModule n l i) = KicadModule n l `fmap` f i
+moduleItems f (KicadModule n l a i) = KicadModule n l a `fmap` f i
+
+moduleAttrs :: Functor f => LensLike' f KicadModule [KicadAttribute]
+moduleAttrs f (KicadModule n l a i) = (\a' -> KicadModule n l a' i) `fmap` f a
 
 instance AEq KicadModule where
-    KicadModule n1 l1 is1 ~== KicadModule n2 l2 is2 =
+    KicadModule n1 l1 as1 is1 ~== KicadModule n2 l2 as2 is2 =
            n1   == n2
         && l1   == l2
+        && as1 ~== as2
         && is1 ~== is2
 
 data KicadItem = KicadFpText { fpTextType      :: KicadFpTextTypeT

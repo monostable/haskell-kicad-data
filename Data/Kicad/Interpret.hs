@@ -87,8 +87,9 @@ asKicadModule (AtomStr n:xs) =
                 interpretRest sxs m {kicadModuleLayer = layer}
             Right (KicadExprItem item) ->
                 interpretRest sxs (over moduleItems (++[item]) m)
-            Right (KicadExprAttribute KicadLocked) -> interpretRest sxs m
-            Right _ -> interpretRest sxs m
+            Right (KicadExprAttribute attr) ->
+                interpretRest sxs (over moduleAttrs (++[attr]) m)
+            Right _ -> expecting "layer, items or attributes" sx
 asKicadModule (x:_) = expecting "module name" x
 asKicadModule x = expecting "module name" x
 

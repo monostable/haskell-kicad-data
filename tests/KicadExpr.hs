@@ -9,7 +9,6 @@ import Test.QuickCheck
 import Control.Monad
 
 import Utils
-
 import Data.Kicad.Parse
 import Data.Kicad.KicadExpr
 import Data.Kicad.SExpr
@@ -20,6 +19,7 @@ tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
         , testProperty "parse fp_poly correctly" parseFpPolyCorrectly
         , testProperty "parse and write any attribute" parseAndWriteAnyAttribute
         , testProperty "parse and write any item" parseAndWriteAnyItem
+        , testProperty "parse and write any module" parseAndWriteAnyModule
         ]
 
 parseFpLineCorrectly :: (Double, Double, Double, Double, Double)
@@ -77,6 +77,23 @@ parseAndWriteAnyItem :: KicadItem -> Bool
 parseAndWriteAnyItem a = tracedPropAEq t1 t2
     where t1 = parse $ write $ toSExpr a
           t2 = Right $ KicadExprItem a
+
+parseAndWriteAnyModule :: KicadModule -> Bool
+parseAndWriteAnyModule a = tracedPropAEq t1 t2
+    where t1 = parse $ write $ toSExpr a
+          t2 = Right $ KicadExprModule a
+
+instance Arbitrary KicadModule where
+    arbitrary = do n <- genSafeString
+                   l <- arbitrary
+                   attrs <- listOf genModuleAttr
+                   items <- arbitrary
+                   return $ KicadModule n l attrs items
+        where
+            genModuleAttr :: Gen KicadAttribute
+            genModuleAttr = suchThat arbitrary not_layer
+            not_layer (KicadLayer _) = False
+            not_layer _ = True
 
 instance Arbitrary KicadItem where
     arbitrary = oneof [ do t  <- arbitrary
