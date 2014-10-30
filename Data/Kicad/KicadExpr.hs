@@ -113,6 +113,11 @@ instance SExpressable KicadItem where
              , toSExpr (KicadLayer l)
              , toSExpr (KicadWidth w)
              ]
+    --toSExpr (KicadPad n t s a si l attrs) =
+    --    List [ AtomKey KeyPad
+    --         , AtomStr n
+    --         , AtomStr $
+
 
 
 itemLayers :: Functor f => LensLike' f KicadItem [KicadLayerT]
@@ -469,8 +474,35 @@ itemsOn = foldMap itemsOn'
 data KicadPadTypeT = ThruHole | SMD | Connect | NPThruHole
     deriving (Show, Eq, Enum, Bounded)
 
+strToPadTypeMap :: [(String, KicadPadTypeT)]
+strToPadTypeMap =
+    [ ("smd"          , SMD)
+    , ("thru_hole"    , ThruHole)
+    , ("connect"      , Connect)
+    , ("np_thru_hole" , NPThruHole)
+    ]
+
+strToPadType :: String -> Maybe KicadPadTypeT
+strToPadType s = lookup s strToPadTypeMap
+
+fpPadTypeToStr :: KicadPadTypeT -> String
+fpPadTypeToStr t = fromMaybe "" $ lookup t $ map swap strToPadTypeMap
+
 data KicadPadShapeT = Circle | Oval | Rect | Trapezoid
     deriving (Show, Eq, Enum, Bounded)
+
+strToPadShapeMap :: [(String, KicadPadShapeT)]
+strToPadShapeMap = [ ("circle"   , Circle)
+                   , ("oval"     , Oval)
+                   , ("rect"     , Rect)
+                   , ("trapezoid", Trapezoid)
+                   ]
+
+strToPadShape :: String -> Maybe KicadPadShapeT
+strToPadShape s = lookup s strToPadShapeMap
+
+fpPadShapeToStr :: KicadPadShapeT -> String
+fpPadShapeToStr t = fromMaybe "" $ lookup t $ map swap strToPadShapeMap
 
 data KicadAtT = KicadAtT { kicadAtPoint :: (Double, Double)
                          , kicadAtOrientation :: Double

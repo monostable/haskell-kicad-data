@@ -196,30 +196,22 @@ asKicadPad :: [SExpr] -> Either String KicadItem
 asKicadPad (n:t:s:xs) = interpretNumber
     where
         interpretNumber = case n of
-            (AtomStr num) -> interpretType (defaultKicadPad {padNumber = num})
+            (AtomStr num) -> interpretType defaultKicadPad {padNumber = num}
             x             -> expecting "string designating pad number" x
         interpretType :: KicadItem -> Either String KicadItem
         interpretType pad = case t of
-            (AtomStr "smd")          ->
-                interpretShape (pad {padType = SMD})
-            (AtomStr "thru_hole")    ->
-                interpretShape (pad {padType = ThruHole})
-            (AtomStr "connect")      ->
-                interpretShape (pad {padType = Connect})
-            (AtomStr "np_thru_hole") ->
-                interpretShape (pad {padType = NPThruHole})
-            x -> expecting "pad type (e.g. 'smd')" x
+            (AtomStr str) -> case strToPadType str of
+                    Just d  -> interpretShape pad {padType = d}
+                    Nothing ->
+                        expecting "pad type (e.g. 'smd')" str
+            x -> expecting "pad type string (e.g. 'smd')" x
         interpretShape :: KicadItem -> Either String KicadItem
         interpretShape pad = case s of
-            (AtomStr "circle")    ->
-                interpretRest xs (pad {padShape = Circle})
-            (AtomStr "oval")      ->
-                interpretRest xs (pad {padShape = Oval})
-            (AtomStr "rect")      ->
-                interpretRest xs (pad {padShape = Rect})
-            (AtomStr "trapezoid") ->
-                interpretRest xs (pad {padShape = Trapezoid})
-            x -> expecting "pad shape (e.g. 'circle')" x
+            (AtomStr str) -> case strToPadShape str of
+                    Just d  -> interpretRest xs pad {padShape = d}
+                    Nothing ->
+                        expecting "pad shape (e.g. 'circle')" str
+            x -> expecting "pad shape string (e.g. 'circle')" x
         interpretRest :: [SExpr] -> KicadItem -> Either String KicadItem
         interpretRest [] pad = Right pad
         interpretRest (sx:sxs) pad = case interpret sx of
