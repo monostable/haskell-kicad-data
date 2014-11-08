@@ -20,6 +20,11 @@ instance AEq KicadExpr where
     KicadExprAttribute x ~== KicadExprAttribute y = x ~== y
     _ ~== _ = False
 
+instance SExpressable KicadExpr where
+    toSExpr (KicadExprModule x)    = toSExpr x
+    toSExpr (KicadExprItem x)      = toSExpr x
+    toSExpr (KicadExprAttribute x) = toSExpr x
+
 data KicadModule = KicadModule { kicadModuleName  :: String
                                , kicadModuleLayer :: KicadLayerT
                                , kicadModuleAttrs :: [KicadAttribute]

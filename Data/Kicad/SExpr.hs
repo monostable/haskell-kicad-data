@@ -8,6 +8,7 @@ module Data.Kicad.SExpr
 where
 import Data.List (intercalate)
 import Data.Char (toLower, isLower, isNumber)
+import Text.PrettyPrint.Leijen
 
 data SExpr = AtomKey Keyword
            | AtomStr String
@@ -94,3 +95,9 @@ class Writable a where
 
 instance Writable String where
     write = id
+
+instance Pretty SExpr where
+    pretty (List sxs)    = group $ (char '(') <> nest 1 (sep $ map pretty sxs) <> (char ')')
+    pretty atm@(AtomDbl _) = text $ write atm
+    pretty atm@(AtomStr _) = text $ write atm
+    pretty atm@(AtomKey _) = text $ write atm

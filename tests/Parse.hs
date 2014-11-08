@@ -1,6 +1,8 @@
 import System.Environment
 import System.Exit
 import Data.Kicad.Parse
+import Data.Kicad.KicadExpr
+import Text.PrettyPrint.Leijen
 
 
 main :: IO ()
@@ -16,5 +18,5 @@ parseAndDisplay (f:fs) = do
             input <- readFile f
             case parse input of
                 Left err -> putStrLn f >> putStrLn err >> exitFailure
-                Right _ -> parseAndDisplay fs
+                Right kx -> putDoc (pretty (toSExpr kx)) >> parseAndDisplay fs
 
