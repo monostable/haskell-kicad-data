@@ -4,11 +4,12 @@ module Data.Kicad.SExpr
 ( SExpr(..)
 , Keyword(..)
 , Writable(..)
+, pretty
 )
 where
 import Data.List (intercalate)
 import Data.Char (toLower, isLower, isNumber)
-import Text.PrettyPrint.Leijen
+import Text.PrettyPrint.Compact
 
 data SExpr = AtomKey Keyword
            | AtomStr String
@@ -96,8 +97,6 @@ class Writable a where
 instance Writable String where
     write = id
 
-instance Pretty SExpr where
-    pretty (List sxs)    = group $ (char '(') <> nest 1 (sep $ map pretty sxs) <> (char ')')
-    pretty atm@(AtomDbl _) = text $ write atm
-    pretty atm@(AtomStr _) = text $ write atm
-    pretty atm@(AtomKey _) = text $ write atm
+pretty :: SExpr -> Doc
+pretty (List xs) = text "(" <> align (sep $ map pretty xs) <> text ")"
+pretty atm = text $ write atm
