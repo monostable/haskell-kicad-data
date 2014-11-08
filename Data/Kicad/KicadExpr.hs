@@ -40,6 +40,7 @@ instance SExpressable KicadModule where
                ] ++ map toSExpr attrs
                ++ map toSExpr items
 
+defaultKicadModule :: KicadModule
 defaultKicadModule = KicadModule "" FCu [] []
 
 moduleItems :: Functor f => LensLike' f KicadModule [KicadItem]
@@ -246,6 +247,7 @@ data KicadDrillT = KicadDrillT { kicadDrillSize   :: Maybe (Double, Double)
                                }
     deriving (Show, Eq)
 
+defaultKicadDrillT :: KicadDrillT
 defaultKicadDrillT  = KicadDrillT Nothing False Nothing
 
 instance AEq KicadDrillT where
@@ -367,9 +369,14 @@ instance SExpressable KicadAttribute where
     toSExpr (KicadAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)
     toSExpr (KicadZoneConnect      i) = toSxD KeyZoneConnect      (fromIntegral i)
 
-toSxD   kw d      = List [AtomKey kw, AtomDbl d]
-toSxDD  kw (x,y)  = List [AtomKey kw, AtomDbl x, AtomDbl y]
-toSxStr kw s      = List [AtomKey kw, AtomStr s]
+toSxD :: Keyword -> Double -> SExpr
+toSxD  kw d = List [AtomKey kw, AtomDbl d]
+
+toSxDD :: Keyword -> (Double, Double) -> SExpr
+toSxDD kw (x,y) = List [AtomKey kw, AtomDbl x, AtomDbl y]
+
+toSxStr :: Keyword -> String -> SExpr
+toSxStr kw s = List [AtomKey kw, AtomStr s]
 
 instance AEq KicadAttribute where
     (KicadAt        x) ~== (KicadAt        y) = x ~== y

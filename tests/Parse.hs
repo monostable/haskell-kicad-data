@@ -18,5 +18,6 @@ parseAndDisplay (f:fs) = do
             input <- readFile f
             case parse input of
                 Left err -> putStrLn f >> putStrLn err >> exitFailure
-                Right kx -> putStrLn (show (toDoc (toSExpr kx))) >> parseAndDisplay fs
+                Right kx -> print (pretty (toSExpr kx)) >> parseAndDisplay fs
+
 
