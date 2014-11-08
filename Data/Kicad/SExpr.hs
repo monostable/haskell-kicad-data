@@ -94,9 +94,6 @@ instance Writable Keyword where
 class Writable a where
     write :: a -> String
 
-instance Writable String where
-    write = id
-
 pretty :: SExpr -> Doc
 pretty (List xs) = text "(" <> align (sep $ map pretty xs) <> text ")"
 pretty atm = text $ write atm

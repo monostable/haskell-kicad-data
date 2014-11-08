@@ -69,11 +69,11 @@ interpret (List (AtomKey kw:sxs)) =
                 -> KicadExprAttribute <$> asInt KicadAutoplaceCost90 sxs
             KeyZoneConnect
                 -> KicadExprAttribute <$> asInt KicadZoneConnect sxs
-interpret (AtomStr s) = case s of
+interpret sx@(AtomStr s) = case s of
     "italic" -> Right $ KicadExprAttribute KicadItalic
     "hide"   -> Right $ KicadExprAttribute KicadHide
     "locked" -> Right $ KicadExprAttribute KicadLocked
-    x -> expecting "'italic' or 'hide'" x
+    _ -> expecting "'italic' or 'hide' or 'locked' " sx
 interpret x = expecting "List with a key or a string atom" x
 
 asKicadModule :: [SExpr] -> Either String KicadModule
@@ -204,14 +204,14 @@ asKicadPad (n:t:s:xs) = interpretNumber
             (AtomStr str) -> case strToPadType str of
                     Just d  -> interpretShape pad {padType = d}
                     Nothing ->
-                        expecting "pad type (e.g. 'smd')" str
+                        expecting "pad type (e.g. 'smd')" t
             x -> expecting "pad type string (e.g. 'smd')" x
         interpretShape :: KicadItem -> Either String KicadItem
         interpretShape pad = case s of
             (AtomStr str) -> case strToPadShape str of
                     Just d  -> interpretRest xs pad {padShape = d}
                     Nothing ->
-                        expecting "pad shape (e.g. 'circle')" str
+                        expecting "pad shape (e.g. 'circle')" s
             x -> expecting "pad shape string (e.g. 'circle')" x
         interpretRest :: [SExpr] -> KicadItem -> Either String KicadItem
         interpretRest [] pad = Right pad
