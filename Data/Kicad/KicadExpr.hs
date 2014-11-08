@@ -533,6 +533,12 @@ defaultKicadAtT = KicadAtT { kicadAtPoint = (0,0)
                            , kicadAtOrientation = 0
                            }
 
+atX :: Functor f => LensLike' f KicadAtT Double
+atX f (KicadAtT (x,y) o) = (\x' -> KicadAtT (x',y) o) `fmap` f x
+
+atY :: Functor f => LensLike' f KicadAtT Double
+atY f (KicadAtT (x,y) o) = (\y' -> KicadAtT (x,y') o) `fmap` f y
+
 data KicadFpTextTypeT = FpTextReference | FpTextValue | FpTextUser
     deriving (Show, Eq, Enum, Bounded)
 
