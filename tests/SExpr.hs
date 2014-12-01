@@ -11,7 +11,7 @@ import Control.Monad (liftM)
 import Utils
 
 import Data.Kicad.SExpr
-import Data.Kicad.ParseSExpr
+import Data.Kicad.Internal.ParseSExpr
 
 tests :: [Test]
 tests = [ testProperty "parse all keywords" parseAllKeywords

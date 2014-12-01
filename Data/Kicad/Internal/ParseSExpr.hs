@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Data.Kicad.ParseSExpr
+module Data.Kicad.Internal.ParseSExpr
 ( parseSExpr
 )
 where

@@ -20,8 +20,8 @@ library
       Data.Kicad.PcbnewExpr
     , Data.Kicad.Parse
     , Data.Kicad.SExpr
-    , Data.Kicad.ParseSExpr
-    , Data.Kicad.Interpret
+    , Data.Kicad.Internal.ParseSExpr
+    , Data.Kicad.Internal.Interpret
   -- other-modules:
   -- other-extensions:
   build-depends:

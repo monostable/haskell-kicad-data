@@ -5,7 +5,6 @@ module Data.Kicad.PcbnewExpr
 , PcbnewModule(..)
 , PcbnewItem(..)
 , PcbnewAttribute(..)
-, SExpressable(..)
 -- * Sub-types
 , PcbnewDrillT(..)
 , PcbnewAtT(..)
@@ -611,6 +610,3 @@ strToFpTextType s = lookup s strToFpTextTypeMap
 
 fpTextTypeToStr :: PcbnewFpTextTypeT -> String
 fpTextTypeToStr t = fromMaybe "" $ lookup t $ map swap strToFpTextTypeMap
-
-class SExpressable a where
-    toSExpr :: a -> SExpr

@@ -1,4 +1,4 @@
-module Data.Kicad.Interpret
+module Data.Kicad.Internal.Interpret
 ( interpret
 )
 where

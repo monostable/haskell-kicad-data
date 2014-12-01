@@ -5,7 +5,7 @@ TEST_EXE=$TEST_DIR/parse
 
 mkdir -p $TEMP_DIR $TEST_DIR
 
-echo "Cloning or repos if needed."
+echo "Cloning repos if needed."
 for repo in $(cat tests/kicad_mod_repo_list)
 do if [ ! -d "$TEMP_DIR/$repo" ]
     then git clone --depth=1 "https://github.com/KiCad/$repo" "$TEMP_DIR/$repo" &> /dev/null || exit 1;

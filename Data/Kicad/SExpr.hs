@@ -4,6 +4,7 @@ module Data.Kicad.SExpr
 ( SExpr(..)
 , Keyword(..)
 , Writable(..)
+, SExpressable(..)
 , pretty
 )
 where
@@ -97,3 +98,6 @@ class Writable a where
 pretty :: SExpr -> Doc
 pretty (List xs) = text "(" <> align (sep $ map pretty xs) <> text ")"
 pretty atm = text $ write atm
+
+class SExpressable a where
+    toSExpr :: a -> SExpr
