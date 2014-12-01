@@ -10,10 +10,13 @@ import Text.PrettyPrint.Compact
 
 import Data.Kicad.SExpr.SExpr
 
+{-| Pretty-print a 'SExpr' as a readable 'Doc'. -}
 pretty :: SExpr -> Doc
 pretty (List xs) = text "(" <> align (sep $ map pretty xs) <> text ")"
 pretty atm = text $ write atm
 
+
+{-| Serialize an SExpr as a compact s-expression 'String'. -}
 write :: SExpr -> String
 write (AtomKey kw)  = writeKeyword kw
 write (AtomStr atm) |  (atm == "")
@@ -29,6 +32,9 @@ write (AtomDbl atm) = strip_zeros $ break (== '.') $ show atm
           dot_if_needed s     = if s == "." then "" else s
 write (List    sxs) = "(" ++ unwords (map write sxs) ++ ")"
 
+{-| Write a 'Keyword' as a 'String'. Removes \"Key\" from the 'Show'
+   instance and converts the rest to underscore (e.g KeyFpTextType becomes
+   "fp_text_type"). -}
 writeKeyword :: Keyword -> String
 writeKeyword = intercalate "_" . splitCapWords . drop 3 . show
     where

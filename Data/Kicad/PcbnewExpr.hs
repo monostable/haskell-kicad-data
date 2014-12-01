@@ -6,8 +6,8 @@ module Data.Kicad.PcbnewExpr
 , parse
 , fromSExpr
 -- * Write
-, write
 , pretty
+, write
 )
 where
 import Data.Kicad.PcbnewExpr.PcbnewExpr

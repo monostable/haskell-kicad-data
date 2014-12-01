@@ -1,6 +1,7 @@
 module Data.Kicad.PcbnewExpr.Write
-( write
-, pretty
+(
+  pretty
+, write
 )
 where
 import Text.PrettyPrint.Compact
@@ -8,10 +9,11 @@ import Text.PrettyPrint.Compact
 import Data.Kicad.PcbnewExpr.PcbnewExpr
 import qualified Data.Kicad.SExpr as SExpr
 
-{-| Serialize a PcbnewExpr as a compact s-expression string -}
+{-| Pretty-print a 'PcbnewExpr' as a readable s-expression 'Doc'.-}
+pretty :: PcbnewExpr -> Doc
+pretty = SExpr.pretty . SExpr.toSExpr
+
+{-| Serialize a 'PcbnewExpr' as a compact s-expression 'String'. -}
 write :: PcbnewExpr -> String
 write = SExpr.write . SExpr.toSExpr
 
-{-| Pretty-print a PcbnewExpr as an indented s-expression-}
-pretty :: PcbnewExpr -> Doc
-pretty = SExpr.pretty . SExpr.toSExpr

@@ -12,11 +12,12 @@ import Data.Kicad.SExpr hiding (parse)
 import qualified Data.Kicad.SExpr as SExpr (parse)
 import Data.Kicad.PcbnewExpr.PcbnewExpr
 
-{-| Parse a PcbnewExpr from a string. Returns an error string or a PcbnewExpr -}
+{-| Parse a 'PcbnewExpr' from a 'String'. Returns an 'String' with an error or
+   a 'PcbnewExpr'. -}
 parse :: String -> Either String PcbnewExpr
 parse = either Left fromSExpr . SExpr.parse
 
-{-| Interpret a SExpr as a PcbnewExpr -}
+{-| Interpret a 'SExpr' as a 'PcbnewExpr'. -}
 fromSExpr :: SExpr -> Either String PcbnewExpr
 fromSExpr (List (AtomKey kw:sxs)) =
     case go of

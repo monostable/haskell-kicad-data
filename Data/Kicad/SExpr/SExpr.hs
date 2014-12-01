@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
 module Data.Kicad.SExpr.SExpr
 ( SExpr(..)
 , Keyword(..)
