@@ -6,13 +6,14 @@ module Data.Kicad.PcbnewExpr
 , PcbnewItem(..)
 , PcbnewAttribute(..)
 , SExpressable(..)
--- * PcbnewItem sub-types
+-- * Sub-types
 , PcbnewDrillT(..)
 , PcbnewAtT(..)
 , PcbnewLayerT(..)
 , PcbnewPadShapeT(..)
 , PcbnewPadTypeT(..)
 , PcbnewFpTextTypeT(..)
+, PcbnewXyzT
 -- * Lenses and other getters/setters
 , moduleItems
 , moduleAttrs
@@ -53,8 +54,8 @@ import Data.Foldable (foldMap)
 import Data.Kicad.SExpr
 
 data PcbnewExpr = PcbnewExprModule PcbnewModule
-               | PcbnewExprItem PcbnewItem
-               | PcbnewExprAttribute PcbnewAttribute
+                | PcbnewExprItem PcbnewItem
+                | PcbnewExprAttribute PcbnewAttribute
     deriving (Show, Eq)
 
 instance AEq PcbnewExpr where
@@ -68,11 +69,11 @@ instance SExpressable PcbnewExpr where
     toSExpr (PcbnewExprItem x)      = toSExpr x
     toSExpr (PcbnewExprAttribute x) = toSExpr x
 
-data PcbnewModule = PcbnewModule { kicadModuleName  :: String
-                               , kicadModuleLayer :: PcbnewLayerT
-                               , kicadModuleAttrs :: [PcbnewAttribute]
-                               , kicadModuleItems :: [PcbnewItem]
-                               }
+data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
+                                 , pcbnewModuleLayer :: PcbnewLayerT
+                                 , pcbnewModuleAttrs :: [PcbnewAttribute]
+                                 , pcbnewModuleItems :: [PcbnewItem]
+                                 }
     deriving (Show, Eq)
 
 instance SExpressable PcbnewModule where
@@ -100,42 +101,42 @@ instance AEq PcbnewModule where
         && is1 ~== is2
 
 data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
-                             , fpTextStr       :: String
-                             , itemAt          :: PcbnewAtT
-                             , itemLayer       :: PcbnewLayerT
-                             , fpTextHide      :: Bool
-                             , itemSize        :: (Double, Double)
-                             , fpTextThickness :: Double
-                             , fpTextItalic    :: Bool
-                             }
-               | PcbnewFpLine { itemStart :: (Double, Double)
-                             , itemEnd   :: (Double, Double)
-                             , itemLayer :: PcbnewLayerT
-                             , itemWidth :: Double
-                             }
-               | PcbnewFpCircle { itemStart  :: (Double, Double)
-                               , itemEnd    :: (Double, Double)
-                               , itemLayer  :: PcbnewLayerT
-                               , itemWidth  :: Double
+                               , fpTextStr       :: String
+                               , itemAt          :: PcbnewAtT
+                               , itemLayer       :: PcbnewLayerT
+                               , fpTextHide      :: Bool
+                               , itemSize        :: (Double, Double)
+                               , fpTextThickness :: Double
+                               , fpTextItalic    :: Bool
                                }
+               | PcbnewFpLine { itemStart :: (Double, Double)
+                              , itemEnd   :: (Double, Double)
+                              , itemLayer :: PcbnewLayerT
+                              , itemWidth :: Double
+                              }
+               | PcbnewFpCircle { itemStart  :: (Double, Double)
+                                , itemEnd    :: (Double, Double)
+                                , itemLayer  :: PcbnewLayerT
+                                , itemWidth  :: Double
+                                }
                | PcbnewFpArc { itemStart  :: (Double, Double)
-                            , itemEnd    :: (Double, Double)
-                            , fpArcAngle :: Double
-                            , itemLayer  :: PcbnewLayerT
-                            , itemWidth  :: Double
-                            }
-               | PcbnewFpPoly { fpPolyPts :: [(Double, Double)]
-                             , itemLayer :: PcbnewLayerT
-                             , itemWidth :: Double
+                             , itemEnd    :: (Double, Double)
+                             , fpArcAngle :: Double
+                             , itemLayer  :: PcbnewLayerT
+                             , itemWidth  :: Double
                              }
+               | PcbnewFpPoly { fpPolyPts :: [(Double, Double)]
+                              , itemLayer :: PcbnewLayerT
+                              , itemWidth :: Double
+                              }
                | PcbnewPad { padNumber      :: String
-                          , padType        :: PcbnewPadTypeT
-                          , padShape       :: PcbnewPadShapeT
-                          , itemAt         :: PcbnewAtT
-                          , itemSize       :: (Double, Double)
-                          , padLayers      :: [PcbnewLayerT]
-                          , padAttributes_ :: [PcbnewAttribute]
-                          }
+                           , padType        :: PcbnewPadTypeT
+                           , padShape       :: PcbnewPadShapeT
+                           , itemAt         :: PcbnewAtT
+                           , itemSize       :: (Double, Double)
+                           , padLayers      :: [PcbnewLayerT]
+                           , padAttributes_ :: [PcbnewAttribute]
+                           }
     deriving (Show, Eq)
 
 instance SExpressable PcbnewItem where
@@ -238,56 +239,56 @@ instance AEq PcbnewItem where
 
 defaultPcbnewFpText :: PcbnewItem
 defaultPcbnewFpText = PcbnewFpText { fpTextType      = FpTextUser
-                                 , fpTextStr       = ""
-                                 , itemAt          = defaultPcbnewAtT
-                                 , itemLayer       = FSilkS
-                                 , fpTextHide      = False
-                                 , itemSize        = (1.0, 1.0)
-                                 , fpTextThickness = 1.0
-                                 , fpTextItalic    = False
-                                 }
+                                   , fpTextStr       = ""
+                                   , itemAt          = defaultPcbnewAtT
+                                   , itemLayer       = FSilkS
+                                   , fpTextHide      = False
+                                   , itemSize        = (1.0, 1.0)
+                                   , fpTextThickness = 1.0
+                                   , fpTextItalic    = False
+                                   }
 
 defaultPcbnewFpLine :: PcbnewItem
 defaultPcbnewFpLine = PcbnewFpLine { itemStart = (0,0)
-                                 , itemEnd   = (0,0)
-                                 , itemLayer = FSilkS
-                                 , itemWidth = 0.15
-                                 }
+                                   , itemEnd   = (0,0)
+                                   , itemLayer = FSilkS
+                                   , itemWidth = 0.15
+                                   }
 
 defaultPcbnewFpCircle :: PcbnewItem
 defaultPcbnewFpCircle = PcbnewFpCircle { itemStart = (0,0)
-                                     , itemEnd   = (0,0)
-                                     , itemLayer = FSilkS
-                                     , itemWidth = 0.15
-                                     }
+                                       , itemEnd   = (0,0)
+                                       , itemLayer = FSilkS
+                                       , itemWidth = 0.15
+                                       }
 defaultPcbnewFpArc :: PcbnewItem
 defaultPcbnewFpArc = PcbnewFpArc { itemStart  = (0,0)
-                               , itemEnd    = (0,0)
-                               , fpArcAngle = 0
-                               , itemLayer  = FSilkS
-                               , itemWidth = 0.15
-                               }
-
-defaultPcbnewFpPoly :: PcbnewItem
-defaultPcbnewFpPoly = PcbnewFpPoly { fpPolyPts   = []
-                                 , itemLayer   = FSilkS
+                                 , itemEnd    = (0,0)
+                                 , fpArcAngle = 0
+                                 , itemLayer  = FSilkS
                                  , itemWidth = 0.15
                                  }
 
+defaultPcbnewFpPoly :: PcbnewItem
+defaultPcbnewFpPoly = PcbnewFpPoly { fpPolyPts   = []
+                                   , itemLayer   = FSilkS
+                                   , itemWidth = 0.15
+                                   }
+
 defaultPcbnewPad :: PcbnewItem
 defaultPcbnewPad = PcbnewPad { padNumber    = ""
-                           , padType      = ThruHole
-                           , padShape     = Circle
-                           , itemAt       = defaultPcbnewAtT
-                           , itemSize     = (0,0)
-                           , padLayers    = []
-                           , padAttributes_ = []
-                           }
+                             , padType      = ThruHole
+                             , padShape     = Circle
+                             , itemAt       = defaultPcbnewAtT
+                             , itemSize     = (0,0)
+                             , padLayers    = []
+                             , padAttributes_ = []
+                             }
 
-data PcbnewDrillT = PcbnewDrillT { kicadDrillSize   :: Maybe (Double, Double)
-                               , kicadDrillOval   :: Bool
-                               , kicadDrillOffset :: Maybe (Double, Double)
-                               }
+data PcbnewDrillT = PcbnewDrillT { pcbnewDrillSize   :: Maybe (Double, Double)
+                                 , pcbnewDrillOval   :: Bool
+                                 , pcbnewDrillOffset :: Maybe (Double, Double)
+                                 }
     deriving (Show, Eq)
 
 defaultPcbnewDrillT :: PcbnewDrillT
@@ -316,18 +317,18 @@ data PcbnewAttribute = PcbnewLayer PcbnewLayerT
                     | PcbnewDrill PcbnewDrillT
                     | PcbnewRectDelta (Double, Double)
                     | PcbnewFpTextEffects PcbnewAttribute
-                    | PcbnewFont { kicadFontSize :: (Double, Double)
-                                , kicadFontThickness :: Double
-                                , kicadFontItalic :: Bool
-                                }
+                    | PcbnewFont { pcbnewFontSize :: (Double, Double)
+                                 , pcbnewFontThickness :: Double
+                                 , pcbnewFontItalic :: Bool
+                                 }
                     | PcbnewAngle Double
                     | PcbnewXy (Double, Double)
                     | PcbnewPts [(Double, Double)]
-                    | PcbnewModel { kicadModelPath   :: String
-                                 , kicadModelAt     :: PcbnewXyzT
-                                 , kicadModelScale  :: PcbnewXyzT
-                                 , kicadModelRotate :: PcbnewXyzT
-                                 }
+                    | PcbnewModel { pcbnewModelPath   :: String
+                                  , pcbnewModelAt     :: PcbnewXyzT
+                                  , pcbnewModelScale  :: PcbnewXyzT
+                                  , pcbnewModelRotate :: PcbnewXyzT
+                                  }
                     | PcbnewModelAt     PcbnewAttribute
                     | PcbnewModelScale  PcbnewAttribute
                     | PcbnewModelRotate PcbnewAttribute
@@ -452,17 +453,17 @@ instance AEq PcbnewAttribute where
     x ~== y = x == y
 
 defaultPcbnewFont :: PcbnewAttribute
-defaultPcbnewFont = PcbnewFont { kicadFontSize = (1.0, 1.0)
-                             , kicadFontThickness = 1.0
-                             , kicadFontItalic = False
-                             }
+defaultPcbnewFont = PcbnewFont { pcbnewFontSize = (1.0, 1.0)
+                               , pcbnewFontThickness = 1.0
+                               , pcbnewFontItalic = False
+                               }
 
 defaultPcbnewModel :: PcbnewAttribute
-defaultPcbnewModel = PcbnewModel { kicadModelPath   = ""
-                               , kicadModelAt     = (0,0,0)
-                               , kicadModelScale  = (0,0,0)
-                               , kicadModelRotate = (0,0,0)
-                               }
+defaultPcbnewModel = PcbnewModel { pcbnewModelPath   = ""
+                                 , pcbnewModelAt     = (0,0,0)
+                                 , pcbnewModelScale  = (0,0,0)
+                                 , pcbnewModelRotate = (0,0,0)
+                                 }
 
 data PcbnewLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS
                  | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
@@ -575,18 +576,18 @@ strToPadShape s = lookup s strToPadShapeMap
 fpPadShapeToStr :: PcbnewPadShapeT -> String
 fpPadShapeToStr t = fromMaybe "" $ lookup t $ map swap strToPadShapeMap
 
-data PcbnewAtT = PcbnewAtT { kicadAtPoint :: (Double, Double)
-                         , kicadAtOrientation :: Double
-                         }
+data PcbnewAtT = PcbnewAtT { pcbnewAtPoint :: (Double, Double)
+                           , pcbnewAtOrientation :: Double
+                           }
     deriving (Show, Eq)
 
 instance AEq PcbnewAtT where
     (PcbnewAtT p1 o1) ~== (PcbnewAtT p2 o2) = p1 ~== p2 && o1 ~== o2
 
 defaultPcbnewAtT :: PcbnewAtT
-defaultPcbnewAtT = PcbnewAtT { kicadAtPoint = (0,0)
-                           , kicadAtOrientation = 0
-                           }
+defaultPcbnewAtT = PcbnewAtT { pcbnewAtPoint = (0,0)
+                             , pcbnewAtOrientation = 0
+                             }
 
 atX :: Functor f => LensLike' f PcbnewAtT Double
 atX f (PcbnewAtT (x,y) o) = (\x' -> PcbnewAtT (x',y) o) `fmap` f x

@@ -10,7 +10,7 @@ import Data.Kicad.PcbnewExpr
 import Control.Applicative
 import Lens.Family2 (over)
 
-{- Interpret a parsed SExpr as a PcbnewExpr -}
+{-| Interpret a parsed SExpr as a PcbnewExpr -}
 interpret :: SExpr -> Either String PcbnewExpr
 interpret (List (AtomKey kw:sxs)) =
     case go of
@@ -79,13 +79,13 @@ interpret x = expecting "List with a key or a string atom" x
 
 asPcbnewModule :: [SExpr] -> Either String PcbnewModule
 asPcbnewModule (AtomStr n:xs) =
-    interpretRest xs defaultPcbnewModule { kicadModuleName = n }
+    interpretRest xs defaultPcbnewModule { pcbnewModuleName = n }
     where
         interpretRest [] m = Right m
         interpretRest (sx:sxs) m = case interpret sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
-                interpretRest sxs m {kicadModuleLayer = layer}
+                interpretRest sxs m {pcbnewModuleLayer = layer}
             Right (PcbnewExprItem item) ->
                 interpretRest sxs (over moduleItems (++[item]) m)
             Right (PcbnewExprAttribute attr) ->
@@ -258,7 +258,7 @@ onePcbnewLayer x = expecting "layer name" x
 
 asPcbnewAt :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewAt (AtomDbl x:[AtomDbl y]) =
-    Right $ PcbnewAt $ defaultPcbnewAtT {kicadAtPoint = (x,y)}
+    Right $ PcbnewAt $ defaultPcbnewAtT {pcbnewAtPoint = (x,y)}
 asPcbnewAt (AtomDbl x:AtomDbl y:[AtomDbl o]) =
     Right $ PcbnewAt $ PcbnewAtT (x,y) o
 asPcbnewAt l@[List _] = asXyz PcbnewModelAt l
@@ -282,11 +282,11 @@ asPcbnewFont xs = interpretRest xs defaultPcbnewFont
         interpretRest (sx:sxs) font = case interpret sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewSize size)) ->
-                interpretRest sxs font {kicadFontSize = size}
+                interpretRest sxs font {pcbnewFontSize = size}
             Right (PcbnewExprAttribute (PcbnewThickness t)) ->
-                interpretRest sxs font {kicadFontThickness = t}
+                interpretRest sxs font {pcbnewFontThickness = t}
             Right (PcbnewExprAttribute PcbnewItalic) ->
-                interpretRest sxs font {kicadFontItalic = True}
+                interpretRest sxs font {pcbnewFontItalic = True}
             Right _ -> expecting "size, thickness or 'italic'" sx
 
 asXy :: ((Double, Double) -> a) -> [SExpr] -> Either String a
@@ -302,7 +302,7 @@ asPcbnewPts = fmap PcbnewPts . foldr interpretXys (Right [])
                         Right _ -> expecting "'xy' (e.g. '(xy 1.0 1.0)')" sx
 
 asString :: (String -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
-asString kicad [AtomStr s] =  Right $ kicad s
+asString pcbnew [AtomStr s] =  Right $ pcbnew s
 asString _ x = expecting "string" x
 
 asPcbnewLayers :: [SExpr] -> Either String PcbnewAttribute
@@ -325,18 +325,18 @@ asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
     where
         interpretRest [] drill = Right $ PcbnewDrill drill
         interpretRest (sx:sxs) drill = case sx of
-            AtomDbl d  -> if isNothing (kicadDrillSize drill)
+            AtomDbl d  -> if isNothing (pcbnewDrillSize drill)
                           then interpretRest sxs drill
-                                { kicadDrillSize = Just (d,d) }
+                                { pcbnewDrillSize = Just (d,d) }
                           else interpretRest sxs drill
-                               { kicadDrillSize =
-                                    fmap (\(x,_) -> (x,d)) (kicadDrillSize drill)
+                               { pcbnewDrillSize =
+                                    fmap (\(x,_) -> (x,d)) (pcbnewDrillSize drill)
                                }
-            AtomStr "oval"  -> interpretRest sxs drill {kicadDrillOval = True}
+            AtomStr "oval"  -> interpretRest sxs drill {pcbnewDrillOval = True}
             (List _) -> case interpret sx of
                 Left err -> Left ('\t':err)
                 Right (PcbnewExprAttribute (PcbnewOffset xy))
-                    -> interpretRest sxs drill {kicadDrillOffset = Just xy}
+                    -> interpretRest sxs drill {pcbnewDrillOffset = Just xy}
                 Right _ -> expecting "offset or nothing" sx
             _ -> expecting "float, 'oval' or offset" sx
 
@@ -353,17 +353,17 @@ asXyz constructor [l@(List _)] = case interpret l of
 asXyz _ x = expecting "xyz (e.g. '(xyz 1 1 1)')" x
 
 asPcbnewModel :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewModel (AtomStr p:xs) = interpretRest xs defaultPcbnewModel {kicadModelPath = p}
+asPcbnewModel (AtomStr p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPath = p}
     where
         interpretRest [] model = Right model
         interpretRest (sx:sxs) model = case interpret sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewModelAt (PcbnewXyz xyz))) ->
-                interpretRest sxs model {kicadModelAt = xyz}
+                interpretRest sxs model {pcbnewModelAt = xyz}
             Right (PcbnewExprAttribute (PcbnewModelScale (PcbnewXyz xyz))) ->
-                interpretRest sxs model {kicadModelScale = xyz}
+                interpretRest sxs model {pcbnewModelScale = xyz}
             Right (PcbnewExprAttribute (PcbnewModelRotate (PcbnewXyz xyz))) ->
-                interpretRest sxs model {kicadModelRotate = xyz}
+                interpretRest sxs model {pcbnewModelRotate = xyz}
             Right _ -> expecting "only at, scale and rotate" sx
 asPcbnewModel x = expecting "model path, at, scale and rotate" x
 
