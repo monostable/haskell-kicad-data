@@ -11,7 +11,6 @@ import Control.Monad (liftM)
 import Utils
 
 import Data.Kicad.SExpr
-import Data.Kicad.Internal.ParseSExpr
 
 tests :: [Test]
 tests = [ testProperty "parse all keywords" parseAllKeywords
@@ -19,8 +18,8 @@ tests = [ testProperty "parse all keywords" parseAllKeywords
 
 parseAllKeywords :: Keyword -> Bool
 parseAllKeywords kw = tracedPropEq t1 t2
-    where t1 = parseSExpr ("(" ++  write kw ++ ")")
-          t2 = parseSExpr $ either id write $ parseSExpr ("(" ++  write kw ++ ")")
+    where t1 = parse ("(" ++  writeKeyword kw ++ ")")
+          t2 = parse $ either id write $ parse ("(" ++  writeKeyword kw ++ ")")
 
 instance Arbitrary SExpr where
     arbitrary = oneof [ liftM AtomKey arbitrary

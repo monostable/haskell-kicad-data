@@ -9,9 +9,8 @@ import Test.QuickCheck
 import Control.Monad
 
 import Utils
-import Data.Kicad.Parse
 import Data.Kicad.PcbnewExpr
-import Data.Kicad.SExpr
+import Data.Kicad.PcbnewExpr.PcbnewExpr
 
 tests :: [Test]
 tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
@@ -70,17 +69,17 @@ parseFpPolyCorrectly ds w l =
 
 parseAndWriteAnyAttribute :: PcbnewAttribute -> Bool
 parseAndWriteAnyAttribute a = tracedPropAEq t1 t2
-    where t1 = parse $ write $ toSExpr a
+    where t1 = parse $ write $ PcbnewExprAttribute a
           t2 = Right $ PcbnewExprAttribute a
 
 parseAndWriteAnyItem :: PcbnewItem -> Bool
 parseAndWriteAnyItem a = tracedPropAEq t1 t2
-    where t1 = parse $ write $ toSExpr a
+    where t1 = parse $ write $ PcbnewExprItem a
           t2 = Right $ PcbnewExprItem a
 
 parseAndWriteAnyModule :: PcbnewModule -> Bool
 parseAndWriteAnyModule a = tracedPropAEq t1 t2
-    where t1 = parse $ write $ toSExpr a
+    where t1 = parse $ write $ PcbnewExprModule a
           t2 = Right $ PcbnewExprModule a
 
 instance Arbitrary PcbnewModule where

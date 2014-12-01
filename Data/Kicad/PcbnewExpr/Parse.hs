@@ -1,20 +1,26 @@
-module Data.Kicad.Internal.Interpret
-( interpret
+module Data.Kicad.PcbnewExpr.Parse
+( parse
+, fromSExpr
 )
 where
-
 import Data.Either
 import Data.Maybe
-import Data.Kicad.SExpr
-import Data.Kicad.PcbnewExpr
 import Control.Applicative
 import Lens.Family2 (over)
 
-{-| Interpret a parsed SExpr as a PcbnewExpr -}
-interpret :: SExpr -> Either String PcbnewExpr
-interpret (List (AtomKey kw:sxs)) =
+import Data.Kicad.SExpr hiding (parse)
+import qualified Data.Kicad.SExpr as SExpr (parse)
+import Data.Kicad.PcbnewExpr.PcbnewExpr
+
+{-| Parse a PcbnewExpr from a string. Returns an error string or a PcbnewExpr -}
+parse :: String -> Either String PcbnewExpr
+parse = either Left fromSExpr . SExpr.parse
+
+{-| Interpret a SExpr as a PcbnewExpr -}
+fromSExpr :: SExpr -> Either String PcbnewExpr
+fromSExpr (List (AtomKey kw:sxs)) =
     case go of
-        Left err   -> Left $ "Could not interpret '" ++ write kw ++
+        Left err   -> Left $ "Could not fromSExpr '" ++ writeKeyword kw ++
                         "' because:\n\t" ++ err
         Right expr -> Right expr
     where go = case kw of
@@ -70,19 +76,19 @@ interpret (List (AtomKey kw:sxs)) =
                 -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost90 sxs
             KeyZoneConnect
                 -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
-interpret sx@(AtomStr s) = case s of
+fromSExpr sx@(AtomStr s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
     "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
     "locked" -> Right $ PcbnewExprAttribute PcbnewLocked
     _ -> expecting "'italic' or 'hide' or 'locked' " sx
-interpret x = expecting "List with a key or a string atom" x
+fromSExpr x = expecting "List with a key or a string atom" x
 
 asPcbnewModule :: [SExpr] -> Either String PcbnewModule
 asPcbnewModule (AtomStr n:xs) =
     interpretRest xs defaultPcbnewModule { pcbnewModuleName = n }
     where
         interpretRest [] m = Right m
-        interpretRest (sx:sxs) m = case interpret sx of
+        interpretRest (sx:sxs) m = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
                 interpretRest sxs m {pcbnewModuleLayer = layer}
@@ -92,7 +98,7 @@ asPcbnewModule (AtomStr n:xs) =
                 interpretRest sxs (over moduleAttrs (++[attr]) m)
             Right _ -> expecting "layer, items or attributes" sx
 asPcbnewModule (x:_) = expecting "module name" x
-asPcbnewModule x = expecting "module name" x
+asPcbnewModule x = expecting' "module name" x
 
 asPcbnewFpText :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpText (t:s:a:xs) = interpretType
@@ -104,17 +110,17 @@ asPcbnewFpText (t:s:a:xs) = interpretType
                 interpretString (defaultPcbnewFpText {fpTextType = FpTextValue})
             (AtomStr "user")     ->
                 interpretString (defaultPcbnewFpText {fpTextType = FpTextUser})
-            x           -> expecting "'reference', 'value' or 'user'" x
+            _           -> expecting "'reference', 'value' or 'user'" t
         interpretString fp_text = case s of
             (AtomStr string) -> interpretAt fp_text {fpTextStr = string}
-            x           -> expecting "string" x
-        interpretAt fp_text = case interpret a of
+            _           -> expecting "string" s
+        interpretAt fp_text = case fromSExpr a of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewAt at)) ->
                 interpretRest xs fp_text {itemAt = at}
             _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
         interpretRest [] fp_text = Right fp_text
-        interpretRest (sx:sxs) fp_text = case interpret sx of
+        interpretRest (sx:sxs) fp_text = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
                 interpretRest sxs (fp_text {itemLayer = layer})
@@ -128,48 +134,48 @@ asPcbnewFpText (t:s:a:xs) = interpretType
             Right (PcbnewExprAttribute PcbnewHide) ->
                 interpretRest sxs (fp_text {fpTextHide = True})
             _ -> expecting "layer or effects expression or 'hide'" sx
-asPcbnewFpText x = expecting "a text-type, text, 'at' and layer" x
+asPcbnewFpText x = expecting' "a text-type, text, 'at' and layer" x
 
 asFp :: PcbnewItem -> [SExpr] -> Either String PcbnewItem
 asFp defaultFp (s:e:xs) = interpretStart defaultFp
     where
-        interpretStart fp_shape = case interpret s of
+        interpretStart fp_shape = case fromSExpr s of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewStart start)) ->
                 interpretEnd fp_shape {itemStart = start}
             Right (PcbnewExprAttribute (PcbnewCenter center)) ->
                 interpretEnd fp_shape {itemStart = center}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
-        interpretEnd fp_shape = case interpret e of
+        interpretEnd fp_shape = case fromSExpr e of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewEnd end)) ->
                 interpretRest xs fp_shape {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_shape = Right fp_shape
-        interpretRest (sx:sxs) fp_shape = case interpret sx of
+        interpretRest (sx:sxs) fp_shape = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_shape {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
                 -> interpretRest sxs fp_shape {itemLayer = d}
             Right _ -> expecting "width or layer" sx
-asFp _ x = expecting "fp_line (or fp_circle) start (center), end and attributes" x
+asFp _ x = expecting' "fp_line (or fp_circle) start (center), end and attributes" x
 
 asPcbnewFpArc :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpArc (s:e:xs) = interpretStart defaultPcbnewFpArc
     where
-        interpretStart fp_arc = case interpret s of
+        interpretStart fp_arc = case fromSExpr s of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewStart start)) ->
                 interpretEnd fp_arc {itemStart = start}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
-        interpretEnd fp_arc = case interpret e of
+        interpretEnd fp_arc = case fromSExpr e of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewEnd end)) ->
                 interpretRest xs fp_arc {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_arc = Right fp_arc
-        interpretRest (sx:sxs) fp_arc = case interpret sx of
+        interpretRest (sx:sxs) fp_arc = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_arc {itemWidth = d}
@@ -178,13 +184,13 @@ asPcbnewFpArc (s:e:xs) = interpretStart defaultPcbnewFpArc
             Right (PcbnewExprAttribute (PcbnewAngle d))
                 -> interpretRest sxs fp_arc {fpArcAngle = d}
             Right _ -> expecting "width, layer or angle" sx
-asPcbnewFpArc x = expecting "fp_arc start, end and attributes" x
+asPcbnewFpArc x = expecting' "fp_arc start, end and attributes" x
 
 asPcbnewFpPoly :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
     where
         interpretRest [] fp_poly = Right fp_poly
-        interpretRest (sx:sxs) fp_poly = case interpret sx of
+        interpretRest (sx:sxs) fp_poly = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewPts   d))
                 -> interpretRest sxs fp_poly {fpPolyPts = d}
@@ -199,24 +205,24 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
     where
         interpretNumber = case n of
             (AtomStr num) -> interpretType defaultPcbnewPad {padNumber = num}
-            x             -> expecting "string designating pad number" x
+            _ -> expecting "string designating pad number" n
         interpretType :: PcbnewItem -> Either String PcbnewItem
         interpretType pad = case t of
             (AtomStr str) -> case strToPadType str of
                     Just d  -> interpretShape pad {padType = d}
                     Nothing ->
                         expecting "pad type (e.g. 'smd')" t
-            x -> expecting "pad type string (e.g. 'smd')" x
+            _ -> expecting "pad type string (e.g. 'smd')" t
         interpretShape :: PcbnewItem -> Either String PcbnewItem
         interpretShape pad = case s of
             (AtomStr str) -> case strToPadShape str of
                     Just d  -> interpretRest xs pad {padShape = d}
                     Nothing ->
                         expecting "pad shape (e.g. 'circle')" s
-            x -> expecting "pad shape string (e.g. 'circle')" x
+            _ -> expecting "pad shape string (e.g. 'circle')" s
         interpretRest :: [SExpr] -> PcbnewItem -> Either String PcbnewItem
         interpretRest [] pad = Right pad
-        interpretRest (sx:sxs) pad = case interpret sx of
+        interpretRest (sx:sxs) pad = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewAt d))
                 -> interpretRest sxs pad {itemAt = d}
@@ -244,11 +250,11 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
                 -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)
-asPcbnewPad xs = expecting "number, type and shape" $ List xs
+asPcbnewPad xs = expecting' "number, type and shape" xs
 
 asPcbnewLayer :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewLayer [sx] = onePcbnewLayer sx
-asPcbnewLayer x    = expecting "only one layer name" x
+asPcbnewLayer x    = expecting' "only one layer name" x
 
 onePcbnewLayer :: SExpr -> Either String PcbnewAttribute
 onePcbnewLayer (AtomStr n) = case strToLayer n of
@@ -263,23 +269,22 @@ asPcbnewAt (AtomDbl x:AtomDbl y:[AtomDbl o]) =
     Right $ PcbnewAt $ PcbnewAtT (x,y) o
 asPcbnewAt l@[List _] = asXyz PcbnewModelAt l
 asPcbnewAt x =
-    expecting "two or three floats or an 'xyz' expression"
-    $ List x
+    expecting' "two or three floats or an 'xyz' expression" x
 
 asPcbnewEffects :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewEffects l@[e@(List _)] =
-    case interpret e of
+asPcbnewEffects [e@(List _)] =
+    case fromSExpr e of
         Left err -> Left ('\t':err)
         Right (PcbnewExprAttribute font@(PcbnewFont {}))
             -> Right $ PcbnewFpTextEffects font
-        _ -> expecting "font-expression" l
-asPcbnewEffects x = expecting "one effects-expression (e.g. font)" x
+        _ -> expecting "font-expression" e
+asPcbnewEffects x = expecting' "one effects-expression (e.g. font)" x
 
 asPcbnewFont :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewFont xs = interpretRest xs defaultPcbnewFont
     where
         interpretRest [] font = Right font
-        interpretRest (sx:sxs) font = case interpret sx of
+        interpretRest (sx:sxs) font = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewSize size)) ->
                 interpretRest sxs font {pcbnewFontSize = size}
@@ -291,11 +296,11 @@ asPcbnewFont xs = interpretRest xs defaultPcbnewFont
 
 asXy :: ((Double, Double) -> a) -> [SExpr] -> Either String a
 asXy constructor [AtomDbl x, AtomDbl y] = Right $ constructor (x,y)
-asXy _ x = expecting "two floats (e.g. 1.0 1.0)" x
+asXy _ x = expecting' "two floats (e.g. 1.0 1.0)" x
 
 asPcbnewPts :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewPts = fmap PcbnewPts . foldr interpretXys (Right [])
-    where interpretXys sx z = case interpret sx of
+    where interpretXys sx z = case fromSExpr sx of
                         Left err -> Left ('\t':err)
                         Right (PcbnewExprAttribute (PcbnewXy xy))
                             -> Right (xy:) <*> z
@@ -303,22 +308,22 @@ asPcbnewPts = fmap PcbnewPts . foldr interpretXys (Right [])
 
 asString :: (String -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
 asString pcbnew [AtomStr s] =  Right $ pcbnew s
-asString _ x = expecting "string" x
+asString _ x = expecting' "string" x
 
 asPcbnewLayers :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewLayers [] = Right $ PcbnewLayers []
 asPcbnewLayers xs = let layers = map onePcbnewLayer xs in case lefts layers of
     [] -> Right $ PcbnewLayers $ map (\(PcbnewLayer l) -> l) $ rights layers
-    _  -> Left $ "Could not interpret layers:\n"
+    _  -> Left $ "Could not fromSExpr layers:\n"
                     ++ unlines (map ("\t\t"++) (lefts layers))
 
 asDouble :: (Double -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
 asDouble constructor [AtomDbl d] = Right $ constructor d
-asDouble _ x = expecting "one float (e.g. '1.0')" x
+asDouble _ x = expecting' "one float (e.g. '1.0')" x
 
 asInt :: (Int -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
 asInt constructor [AtomDbl d] = Right $ constructor $ round d
-asInt _ x = expecting "one int (e.g. '1')" x
+asInt _ x = expecting' "one int (e.g. '1')" x
 
 asPcbnewDrill :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
@@ -333,7 +338,7 @@ asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
                                     fmap (\(x,_) -> (x,d)) (pcbnewDrillSize drill)
                                }
             AtomStr "oval"  -> interpretRest sxs drill {pcbnewDrillOval = True}
-            (List _) -> case interpret sx of
+            (List _) -> case fromSExpr sx of
                 Left err -> Left ('\t':err)
                 Right (PcbnewExprAttribute (PcbnewOffset xy))
                     -> interpretRest sxs drill {pcbnewDrillOffset = Just xy}
@@ -343,20 +348,20 @@ asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
 asPcbnewXyz :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =
     Right $ PcbnewXyz (x,y,z)
-asPcbnewXyz x = expecting "three floats" x
+asPcbnewXyz x = expecting' "three floats" x
 
 asXyz :: (PcbnewAttribute -> a) -> [SExpr] -> Either String a
-asXyz constructor [l@(List _)] = case interpret l of
+asXyz constructor [l@(List _)] = case fromSExpr l of
     Left err -> Left ('\t':err)
     Right (PcbnewExprAttribute xyz) -> Right $ constructor xyz
     Right _ -> expecting "xyz (e.g. '(xyz 1 1 1)')" l
-asXyz _ x = expecting "xyz (e.g. '(xyz 1 1 1)')" x
+asXyz _ x = expecting' "xyz (e.g. '(xyz 1 1 1)')" x
 
 asPcbnewModel :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewModel (AtomStr p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPath = p}
     where
         interpretRest [] model = Right model
-        interpretRest (sx:sxs) model = case interpret sx of
+        interpretRest (sx:sxs) model = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewModelAt (PcbnewXyz xyz))) ->
                 interpretRest sxs model {pcbnewModelAt = xyz}
@@ -365,9 +370,9 @@ asPcbnewModel (AtomStr p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelP
             Right (PcbnewExprAttribute (PcbnewModelRotate (PcbnewXyz xyz))) ->
                 interpretRest sxs model {pcbnewModelRotate = xyz}
             Right _ -> expecting "only at, scale and rotate" sx
-asPcbnewModel x = expecting "model path, at, scale and rotate" x
+asPcbnewModel x = expecting' "model path, at, scale and rotate" x
 
-expecting :: Writable a => String -> a -> Either String b
+expecting :: String -> SExpr -> Either String a
 expecting x y =
     Left $ "-> Expecting " ++ x ++ " but got " ++
         nothing_or (strip_brackets (write y)) ++ " instead"
@@ -378,3 +383,6 @@ expecting x y =
         strip_brackets y' = case head y' of
                 '(' -> tail . init $ y'
                 _   -> y'
+
+expecting' :: String -> [SExpr] -> Either String a
+expecting' x y = expecting x $ List y

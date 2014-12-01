@@ -1,17 +1,19 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Data.Kicad.Internal.ParseSExpr
-( parseSExpr
+module Data.Kicad.SExpr.Parse
+( parse
 )
 where
-import Text.ParserCombinators.Parsec hiding (spaces)
+import Text.ParserCombinators.Parsec hiding (spaces, parse)
+import qualified Text.ParserCombinators.Parsec as Parsec (parse)
 import Text.ParserCombinators.Parsec.Number
 import Control.Monad
 
-import Data.Kicad.SExpr
+import Data.Kicad.SExpr.SExpr
+import Data.Kicad.SExpr.Write (writeKeyword)
 
-parseSExpr :: String -> Either String SExpr
-parseSExpr input = case parse parseList "SExpr" input of
+parse :: String -> Either String SExpr
+parse input = case Parsec.parse parseList "SExpr" input of
     Left err -> Left $ "Parse Error: " ++ show err
     Right val -> Right val
 
@@ -61,7 +63,7 @@ parseAtom =  try parseDouble
          <?> "a double, string or s-expression"
 
 parseOneKeyword :: Keyword -> Parser SExpr
-parseOneKeyword kw = try $ string (write kw) >> return (AtomKey kw)
+parseOneKeyword kw = try $ string (writeKeyword kw) >> return (AtomKey kw)
 
 parseKeyword :: Parser SExpr
 parseKeyword = choice (map parseOneKeyword [minBound..maxBound]) <?> "keyword"

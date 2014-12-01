@@ -1,9 +1,6 @@
 import System.Environment
 import System.Exit
-import Data.Kicad.Parse
-import Data.Kicad.PcbnewExpr
-import Data.Kicad.SExpr
-
+import qualified Data.Kicad.PcbnewExpr as PcbnewExpr
 
 main :: IO ()
 main = do
@@ -16,8 +13,7 @@ parseAndDisplay :: [String] -> IO ()
 parseAndDisplay [] = return ()
 parseAndDisplay (f:fs) = do
             input <- readFile f
-            case parse input of
+            case PcbnewExpr.parse input of
                 Left err -> putStrLn f >> putStrLn err >> exitFailure
-                Right kx -> print (pretty (toSExpr kx)) >> parseAndDisplay fs
-
+                Right px -> print (PcbnewExpr.pretty px) >> parseAndDisplay fs
 

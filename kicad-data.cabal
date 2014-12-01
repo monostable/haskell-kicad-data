@@ -18,10 +18,13 @@ library
   ghc-options: -Wall
   exposed-modules:
       Data.Kicad.PcbnewExpr
-    , Data.Kicad.Parse
+    , Data.Kicad.PcbnewExpr.PcbnewExpr
+    , Data.Kicad.PcbnewExpr.Parse
+    , Data.Kicad.PcbnewExpr.Write
     , Data.Kicad.SExpr
-    , Data.Kicad.Internal.ParseSExpr
-    , Data.Kicad.Internal.Interpret
+    , Data.Kicad.SExpr.SExpr
+    , Data.Kicad.SExpr.Parse
+    , Data.Kicad.SExpr.Write
   -- other-modules:
   -- other-extensions:
   build-depends:
