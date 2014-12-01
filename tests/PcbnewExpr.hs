@@ -16,9 +16,8 @@ tests :: [Test]
 tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
         , testProperty "parse fp_arc correctly" parseFpArcCorrectly
         , testProperty "parse fp_poly correctly" parseFpPolyCorrectly
-        , testProperty "parse and write any attribute" parseAndWriteAnyAttribute
-        , testProperty "parse and write any item" parseAndWriteAnyItem
-        , testProperty "parse and write any module" parseAndWriteAnyModule
+        , testProperty "parse and write any PcbnewExpr" parseAndWriteAnyPcbnewExpr
+        , testProperty "parse and pretty any PcbnewExpr" parseAndPrettyAnyPcbnewExpr
         ]
 
 parseFpLineCorrectly :: (Double, Double, Double, Double, Double)
@@ -67,20 +66,24 @@ parseFpPolyCorrectly ds w l =
             ++ show w ++ "))"
         fpPoly = Right $ PcbnewExprItem $ PcbnewFpPoly ds l w
 
-parseAndWriteAnyAttribute :: PcbnewAttribute -> Bool
-parseAndWriteAnyAttribute a = tracedPropAEq t1 t2
-    where t1 = parse $ write $ PcbnewExprAttribute a
-          t2 = Right $ PcbnewExprAttribute a
+parseAndWriteAnyPcbnewExpr :: PcbnewExpr -> Bool
+parseAndWriteAnyPcbnewExpr a = tracedPropAEq t1 t2
+    where t1 = parse $ write a
+          t2 = Right a
 
-parseAndWriteAnyItem :: PcbnewItem -> Bool
-parseAndWriteAnyItem a = tracedPropAEq t1 t2
-    where t1 = parse $ write $ PcbnewExprItem a
-          t2 = Right $ PcbnewExprItem a
+parseAndPrettyAnyPcbnewExpr :: PcbnewExpr -> Bool
+parseAndPrettyAnyPcbnewExpr a = tracedPropAEq t1 t2
+    where t1 = parse $ show $ pretty a
+          t2 = Right a
 
-parseAndWriteAnyModule :: PcbnewModule -> Bool
-parseAndWriteAnyModule a = tracedPropAEq t1 t2
-    where t1 = parse $ write $ PcbnewExprModule a
-          t2 = Right $ PcbnewExprModule a
+instance Arbitrary PcbnewExpr where
+    arbitrary = oneof [ do a <- arbitrary
+                           return $ PcbnewExprModule a
+                      , do a <- arbitrary
+                           return $ PcbnewExprItem a
+                      , do a <- arbitrary
+                           return $ PcbnewExprAttribute a
+                      ]
 
 instance Arbitrary PcbnewModule where
     arbitrary = do n <- genSafeString

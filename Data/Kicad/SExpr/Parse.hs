@@ -12,6 +12,7 @@ import Control.Monad
 import Data.Kicad.SExpr.SExpr
 import Data.Kicad.SExpr.Write (writeKeyword)
 
+{-| Parse a string as a SExpr or return an error -}
 parse :: String -> Either String SExpr
 parse input = case Parsec.parse parseList "SExpr" input of
     Left err -> Left $ "Parse Error: " ++ show err
