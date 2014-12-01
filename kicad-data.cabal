@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 library
   ghc-options: -Wall
   exposed-modules:
-      Data.Kicad.KicadExpr
+      Data.Kicad.PcbnewExpr
     , Data.Kicad.Parse
     , Data.Kicad.SExpr
     , Data.Kicad.ParseSExpr

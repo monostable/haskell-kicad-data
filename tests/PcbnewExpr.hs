@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module KicadExpr
+module PcbnewExpr
 ( tests
 )
 where
@@ -10,7 +10,7 @@ import Control.Monad
 
 import Utils
 import Data.Kicad.Parse
-import Data.Kicad.KicadExpr
+import Data.Kicad.PcbnewExpr
 import Data.Kicad.SExpr
 
 tests :: [Test]
@@ -23,7 +23,7 @@ tests = [ testProperty "parse fp_line correctly" parseFpLineCorrectly
         ]
 
 parseFpLineCorrectly :: (Double, Double, Double, Double, Double)
-                     -> KicadLayerT
+                     -> PcbnewLayerT
                      -> Bool
 parseFpLineCorrectly (d1, d2, d3, d4, d5) l =
     tracedPropAEq (parse fp_line) fpLine
@@ -34,11 +34,11 @@ parseFpLineCorrectly (d1, d2, d3, d4, d5) l =
              ++ show d4 ++ ") (layer "
              ++ layerToStr l
              ++ ") (width " ++ show d5 ++ "))"
-        fpLine  = Right $ KicadExprItem
-                        $ KicadFpLine (d1, d2) (d3, d4) l d5
+        fpLine  = Right $ PcbnewExprItem
+                        $ PcbnewFpLine (d1, d2) (d3, d4) l d5
 
 parseFpArcCorrectly :: (Double, Double, Double, Double, Double) -> Double
-                     -> KicadLayerT
+                     -> PcbnewLayerT
                      -> Bool
 parseFpArcCorrectly (d1, d2, d3, d4, d5) d6 l =
     tracedPropAEq (parse fp_arc) fpArc
@@ -49,11 +49,11 @@ parseFpArcCorrectly (d1, d2, d3, d4, d5) d6 l =
             ++ show d4 ++ ") (angle " ++ show d5
             ++ ") (layer " ++ layerToStr l ++ ") (width "
             ++ show d6 ++ "))"
-        fpArc = Right $ KicadExprItem
-                      $ KicadFpArc (d1, d2) (d3, d4) d5 l d6
+        fpArc = Right $ PcbnewExprItem
+                      $ PcbnewFpArc (d1, d2) (d3, d4) d5 l d6
 
 parseFpPolyCorrectly :: [(Double, Double)] -> Double
-                     -> KicadLayerT
+                     -> PcbnewLayerT
                      -> Bool
 parseFpPolyCorrectly ds w l =
     tracedPropAEq (parse fp_poly) fpPoly
@@ -66,36 +66,36 @@ parseFpPolyCorrectly ds w l =
                     ds)
             ++ ") (layer " ++ layerToStr l ++ ") (width "
             ++ show w ++ "))"
-        fpPoly = Right $ KicadExprItem $ KicadFpPoly ds l w
+        fpPoly = Right $ PcbnewExprItem $ PcbnewFpPoly ds l w
 
-parseAndWriteAnyAttribute :: KicadAttribute -> Bool
+parseAndWriteAnyAttribute :: PcbnewAttribute -> Bool
 parseAndWriteAnyAttribute a = tracedPropAEq t1 t2
     where t1 = parse $ write $ toSExpr a
-          t2 = Right $ KicadExprAttribute a
+          t2 = Right $ PcbnewExprAttribute a
 
-parseAndWriteAnyItem :: KicadItem -> Bool
+parseAndWriteAnyItem :: PcbnewItem -> Bool
 parseAndWriteAnyItem a = tracedPropAEq t1 t2
     where t1 = parse $ write $ toSExpr a
-          t2 = Right $ KicadExprItem a
+          t2 = Right $ PcbnewExprItem a
 
-parseAndWriteAnyModule :: KicadModule -> Bool
+parseAndWriteAnyModule :: PcbnewModule -> Bool
 parseAndWriteAnyModule a = tracedPropAEq t1 t2
     where t1 = parse $ write $ toSExpr a
-          t2 = Right $ KicadExprModule a
+          t2 = Right $ PcbnewExprModule a
 
-instance Arbitrary KicadModule where
+instance Arbitrary PcbnewModule where
     arbitrary = do n <- genSafeString
                    l <- arbitrary
                    attrs <- listOf genModuleAttr
                    items <- arbitrary
-                   return $ KicadModule n l attrs items
+                   return $ PcbnewModule n l attrs items
         where
-            genModuleAttr :: Gen KicadAttribute
+            genModuleAttr :: Gen PcbnewAttribute
             genModuleAttr = suchThat arbitrary not_layer
-            not_layer (KicadLayer _) = False
+            not_layer (PcbnewLayer _) = False
             not_layer _ = True
 
-instance Arbitrary KicadItem where
+instance Arbitrary PcbnewItem where
     arbitrary = oneof [ do t  <- arbitrary
                            s  <- genSafeString
                            a  <- arbitrary
@@ -104,23 +104,23 @@ instance Arbitrary KicadItem where
                            si <- arbitrary
                            th <- arbitrary
                            i  <- arbitrary
-                           return $ KicadFpText t s a l h si th i
+                           return $ PcbnewFpText t s a l h si th i
                       , do s <- arbitrary
                            e <- arbitrary
                            l <- arbitrary
                            w <- arbitrary
-                           fp <- elements [KicadFpLine, KicadFpCircle]
+                           fp <- elements [PcbnewFpLine, PcbnewFpCircle]
                            return $ fp s e l w
                       , do s <- arbitrary
                            e <- arbitrary
                            a <- arbitrary
                            l <- arbitrary
                            w <- arbitrary
-                           return $ KicadFpArc s e a l w
+                           return $ PcbnewFpArc s e a l w
                       , do ps <- arbitrary
                            l  <- arbitrary
                            w  <- arbitrary
-                           return $ KicadFpPoly ps l w
+                           return $ PcbnewFpPoly ps l w
                       , do n  <- genSafeString
                            t  <- arbitrary
                            s  <- arbitrary
@@ -128,82 +128,82 @@ instance Arbitrary KicadItem where
                            si <- arbitrary
                            l  <- arbitrary
                            attrs <- listOf genPadAttrs
-                           return $ KicadPad n t s a si l attrs
+                           return $ PcbnewPad n t s a si l attrs
                       ]
 
-genPadAttrs :: Gen KicadAttribute
-genPadAttrs = oneof [ liftM KicadRectDelta        arbitrary
-                    , liftM KicadMaskMargin       arbitrary
-                    , liftM KicadPasteMarginRatio arbitrary
-                    , liftM KicadPasteMargin      arbitrary
-                    , liftM KicadClearance        arbitrary
-                    , liftM KicadZoneConnect      arbitrary
-                    , liftM KicadThermalWidth     arbitrary
-                    , liftM KicadThermalGap       arbitrary
+genPadAttrs :: Gen PcbnewAttribute
+genPadAttrs = oneof [ liftM PcbnewRectDelta        arbitrary
+                    , liftM PcbnewMaskMargin       arbitrary
+                    , liftM PcbnewPasteMarginRatio arbitrary
+                    , liftM PcbnewPasteMargin      arbitrary
+                    , liftM PcbnewClearance        arbitrary
+                    , liftM PcbnewZoneConnect      arbitrary
+                    , liftM PcbnewThermalWidth     arbitrary
+                    , liftM PcbnewThermalGap       arbitrary
                     , do a <- arbitrary
                          b <- arbitrary
-                         return $ KicadDrill $ KicadDrillT a True b
+                         return $ PcbnewDrill $ PcbnewDrillT a True b
                     , do a <- suchThatMaybe arbitrary (uncurry (==))
                          b <- arbitrary
-                         return $ KicadDrill $ KicadDrillT a False b
+                         return $ PcbnewDrill $ PcbnewDrillT a False b
                     ]
 
-instance Arbitrary KicadAttribute where
+instance Arbitrary PcbnewAttribute where
     arbitrary = oneof [ genPadAttrs
-                      , oneof [ liftM KicadLayer     arbitrary
-                              , liftM KicadAt        arbitrary
-                              , liftM KicadSize      arbitrary
-                              , liftM KicadThickness arbitrary
-                              , liftM KicadTedit     genSafeString
-                              , liftM KicadStart     arbitrary
-                              , liftM KicadEnd       arbitrary
-                              , liftM KicadCenter    arbitrary
-                              , liftM KicadWidth     arbitrary
-                              , liftM KicadDescr     genSafeString
-                              , liftM KicadTags      genSafeString
-                              , liftM KicadAttr      genSafeString
-                              , liftM KicadLayers    arbitrary
-                              , liftM KicadAngle     arbitrary
-                              , liftM KicadXy        arbitrary
-                              , liftM KicadPts       arbitrary
-                              , liftM KicadXyz       arbitrary
-                              , liftM KicadZoneConnect  arbitrary
-                              , liftM KicadThermalGap   arbitrary
-                              , liftM KicadThermalWidth arbitrary
-                              , liftM KicadModelScale   arbitrary
-                              , liftM KicadModelRotate  arbitrary
-                              , liftM KicadClearance    arbitrary
-                              , liftM KicadMaskMargin   arbitrary
-                              , liftM KicadPasteMargin  arbitrary
-                              , liftM KicadPasteMarginRatio  arbitrary
-                              , liftM KicadAutoplaceCost90   arbitrary
-                              , liftM KicadAutoplaceCost180  arbitrary
+                      , oneof [ liftM PcbnewLayer     arbitrary
+                              , liftM PcbnewAt        arbitrary
+                              , liftM PcbnewSize      arbitrary
+                              , liftM PcbnewThickness arbitrary
+                              , liftM PcbnewTedit     genSafeString
+                              , liftM PcbnewStart     arbitrary
+                              , liftM PcbnewEnd       arbitrary
+                              , liftM PcbnewCenter    arbitrary
+                              , liftM PcbnewWidth     arbitrary
+                              , liftM PcbnewDescr     genSafeString
+                              , liftM PcbnewTags      genSafeString
+                              , liftM PcbnewAttr      genSafeString
+                              , liftM PcbnewLayers    arbitrary
+                              , liftM PcbnewAngle     arbitrary
+                              , liftM PcbnewXy        arbitrary
+                              , liftM PcbnewPts       arbitrary
+                              , liftM PcbnewXyz       arbitrary
+                              , liftM PcbnewZoneConnect  arbitrary
+                              , liftM PcbnewThermalGap   arbitrary
+                              , liftM PcbnewThermalWidth arbitrary
+                              , liftM PcbnewModelScale   arbitrary
+                              , liftM PcbnewModelRotate  arbitrary
+                              , liftM PcbnewClearance    arbitrary
+                              , liftM PcbnewMaskMargin   arbitrary
+                              , liftM PcbnewPasteMargin  arbitrary
+                              , liftM PcbnewPasteMarginRatio  arbitrary
+                              , liftM PcbnewAutoplaceCost90   arbitrary
+                              , liftM PcbnewAutoplaceCost180  arbitrary
                               , do s <- arbitrary
                                    t <- arbitrary
                                    i <- arbitrary
-                                   return $ KicadFont s t i
+                                   return $ PcbnewFont s t i
                               , do p <- genSafeString
                                    a <- arbitrary
                                    s <- arbitrary
                                    r <- arbitrary
-                                   return $ KicadModel p a s r
+                                   return $ PcbnewModel p a s r
                              ]
                     ]
 
-instance Arbitrary KicadLayerT where
+instance Arbitrary PcbnewLayerT where
     arbitrary = arbitraryBoundedEnum
 
-instance Arbitrary KicadFpTextTypeT where
+instance Arbitrary PcbnewFpTextTypeT where
     arbitrary = arbitraryBoundedEnum
 
-instance Arbitrary KicadPadShapeT where
+instance Arbitrary PcbnewPadShapeT where
     arbitrary = arbitraryBoundedEnum
 
-instance Arbitrary KicadPadTypeT where
+instance Arbitrary PcbnewPadTypeT where
     arbitrary = arbitraryBoundedEnum
 
-instance Arbitrary KicadAtT where
+instance Arbitrary PcbnewAtT where
     arbitrary = do p <- arbitrary
                    o <- arbitrary
-                   return $ KicadAtT p o
+                   return $ PcbnewAtT p o
 

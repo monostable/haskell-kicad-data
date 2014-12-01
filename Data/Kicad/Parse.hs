@@ -3,8 +3,8 @@ module Data.Kicad.Parse
 )
 where
 import Data.Kicad.ParseSExpr
-import Data.Kicad.KicadExpr
+import Data.Kicad.PcbnewExpr
 import Data.Kicad.Interpret
 
-parse :: String -> Either String KicadExpr
+parse :: String -> Either String PcbnewExpr
 parse = either Left interpret . parseSExpr

@@ -1,7 +1,7 @@
 import System.Environment
 import System.Exit
 import Data.Kicad.Parse
-import Data.Kicad.KicadExpr
+import Data.Kicad.PcbnewExpr
 import Data.Kicad.SExpr
 
 

@@ -6,286 +6,286 @@ where
 import Data.Either
 import Data.Maybe
 import Data.Kicad.SExpr
-import Data.Kicad.KicadExpr
+import Data.Kicad.PcbnewExpr
 import Control.Applicative
 import Lens.Family2 (over)
 
-{- Interpret a parsed SExpr as a KicadExpr -}
-interpret :: SExpr -> Either String KicadExpr
+{- Interpret a parsed SExpr as a PcbnewExpr -}
+interpret :: SExpr -> Either String PcbnewExpr
 interpret (List (AtomKey kw:sxs)) =
     case go of
         Left err   -> Left $ "Could not interpret '" ++ write kw ++
                         "' because:\n\t" ++ err
         Right expr -> Right expr
     where go = case kw of
-            KeyModule    -> KicadExprModule    <$> asKicadModule           sxs
-            KeyPad       -> KicadExprItem      <$> asKicadPad              sxs
-            KeyFpText    -> KicadExprItem      <$> asKicadFpText           sxs
-            KeyFpArc     -> KicadExprItem      <$> asKicadFpArc            sxs
-            KeyFpPoly    -> KicadExprItem      <$> asKicadFpPoly           sxs
-            KeyLayer     -> KicadExprAttribute <$> asKicadLayer            sxs
-            KeyAt        -> KicadExprAttribute <$> asKicadAt               sxs
-            KeyEffects   -> KicadExprAttribute <$> asKicadEffects          sxs
-            KeyFont      -> KicadExprAttribute <$> asKicadFont             sxs
-            KeyLayers    -> KicadExprAttribute <$> asKicadLayers           sxs
-            KeyPts       -> KicadExprAttribute <$> asKicadPts              sxs
-            KeyXyz       -> KicadExprAttribute <$> asKicadXyz              sxs
-            KeyModel     -> KicadExprAttribute <$> asKicadModel            sxs
-            KeyDrill     -> KicadExprAttribute <$> asKicadDrill            sxs
-            KeySize      -> KicadExprAttribute <$> asXy KicadSize          sxs
-            KeyStart     -> KicadExprAttribute <$> asXy KicadStart         sxs
-            KeyEnd       -> KicadExprAttribute <$> asXy KicadEnd           sxs
-            KeyCenter    -> KicadExprAttribute <$> asXy KicadCenter        sxs
-            KeyRectDelta -> KicadExprAttribute <$> asXy KicadRectDelta     sxs
-            KeyXy        -> KicadExprAttribute <$> asXy KicadXy            sxs
-            KeyOffset    -> KicadExprAttribute <$> asXy KicadOffset        sxs
-            KeyScale     -> KicadExprAttribute <$> asXyz KicadModelScale   sxs
-            KeyRotate    -> KicadExprAttribute <$> asXyz KicadModelRotate  sxs
-            KeyDescr     -> KicadExprAttribute <$> asString KicadDescr     sxs
-            KeyTags      -> KicadExprAttribute <$> asString KicadTags      sxs
-            KeyAttr      -> KicadExprAttribute <$> asString KicadAttr      sxs
-            KeyTedit     -> KicadExprAttribute <$> asString KicadTedit     sxs
-            KeyAngle     -> KicadExprAttribute <$> asDouble KicadAngle     sxs
-            KeyThickness -> KicadExprAttribute <$> asDouble KicadThickness sxs
-            KeyWidth     -> KicadExprAttribute <$> asDouble KicadWidth     sxs
+            KeyModule    -> PcbnewExprModule    <$> asPcbnewModule           sxs
+            KeyPad       -> PcbnewExprItem      <$> asPcbnewPad              sxs
+            KeyFpText    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
+            KeyFpArc     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
+            KeyFpPoly    -> PcbnewExprItem      <$> asPcbnewFpPoly           sxs
+            KeyLayer     -> PcbnewExprAttribute <$> asPcbnewLayer            sxs
+            KeyAt        -> PcbnewExprAttribute <$> asPcbnewAt               sxs
+            KeyEffects   -> PcbnewExprAttribute <$> asPcbnewEffects          sxs
+            KeyFont      -> PcbnewExprAttribute <$> asPcbnewFont             sxs
+            KeyLayers    -> PcbnewExprAttribute <$> asPcbnewLayers           sxs
+            KeyPts       -> PcbnewExprAttribute <$> asPcbnewPts              sxs
+            KeyXyz       -> PcbnewExprAttribute <$> asPcbnewXyz              sxs
+            KeyModel     -> PcbnewExprAttribute <$> asPcbnewModel            sxs
+            KeyDrill     -> PcbnewExprAttribute <$> asPcbnewDrill            sxs
+            KeySize      -> PcbnewExprAttribute <$> asXy PcbnewSize          sxs
+            KeyStart     -> PcbnewExprAttribute <$> asXy PcbnewStart         sxs
+            KeyEnd       -> PcbnewExprAttribute <$> asXy PcbnewEnd           sxs
+            KeyCenter    -> PcbnewExprAttribute <$> asXy PcbnewCenter        sxs
+            KeyRectDelta -> PcbnewExprAttribute <$> asXy PcbnewRectDelta     sxs
+            KeyXy        -> PcbnewExprAttribute <$> asXy PcbnewXy            sxs
+            KeyOffset    -> PcbnewExprAttribute <$> asXy PcbnewOffset        sxs
+            KeyScale     -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
+            KeyRotate    -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
+            KeyDescr     -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
+            KeyTags      -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
+            KeyAttr      -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
+            KeyTedit     -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
+            KeyAngle     -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
+            KeyThickness -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
+            KeyWidth     -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
             KeyThermalGap
-                -> KicadExprAttribute <$> asDouble KicadThermalGap sxs
+                -> PcbnewExprAttribute <$> asDouble PcbnewThermalGap sxs
             KeyThermalWidth
-                -> KicadExprAttribute <$> asDouble KicadThermalWidth sxs
+                -> PcbnewExprAttribute <$> asDouble PcbnewThermalWidth sxs
             KeySolderPasteMarginRatio
-                -> KicadExprAttribute <$> asDouble KicadPasteMarginRatio  sxs
+                -> PcbnewExprAttribute <$> asDouble PcbnewPasteMarginRatio  sxs
             KeySolderPasteMargin
-                -> KicadExprAttribute <$> asDouble KicadPasteMargin sxs
+                -> PcbnewExprAttribute <$> asDouble PcbnewPasteMargin sxs
             KeySolderMaskMargin
-                -> KicadExprAttribute <$> asDouble KicadMaskMargin  sxs
+                -> PcbnewExprAttribute <$> asDouble PcbnewMaskMargin  sxs
             KeyClearance
-                -> KicadExprAttribute <$> asDouble KicadClearance   sxs
+                -> PcbnewExprAttribute <$> asDouble PcbnewClearance   sxs
             KeyFpLine
-                -> KicadExprItem <$> asFp defaultKicadFpLine        sxs
+                -> PcbnewExprItem <$> asFp defaultPcbnewFpLine        sxs
             KeyFpCircle
-                -> KicadExprItem <$> asFp defaultKicadFpCircle      sxs
+                -> PcbnewExprItem <$> asFp defaultPcbnewFpCircle      sxs
             KeyAutoplaceCost180
-                -> KicadExprAttribute <$> asInt KicadAutoplaceCost180 sxs
+                -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost180 sxs
             KeyAutoplaceCost90
-                -> KicadExprAttribute <$> asInt KicadAutoplaceCost90 sxs
+                -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost90 sxs
             KeyZoneConnect
-                -> KicadExprAttribute <$> asInt KicadZoneConnect sxs
+                -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
 interpret sx@(AtomStr s) = case s of
-    "italic" -> Right $ KicadExprAttribute KicadItalic
-    "hide"   -> Right $ KicadExprAttribute KicadHide
-    "locked" -> Right $ KicadExprAttribute KicadLocked
+    "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
+    "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
+    "locked" -> Right $ PcbnewExprAttribute PcbnewLocked
     _ -> expecting "'italic' or 'hide' or 'locked' " sx
 interpret x = expecting "List with a key or a string atom" x
 
-asKicadModule :: [SExpr] -> Either String KicadModule
-asKicadModule (AtomStr n:xs) =
-    interpretRest xs defaultKicadModule { kicadModuleName = n }
+asPcbnewModule :: [SExpr] -> Either String PcbnewModule
+asPcbnewModule (AtomStr n:xs) =
+    interpretRest xs defaultPcbnewModule { kicadModuleName = n }
     where
         interpretRest [] m = Right m
         interpretRest (sx:sxs) m = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadLayer layer)) ->
+            Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
                 interpretRest sxs m {kicadModuleLayer = layer}
-            Right (KicadExprItem item) ->
+            Right (PcbnewExprItem item) ->
                 interpretRest sxs (over moduleItems (++[item]) m)
-            Right (KicadExprAttribute attr) ->
+            Right (PcbnewExprAttribute attr) ->
                 interpretRest sxs (over moduleAttrs (++[attr]) m)
             Right _ -> expecting "layer, items or attributes" sx
-asKicadModule (x:_) = expecting "module name" x
-asKicadModule x = expecting "module name" x
+asPcbnewModule (x:_) = expecting "module name" x
+asPcbnewModule x = expecting "module name" x
 
-asKicadFpText :: [SExpr] -> Either String KicadItem
-asKicadFpText (t:s:a:xs) = interpretType
+asPcbnewFpText :: [SExpr] -> Either String PcbnewItem
+asPcbnewFpText (t:s:a:xs) = interpretType
     where
         interpretType = case t of
             (AtomStr "reference") ->
-                interpretString (defaultKicadFpText {fpTextType = FpTextReference})
+                interpretString (defaultPcbnewFpText {fpTextType = FpTextReference})
             (AtomStr "value")     ->
-                interpretString (defaultKicadFpText {fpTextType = FpTextValue})
+                interpretString (defaultPcbnewFpText {fpTextType = FpTextValue})
             (AtomStr "user")     ->
-                interpretString (defaultKicadFpText {fpTextType = FpTextUser})
+                interpretString (defaultPcbnewFpText {fpTextType = FpTextUser})
             x           -> expecting "'reference', 'value' or 'user'" x
         interpretString fp_text = case s of
             (AtomStr string) -> interpretAt fp_text {fpTextStr = string}
             x           -> expecting "string" x
         interpretAt fp_text = case interpret a of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadAt at)) ->
+            Right (PcbnewExprAttribute (PcbnewAt at)) ->
                 interpretRest xs fp_text {itemAt = at}
             _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
         interpretRest [] fp_text = Right fp_text
         interpretRest (sx:sxs) fp_text = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadLayer layer)) ->
+            Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
                 interpretRest sxs (fp_text {itemLayer = layer})
-            Right (KicadExprAttribute (KicadFpTextEffects
-                    (KicadFont size thickness italic))) ->
+            Right (PcbnewExprAttribute (PcbnewFpTextEffects
+                    (PcbnewFont size thickness italic))) ->
                 interpretRest sxs (fp_text {  itemSize        = size
                                             , fpTextThickness = thickness
                                             , fpTextItalic    = italic
                                             }
                                    )
-            Right (KicadExprAttribute KicadHide) ->
+            Right (PcbnewExprAttribute PcbnewHide) ->
                 interpretRest sxs (fp_text {fpTextHide = True})
             _ -> expecting "layer or effects expression or 'hide'" sx
-asKicadFpText x = expecting "a text-type, text, 'at' and layer" x
+asPcbnewFpText x = expecting "a text-type, text, 'at' and layer" x
 
-asFp :: KicadItem -> [SExpr] -> Either String KicadItem
+asFp :: PcbnewItem -> [SExpr] -> Either String PcbnewItem
 asFp defaultFp (s:e:xs) = interpretStart defaultFp
     where
         interpretStart fp_shape = case interpret s of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadStart start)) ->
+            Right (PcbnewExprAttribute (PcbnewStart start)) ->
                 interpretEnd fp_shape {itemStart = start}
-            Right (KicadExprAttribute (KicadCenter center)) ->
+            Right (PcbnewExprAttribute (PcbnewCenter center)) ->
                 interpretEnd fp_shape {itemStart = center}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
         interpretEnd fp_shape = case interpret e of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadEnd end)) ->
+            Right (PcbnewExprAttribute (PcbnewEnd end)) ->
                 interpretRest xs fp_shape {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_shape = Right fp_shape
         interpretRest (sx:sxs) fp_shape = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadWidth d))
+            Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_shape {itemWidth = d}
-            Right (KicadExprAttribute (KicadLayer d))
+            Right (PcbnewExprAttribute (PcbnewLayer d))
                 -> interpretRest sxs fp_shape {itemLayer = d}
             Right _ -> expecting "width or layer" sx
 asFp _ x = expecting "fp_line (or fp_circle) start (center), end and attributes" x
 
-asKicadFpArc :: [SExpr] -> Either String KicadItem
-asKicadFpArc (s:e:xs) = interpretStart defaultKicadFpArc
+asPcbnewFpArc :: [SExpr] -> Either String PcbnewItem
+asPcbnewFpArc (s:e:xs) = interpretStart defaultPcbnewFpArc
     where
         interpretStart fp_arc = case interpret s of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadStart start)) ->
+            Right (PcbnewExprAttribute (PcbnewStart start)) ->
                 interpretEnd fp_arc {itemStart = start}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
         interpretEnd fp_arc = case interpret e of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadEnd end)) ->
+            Right (PcbnewExprAttribute (PcbnewEnd end)) ->
                 interpretRest xs fp_arc {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_arc = Right fp_arc
         interpretRest (sx:sxs) fp_arc = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadWidth d))
+            Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_arc {itemWidth = d}
-            Right (KicadExprAttribute (KicadLayer d))
+            Right (PcbnewExprAttribute (PcbnewLayer d))
                 -> interpretRest sxs fp_arc {itemLayer = d}
-            Right (KicadExprAttribute (KicadAngle d))
+            Right (PcbnewExprAttribute (PcbnewAngle d))
                 -> interpretRest sxs fp_arc {fpArcAngle = d}
             Right _ -> expecting "width, layer or angle" sx
-asKicadFpArc x = expecting "fp_arc start, end and attributes" x
+asPcbnewFpArc x = expecting "fp_arc start, end and attributes" x
 
-asKicadFpPoly :: [SExpr] -> Either String KicadItem
-asKicadFpPoly xs = interpretRest xs defaultKicadFpPoly
+asPcbnewFpPoly :: [SExpr] -> Either String PcbnewItem
+asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
     where
         interpretRest [] fp_poly = Right fp_poly
         interpretRest (sx:sxs) fp_poly = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadPts   d))
+            Right (PcbnewExprAttribute (PcbnewPts   d))
                 -> interpretRest sxs fp_poly {fpPolyPts = d}
-            Right (KicadExprAttribute (KicadWidth d))
+            Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_poly {itemWidth = d}
-            Right (KicadExprAttribute (KicadLayer d))
+            Right (PcbnewExprAttribute (PcbnewLayer d))
                 -> interpretRest sxs fp_poly {itemLayer = d}
             Right _ -> expecting "width, layer or 'pts'" sx
 
-asKicadPad :: [SExpr] -> Either String KicadItem
-asKicadPad (n:t:s:xs) = interpretNumber
+asPcbnewPad :: [SExpr] -> Either String PcbnewItem
+asPcbnewPad (n:t:s:xs) = interpretNumber
     where
         interpretNumber = case n of
-            (AtomStr num) -> interpretType defaultKicadPad {padNumber = num}
+            (AtomStr num) -> interpretType defaultPcbnewPad {padNumber = num}
             x             -> expecting "string designating pad number" x
-        interpretType :: KicadItem -> Either String KicadItem
+        interpretType :: PcbnewItem -> Either String PcbnewItem
         interpretType pad = case t of
             (AtomStr str) -> case strToPadType str of
                     Just d  -> interpretShape pad {padType = d}
                     Nothing ->
                         expecting "pad type (e.g. 'smd')" t
             x -> expecting "pad type string (e.g. 'smd')" x
-        interpretShape :: KicadItem -> Either String KicadItem
+        interpretShape :: PcbnewItem -> Either String PcbnewItem
         interpretShape pad = case s of
             (AtomStr str) -> case strToPadShape str of
                     Just d  -> interpretRest xs pad {padShape = d}
                     Nothing ->
                         expecting "pad shape (e.g. 'circle')" s
             x -> expecting "pad shape string (e.g. 'circle')" x
-        interpretRest :: [SExpr] -> KicadItem -> Either String KicadItem
+        interpretRest :: [SExpr] -> PcbnewItem -> Either String PcbnewItem
         interpretRest [] pad = Right pad
         interpretRest (sx:sxs) pad = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadAt d))
+            Right (PcbnewExprAttribute (PcbnewAt d))
                 -> interpretRest sxs pad {itemAt = d}
-            Right (KicadExprAttribute (KicadLayers d))
+            Right (PcbnewExprAttribute (PcbnewLayers d))
                 -> interpretRest sxs pad {padLayers = d}
-            Right (KicadExprAttribute  (KicadSize d))
+            Right (PcbnewExprAttribute  (PcbnewSize d))
                 -> interpretRest sxs pad {itemSize = d}
-            Right (KicadExprAttribute a@(KicadDrill _))
+            Right (PcbnewExprAttribute a@(PcbnewDrill _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadRectDelta _))
+            Right (PcbnewExprAttribute a@(PcbnewRectDelta _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadMaskMargin _))
+            Right (PcbnewExprAttribute a@(PcbnewMaskMargin _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadPasteMarginRatio _))
+            Right (PcbnewExprAttribute a@(PcbnewPasteMarginRatio _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadPasteMargin _))
+            Right (PcbnewExprAttribute a@(PcbnewPasteMargin _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadClearance _))
+            Right (PcbnewExprAttribute a@(PcbnewClearance _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadZoneConnect _))
+            Right (PcbnewExprAttribute a@(PcbnewZoneConnect _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadThermalWidth _))
+            Right (PcbnewExprAttribute a@(PcbnewThermalWidth _))
                 -> pushToAttrs sxs a pad
-            Right (KicadExprAttribute a@(KicadThermalGap _))
+            Right (PcbnewExprAttribute a@(PcbnewThermalGap _))
                 -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)
-asKicadPad xs = expecting "number, type and shape" $ List xs
+asPcbnewPad xs = expecting "number, type and shape" $ List xs
 
-asKicadLayer :: [SExpr] -> Either String KicadAttribute
-asKicadLayer [sx] = oneKicadLayer sx
-asKicadLayer x    = expecting "only one layer name" x
+asPcbnewLayer :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewLayer [sx] = onePcbnewLayer sx
+asPcbnewLayer x    = expecting "only one layer name" x
 
-oneKicadLayer :: SExpr -> Either String KicadAttribute
-oneKicadLayer (AtomStr n) = case strToLayer n of
-    Just l  -> Right $ KicadLayer l
+onePcbnewLayer :: SExpr -> Either String PcbnewAttribute
+onePcbnewLayer (AtomStr n) = case strToLayer n of
+    Just l  -> Right $ PcbnewLayer l
     Nothing -> Left ("-> Unknown layer name: " ++ n)
-oneKicadLayer x = expecting "layer name" x
+onePcbnewLayer x = expecting "layer name" x
 
-asKicadAt :: [SExpr] -> Either String KicadAttribute
-asKicadAt (AtomDbl x:[AtomDbl y]) =
-    Right $ KicadAt $ defaultKicadAtT {kicadAtPoint = (x,y)}
-asKicadAt (AtomDbl x:AtomDbl y:[AtomDbl o]) =
-    Right $ KicadAt $ KicadAtT (x,y) o
-asKicadAt l@[List _] = asXyz KicadModelAt l
-asKicadAt x =
+asPcbnewAt :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewAt (AtomDbl x:[AtomDbl y]) =
+    Right $ PcbnewAt $ defaultPcbnewAtT {kicadAtPoint = (x,y)}
+asPcbnewAt (AtomDbl x:AtomDbl y:[AtomDbl o]) =
+    Right $ PcbnewAt $ PcbnewAtT (x,y) o
+asPcbnewAt l@[List _] = asXyz PcbnewModelAt l
+asPcbnewAt x =
     expecting "two or three floats or an 'xyz' expression"
     $ List x
 
-asKicadEffects :: [SExpr] -> Either String KicadAttribute
-asKicadEffects l@[e@(List _)] =
+asPcbnewEffects :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewEffects l@[e@(List _)] =
     case interpret e of
         Left err -> Left ('\t':err)
-        Right (KicadExprAttribute font@(KicadFont {}))
-            -> Right $ KicadFpTextEffects font
+        Right (PcbnewExprAttribute font@(PcbnewFont {}))
+            -> Right $ PcbnewFpTextEffects font
         _ -> expecting "font-expression" l
-asKicadEffects x = expecting "one effects-expression (e.g. font)" x
+asPcbnewEffects x = expecting "one effects-expression (e.g. font)" x
 
-asKicadFont :: [SExpr] -> Either String KicadAttribute
-asKicadFont xs = interpretRest xs defaultKicadFont
+asPcbnewFont :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewFont xs = interpretRest xs defaultPcbnewFont
     where
         interpretRest [] font = Right font
         interpretRest (sx:sxs) font = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadSize size)) ->
+            Right (PcbnewExprAttribute (PcbnewSize size)) ->
                 interpretRest sxs font {kicadFontSize = size}
-            Right (KicadExprAttribute (KicadThickness t)) ->
+            Right (PcbnewExprAttribute (PcbnewThickness t)) ->
                 interpretRest sxs font {kicadFontThickness = t}
-            Right (KicadExprAttribute KicadItalic) ->
+            Right (PcbnewExprAttribute PcbnewItalic) ->
                 interpretRest sxs font {kicadFontItalic = True}
             Right _ -> expecting "size, thickness or 'italic'" sx
 
@@ -293,37 +293,37 @@ asXy :: ((Double, Double) -> a) -> [SExpr] -> Either String a
 asXy constructor [AtomDbl x, AtomDbl y] = Right $ constructor (x,y)
 asXy _ x = expecting "two floats (e.g. 1.0 1.0)" x
 
-asKicadPts :: [SExpr] -> Either String KicadAttribute
-asKicadPts = fmap KicadPts . foldr interpretXys (Right [])
+asPcbnewPts :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewPts = fmap PcbnewPts . foldr interpretXys (Right [])
     where interpretXys sx z = case interpret sx of
                         Left err -> Left ('\t':err)
-                        Right (KicadExprAttribute (KicadXy xy))
+                        Right (PcbnewExprAttribute (PcbnewXy xy))
                             -> Right (xy:) <*> z
                         Right _ -> expecting "'xy' (e.g. '(xy 1.0 1.0)')" sx
 
-asString :: (String -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
+asString :: (String -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
 asString kicad [AtomStr s] =  Right $ kicad s
 asString _ x = expecting "string" x
 
-asKicadLayers :: [SExpr] -> Either String KicadAttribute
-asKicadLayers [] = Right $ KicadLayers []
-asKicadLayers xs = let layers = map oneKicadLayer xs in case lefts layers of
-    [] -> Right $ KicadLayers $ map (\(KicadLayer l) -> l) $ rights layers
+asPcbnewLayers :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewLayers [] = Right $ PcbnewLayers []
+asPcbnewLayers xs = let layers = map onePcbnewLayer xs in case lefts layers of
+    [] -> Right $ PcbnewLayers $ map (\(PcbnewLayer l) -> l) $ rights layers
     _  -> Left $ "Could not interpret layers:\n"
                     ++ unlines (map ("\t\t"++) (lefts layers))
 
-asDouble :: (Double -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
+asDouble :: (Double -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
 asDouble constructor [AtomDbl d] = Right $ constructor d
 asDouble _ x = expecting "one float (e.g. '1.0')" x
 
-asInt :: (Int -> KicadAttribute) -> [SExpr] -> Either String KicadAttribute
+asInt :: (Int -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
 asInt constructor [AtomDbl d] = Right $ constructor $ round d
 asInt _ x = expecting "one int (e.g. '1')" x
 
-asKicadDrill :: [SExpr] -> Either String KicadAttribute
-asKicadDrill xs = interpretRest xs defaultKicadDrillT
+asPcbnewDrill :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
     where
-        interpretRest [] drill = Right $ KicadDrill drill
+        interpretRest [] drill = Right $ PcbnewDrill drill
         interpretRest (sx:sxs) drill = case sx of
             AtomDbl d  -> if isNothing (kicadDrillSize drill)
                           then interpretRest sxs drill
@@ -335,37 +335,37 @@ asKicadDrill xs = interpretRest xs defaultKicadDrillT
             AtomStr "oval"  -> interpretRest sxs drill {kicadDrillOval = True}
             (List _) -> case interpret sx of
                 Left err -> Left ('\t':err)
-                Right (KicadExprAttribute (KicadOffset xy))
+                Right (PcbnewExprAttribute (PcbnewOffset xy))
                     -> interpretRest sxs drill {kicadDrillOffset = Just xy}
                 Right _ -> expecting "offset or nothing" sx
             _ -> expecting "float, 'oval' or offset" sx
 
-asKicadXyz :: [SExpr] -> Either String KicadAttribute
-asKicadXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =
-    Right $ KicadXyz (x,y,z)
-asKicadXyz x = expecting "three floats" x
+asPcbnewXyz :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =
+    Right $ PcbnewXyz (x,y,z)
+asPcbnewXyz x = expecting "three floats" x
 
-asXyz :: (KicadAttribute -> a) -> [SExpr] -> Either String a
+asXyz :: (PcbnewAttribute -> a) -> [SExpr] -> Either String a
 asXyz constructor [l@(List _)] = case interpret l of
     Left err -> Left ('\t':err)
-    Right (KicadExprAttribute xyz) -> Right $ constructor xyz
+    Right (PcbnewExprAttribute xyz) -> Right $ constructor xyz
     Right _ -> expecting "xyz (e.g. '(xyz 1 1 1)')" l
 asXyz _ x = expecting "xyz (e.g. '(xyz 1 1 1)')" x
 
-asKicadModel :: [SExpr] -> Either String KicadAttribute
-asKicadModel (AtomStr p:xs) = interpretRest xs defaultKicadModel {kicadModelPath = p}
+asPcbnewModel :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewModel (AtomStr p:xs) = interpretRest xs defaultPcbnewModel {kicadModelPath = p}
     where
         interpretRest [] model = Right model
         interpretRest (sx:sxs) model = case interpret sx of
             Left err -> Left ('\t':err)
-            Right (KicadExprAttribute (KicadModelAt (KicadXyz xyz))) ->
+            Right (PcbnewExprAttribute (PcbnewModelAt (PcbnewXyz xyz))) ->
                 interpretRest sxs model {kicadModelAt = xyz}
-            Right (KicadExprAttribute (KicadModelScale (KicadXyz xyz))) ->
+            Right (PcbnewExprAttribute (PcbnewModelScale (PcbnewXyz xyz))) ->
                 interpretRest sxs model {kicadModelScale = xyz}
-            Right (KicadExprAttribute (KicadModelRotate (KicadXyz xyz))) ->
+            Right (PcbnewExprAttribute (PcbnewModelRotate (PcbnewXyz xyz))) ->
                 interpretRest sxs model {kicadModelRotate = xyz}
             Right _ -> expecting "only at, scale and rotate" sx
-asKicadModel x = expecting "model path, at, scale and rotate" x
+asPcbnewModel x = expecting "model path, at, scale and rotate" x
 
 expecting :: Writable a => String -> a -> Either String b
 expecting x y =
