@@ -1,5 +1,49 @@
-{-# LANGUAGE FlexibleInstances #-}
-module Data.Kicad.KicadExpr where
+module Data.Kicad.KicadExpr
+(
+-- * Types
+  KicadExpr(..)
+, KicadModule(..)
+, KicadItem(..)
+, KicadAttribute(..)
+, SExpressable(..)
+-- * KicadItem sub-types
+, KicadDrillT(..)
+, KicadAtT(..)
+, KicadLayerT(..)
+, KicadPadShapeT(..)
+, KicadPadTypeT(..)
+, KicadFpTextTypeT(..)
+-- * Lenses and other getters/setters
+, moduleItems
+, moduleAttrs
+, itemLayers
+, padAttributes
+, atX
+, atY
+, itemsOn
+-- * String conversion
+, strToLayer
+, layerToStr
+, strToPadType
+, fpPadTypeToStr
+, strToPadShape
+, fpPadShapeToStr
+, strToFpTextType
+, fpTextTypeToStr
+-- * Default (empty) instances
+, defaultKicadModule
+, defaultKicadFpText
+, defaultKicadFpLine
+, defaultKicadFpCircle
+, defaultKicadFpArc
+, defaultKicadFpPoly
+, defaultKicadPad
+, defaultKicadDrillT
+, defaultKicadFont
+, defaultKicadModel
+, defaultKicadAtT
+)
+where
 import Lens.Family2
 import Data.AEq
 import Data.Tuple (swap)
@@ -12,7 +56,6 @@ data KicadExpr = KicadExprModule KicadModule
                | KicadExprItem KicadItem
                | KicadExprAttribute KicadAttribute
     deriving (Show, Eq)
-
 
 instance AEq KicadExpr where
     KicadExprModule    x ~== KicadExprModule    y = x ~== y

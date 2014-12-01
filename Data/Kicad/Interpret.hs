@@ -10,6 +10,7 @@ import Data.Kicad.KicadExpr
 import Control.Applicative
 import Lens.Family2 (over)
 
+{- Interpret a parsed SExpr as a KicadExpr -}
 interpret :: SExpr -> Either String KicadExpr
 interpret (List (AtomKey kw:sxs)) =
     case go of
