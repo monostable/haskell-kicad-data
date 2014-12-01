@@ -7,7 +7,7 @@ author:        Kaspar Emanuel
 maintainer:    kaspar.emanuel@gmail.com
 homepage:      http://github.com/kasbah/haskell-kicad-data
 bug-reports:   http://github.com/kasbah/haskell-kicad-data/issues
-copyright:     2014 Kaspar Emanuel
+copyright:     2014
 category:      Data
 build-type:    Simple
 -- extra-source-files:
