@@ -5,7 +5,7 @@ Parse and write KiCad data (currently .kicad_mod files only).
 
     $ cabal repl
 
-```ghci
+```haskell
 *Data.Kicad.PcbnewExpr> let pad = parse "(pad 1 smd rect (size 1.0 1.0) (at 1.0 1.0))"
 *Data.Kicad.PcbnewExpr> pad
 Right (PcbnewExprItem (PcbnewPad {padNumber = "1", padType = SMD, padShape
