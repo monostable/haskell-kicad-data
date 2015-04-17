@@ -21,7 +21,7 @@ parse = either Left fromSExpr . SExpr.parse
 fromSExpr :: SExpr -> Either String PcbnewExpr
 fromSExpr (List (AtomKey kw:sxs)) =
     case go of
-        Left err   -> Left $ "Could not fromSExpr '" ++ writeKeyword kw ++
+        Left err   -> Left $ "Could not interpret '" ++ writeKeyword kw ++
                         "' because:\n\t" ++ err
         Right expr -> Right expr
     where go = case kw of

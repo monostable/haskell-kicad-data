@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Data.Kicad.PcbnewExpr.PcbnewExpr
 (
 -- * Types
@@ -13,14 +15,18 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , PcbnewPadTypeT(..)
 , PcbnewFpTextTypeT(..)
 , PcbnewXyzT
+, V2Double
 -- * Lenses and other getters/setters
 , moduleItems
 , moduleAttrs
 , itemLayers
 , padAttributes
+, atP
 , atX
 , atY
 , itemsOn
+, itemPoints
+, itemHandle
 -- * String conversion
 , strToLayer
 , layerToStr
@@ -51,6 +57,7 @@ import Data.Maybe
 import Data.Foldable (foldMap)
 
 import Data.Kicad.SExpr.SExpr
+import Data.Kicad.Util
 
 data PcbnewExpr = PcbnewExprModule PcbnewModule
                 | PcbnewExprItem PcbnewItem
@@ -104,39 +111,72 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                                , itemAt          :: PcbnewAtT
                                , itemLayer       :: PcbnewLayerT
                                , fpTextHide      :: Bool
-                               , itemSize        :: (Double, Double)
+                               , itemSize        :: V2Double
                                , fpTextThickness :: Double
                                , fpTextItalic    :: Bool
                                }
-               | PcbnewFpLine { itemStart :: (Double, Double)
-                              , itemEnd   :: (Double, Double)
-                              , itemLayer :: PcbnewLayerT
-                              , itemWidth :: Double
+                | PcbnewFpLine { itemStart :: V2Double
+                               , itemEnd   :: V2Double
+                               , itemLayer :: PcbnewLayerT
+                               , itemWidth :: Double
+                               }
+                | PcbnewFpCircle { itemStart  :: V2Double
+                                 , itemEnd    :: V2Double
+                                 , itemLayer  :: PcbnewLayerT
+                                 , itemWidth  :: Double
+                                 }
+                | PcbnewFpArc { itemStart  :: V2Double
+                              , itemEnd    :: V2Double
+                              , fpArcAngle :: Double
+                              , itemLayer  :: PcbnewLayerT
+                              , itemWidth  :: Double
                               }
-               | PcbnewFpCircle { itemStart  :: (Double, Double)
-                                , itemEnd    :: (Double, Double)
-                                , itemLayer  :: PcbnewLayerT
-                                , itemWidth  :: Double
-                                }
-               | PcbnewFpArc { itemStart  :: (Double, Double)
-                             , itemEnd    :: (Double, Double)
-                             , fpArcAngle :: Double
-                             , itemLayer  :: PcbnewLayerT
-                             , itemWidth  :: Double
-                             }
-               | PcbnewFpPoly { fpPolyPts :: [(Double, Double)]
-                              , itemLayer :: PcbnewLayerT
-                              , itemWidth :: Double
-                              }
-               | PcbnewPad { padNumber      :: String
-                           , padType        :: PcbnewPadTypeT
-                           , padShape       :: PcbnewPadShapeT
-                           , itemAt         :: PcbnewAtT
-                           , itemSize       :: (Double, Double)
-                           , padLayers      :: [PcbnewLayerT]
-                           , padAttributes_ :: [PcbnewAttribute]
+                | PcbnewFpPoly { fpPolyPts :: [V2Double]
+                               , itemLayer :: PcbnewLayerT
+                               , itemWidth :: Double
+                               }
+                | PcbnewPad { padNumber      :: String
+                            , padType        :: PcbnewPadTypeT
+                            , padShape       :: PcbnewPadShapeT
+                            , itemAt         :: PcbnewAtT
+                            , itemSize       :: V2Double
+                            , padLayers      :: [PcbnewLayerT]
+                            , padAttributes_ :: [PcbnewAttribute]
                            }
     deriving (Show, Eq)
+
+
+{-| Lense of the points that define this item -}
+itemPoints :: Functor f => LensLike' f PcbnewItem [V2Double]
+itemPoints f item = case item of
+    PcbnewFpText {}   -> atLense
+    PcbnewPad {}      -> atLense
+    PcbnewFpLine {}   -> startEndLense
+    PcbnewFpCircle {} -> startEndLense
+    PcbnewFpArc {}    -> startEndLense
+    PcbnewFpPoly {}   ->
+        (\ps -> item {fpPolyPts = ps}) `fmap` (f (fpPolyPts item))
+    where
+        atLense     = atSetter `fmap` (f [view atP (itemAt item)])
+        atSetter ps =
+            fromMaybe
+                item
+                (fmap (\p -> item {itemAt = set atP p (itemAt item)})
+                    (maybeHead ps))
+        startEndLense =
+            startEndSetter `fmap` (f [itemStart item, itemEnd item])
+        startEndSetter (p1:p2:_) = item {itemStart = p1, itemEnd = p2}
+        startEndSetter (p1:[])   = item {itemStart = p1}
+        startEndSetter _         = item
+
+
+{-| Lense of the item handle, moving the handle will move the entire item -}
+itemHandle :: Functor f => LensLike' f PcbnewItem V2Double
+itemHandle f item = setter `fmap` (f (headOr (0,0) (view itemPoints item)))
+    where
+        setter p = let diff = (view itemHandle item) - p
+                   in over itemPoints (map (+ diff)) item
+
 
 instance SExpressable PcbnewItem where
     toSExpr (PcbnewFpText t s a l h si th i) =
@@ -275,18 +315,18 @@ defaultPcbnewFpPoly = PcbnewFpPoly { fpPolyPts   = []
                                    }
 
 defaultPcbnewPad :: PcbnewItem
-defaultPcbnewPad = PcbnewPad { padNumber    = ""
-                             , padType      = ThruHole
-                             , padShape     = Circle
-                             , itemAt       = defaultPcbnewAtT
-                             , itemSize     = (0,0)
-                             , padLayers    = []
+defaultPcbnewPad = PcbnewPad { padNumber      = ""
+                             , padType        = ThruHole
+                             , padShape       = Circle
+                             , itemAt         = defaultPcbnewAtT
+                             , itemSize       = (0,0)
+                             , padLayers      = []
                              , padAttributes_ = []
                              }
 
-data PcbnewDrillT = PcbnewDrillT { pcbnewDrillSize   :: Maybe (Double, Double)
+data PcbnewDrillT = PcbnewDrillT { pcbnewDrillSize   :: Maybe V2Double
                                  , pcbnewDrillOval   :: Bool
-                                 , pcbnewDrillOffset :: Maybe (Double, Double)
+                                 , pcbnewDrillOffset :: Maybe V2Double
                                  }
     deriving (Show, Eq)
 
@@ -300,29 +340,29 @@ instance AEq PcbnewDrillT where
 data PcbnewAttribute = PcbnewLayer PcbnewLayerT
                     | PcbnewAt PcbnewAtT
                     | PcbnewFpTextType PcbnewFpTextTypeT
-                    | PcbnewSize (Double, Double)
+                    | PcbnewSize V2Double
                     | PcbnewThickness Double
                     | PcbnewTedit String
                     | PcbnewItalic
                     | PcbnewHide
                     | PcbnewLocked
-                    | PcbnewStart (Double, Double)
-                    | PcbnewEnd (Double, Double)
+                    | PcbnewStart V2Double
+                    | PcbnewEnd V2Double
                     | PcbnewWidth Double
                     | PcbnewDescr String
                     | PcbnewTags String
                     | PcbnewAttr String
                     | PcbnewLayers [PcbnewLayerT]
                     | PcbnewDrill PcbnewDrillT
-                    | PcbnewRectDelta (Double, Double)
+                    | PcbnewRectDelta V2Double
                     | PcbnewFpTextEffects PcbnewAttribute
-                    | PcbnewFont { pcbnewFontSize :: (Double, Double)
+                    | PcbnewFont { pcbnewFontSize :: V2Double
                                  , pcbnewFontThickness :: Double
                                  , pcbnewFontItalic :: Bool
                                  }
                     | PcbnewAngle Double
-                    | PcbnewXy (Double, Double)
-                    | PcbnewPts [(Double, Double)]
+                    | PcbnewXy V2Double
+                    | PcbnewPts [V2Double]
                     | PcbnewModel { pcbnewModelPath   :: String
                                   , pcbnewModelAt     :: PcbnewXyzT
                                   , pcbnewModelScale  :: PcbnewXyzT
@@ -332,12 +372,12 @@ data PcbnewAttribute = PcbnewLayer PcbnewLayerT
                     | PcbnewModelScale  PcbnewAttribute
                     | PcbnewModelRotate PcbnewAttribute
                     | PcbnewXyz         PcbnewXyzT
-                    | PcbnewCenter (Double, Double)
+                    | PcbnewCenter V2Double
                     | PcbnewClearance   Double
                     | PcbnewMaskMargin  Double
                     | PcbnewPasteMargin Double
                     | PcbnewPasteMarginRatio  Double
-                    | PcbnewOffset (Double, Double)
+                    | PcbnewOffset V2Double
                     | PcbnewAutoplaceCost90 Int
                     | PcbnewAutoplaceCost180 Int
                     | PcbnewZoneConnect Int
@@ -415,37 +455,37 @@ instance SExpressable PcbnewAttribute where
 toSxD :: Keyword -> Double -> SExpr
 toSxD  kw d = List [AtomKey kw, AtomDbl d]
 
-toSxDD :: Keyword -> (Double, Double) -> SExpr
+toSxDD :: Keyword -> V2Double -> SExpr
 toSxDD kw (x,y) = List [AtomKey kw, AtomDbl x, AtomDbl y]
 
 toSxStr :: Keyword -> String -> SExpr
 toSxStr kw s = List [AtomKey kw, AtomStr s]
 
 instance AEq PcbnewAttribute where
-    (PcbnewAt        x) ~== (PcbnewAt        y) = x ~== y
-    (PcbnewSize      x) ~== (PcbnewSize      y) = x ~== y
-    (PcbnewCenter    x) ~== (PcbnewCenter    y) = x ~== y
-    (PcbnewThickness x) ~== (PcbnewThickness y) = x ~== y
-    (PcbnewStart     x) ~== (PcbnewStart     y) = x ~== y
-    (PcbnewEnd       x) ~== (PcbnewEnd       y) = x ~== y
-    (PcbnewWidth     x) ~== (PcbnewWidth     y) = x ~== y
-    (PcbnewDrill     x) ~== (PcbnewDrill     y) = x ~== y
-    (PcbnewRectDelta x) ~== (PcbnewRectDelta y) = x ~== y
-    (PcbnewAngle     x) ~== (PcbnewAngle     y) = x ~== y
-    (PcbnewXy        x) ~== (PcbnewXy        y) = x ~== y
-    (PcbnewPts       x) ~== (PcbnewPts       y) = x ~== y
-    (PcbnewXyz       x) ~== (PcbnewXyz       y) = x ~== y
-    (PcbnewOffset    x) ~== (PcbnewOffset    y) = x ~== y
-    (PcbnewClearance   x)       ~== (PcbnewClearance   y)       = x ~== y
-    (PcbnewMaskMargin  x)       ~== (PcbnewMaskMargin  y)       = x ~== y
-    (PcbnewPasteMargin x)       ~== (PcbnewPasteMargin y)       = x ~== y
+    (PcbnewAt                x) ~== (PcbnewAt                y) = x ~== y
+    (PcbnewSize              x) ~== (PcbnewSize              y) = x ~== y
+    (PcbnewCenter            x) ~== (PcbnewCenter            y) = x ~== y
+    (PcbnewThickness         x) ~== (PcbnewThickness         y) = x ~== y
+    (PcbnewStart             x) ~== (PcbnewStart             y) = x ~== y
+    (PcbnewEnd               x) ~== (PcbnewEnd               y) = x ~== y
+    (PcbnewWidth             x) ~== (PcbnewWidth             y) = x ~== y
+    (PcbnewDrill             x) ~== (PcbnewDrill             y) = x ~== y
+    (PcbnewRectDelta         x) ~== (PcbnewRectDelta         y) = x ~== y
+    (PcbnewAngle             x) ~== (PcbnewAngle             y) = x ~== y
+    (PcbnewXy                x) ~== (PcbnewXy                y) = x ~== y
+    (PcbnewPts               x) ~== (PcbnewPts               y) = x ~== y
+    (PcbnewXyz               x) ~== (PcbnewXyz               y) = x ~== y
+    (PcbnewOffset            x) ~== (PcbnewOffset            y) = x ~== y
+    (PcbnewClearance         x) ~== (PcbnewClearance         y) = x ~== y
+    (PcbnewMaskMargin        x) ~== (PcbnewMaskMargin        y) = x ~== y
+    (PcbnewPasteMargin       x) ~== (PcbnewPasteMargin       y) = x ~== y
     (PcbnewPasteMarginRatio  x) ~== (PcbnewPasteMarginRatio  y) = x ~== y
-    (PcbnewThermalWidth    x) ~== (PcbnewThermalWidth    y) = x ~== y
-    (PcbnewThermalGap      x) ~== (PcbnewThermalGap      y) = x ~== y
-    (PcbnewModelAt x)         ~== (PcbnewModelAt y)     = x ~== y
-    (PcbnewModelScale x)      ~== (PcbnewModelScale y)  = x ~== y
-    (PcbnewModelRotate x)     ~== (PcbnewModelRotate y) = x ~== y
-    (PcbnewModel p1 a1 s1 r1) ~== (PcbnewModel p2 a2 s2 r2) =
+    (PcbnewThermalWidth      x) ~== (PcbnewThermalWidth      y) = x ~== y
+    (PcbnewThermalGap        x) ~== (PcbnewThermalGap        y) = x ~== y
+    (PcbnewModelAt           x) ~== (PcbnewModelAt           y) = x ~== y
+    (PcbnewModelScale        x) ~== (PcbnewModelScale        y) = x ~== y
+    (PcbnewModelRotate       x) ~== (PcbnewModelRotate       y) = x ~== y
+    (PcbnewModel p1 a1 s1 r1)   ~== (PcbnewModel p2 a2 s2 r2) =
         p1 == p2 && a1 ~== a2 && s1 ~== s2 && r1 ~== r2
     (PcbnewFont s1 t1 i1) ~== (PcbnewFont s2 t2 i2) =
         s1 ~== s2 && t1 ~== t2 && i1 == i2
@@ -465,16 +505,16 @@ defaultPcbnewModel = PcbnewModel { pcbnewModelPath   = ""
                                  }
 
 data PcbnewLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS
-                 | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
-                 | FAdhes    | AllSilk   | FandBCu   | AllCu     | AllMask
-                 | EdgeCuts  | FCrtYd    | BCrtYd    | FFab      | BFab
-                 | Inner1Cu  | Inner2Cu  | Inner3Cu  | Inner4Cu  | Inner5Cu
-                 | Inner6Cu  | Inner7Cu  | Inner8Cu  | Inner9Cu  | Inner10Cu
-                 | Inner11Cu | Inner12Cu | Inner13Cu | Inner14Cu | Inner15Cu
-                 | Inner16Cu | Inner17Cu | Inner18Cu | Inner19Cu | Inner20Cu
-                 | Inner21Cu | Inner22Cu | Inner23Cu | Inner24Cu | Inner25Cu
-                 | Inner26Cu | Inner27Cu | Inner28Cu | Inner29Cu | Inner30Cu
-                 | Inner31Cu | Inner32Cu
+                  | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
+                  | FAdhes    | AllSilk   | FandBCu   | AllCu     | AllMask
+                  | EdgeCuts  | FCrtYd    | BCrtYd    | FFab      | BFab
+                  | Inner1Cu  | Inner2Cu  | Inner3Cu  | Inner4Cu  | Inner5Cu
+                  | Inner6Cu  | Inner7Cu  | Inner8Cu  | Inner9Cu  | Inner10Cu
+                  | Inner11Cu | Inner12Cu | Inner13Cu | Inner14Cu | Inner15Cu
+                  | Inner16Cu | Inner17Cu | Inner18Cu | Inner19Cu | Inner20Cu
+                  | Inner21Cu | Inner22Cu | Inner23Cu | Inner24Cu | Inner25Cu
+                  | Inner26Cu | Inner27Cu | Inner28Cu | Inner29Cu | Inner30Cu
+                  | Inner31Cu | Inner32Cu
     deriving (Show, Eq, Enum, Bounded)
 
 strToLayerMap :: [(String, PcbnewLayerT)]
@@ -577,7 +617,7 @@ strToPadShape s = lookup s strToPadShapeMap
 fpPadShapeToStr :: PcbnewPadShapeT -> String
 fpPadShapeToStr t = fromMaybe "" $ lookup t $ map swap strToPadShapeMap
 
-data PcbnewAtT = PcbnewAtT { pcbnewAtPoint :: (Double, Double)
+data PcbnewAtT = PcbnewAtT { pcbnewAtPoint :: V2Double
                            , pcbnewAtOrientation :: Double
                            }
     deriving (Show, Eq)
@@ -589,6 +629,9 @@ defaultPcbnewAtT :: PcbnewAtT
 defaultPcbnewAtT = PcbnewAtT { pcbnewAtPoint = (0,0)
                              , pcbnewAtOrientation = 0
                              }
+
+atP :: Functor f => LensLike' f PcbnewAtT V2Double
+atP f (PcbnewAtT p o) =  (\p' -> PcbnewAtT p' o) `fmap` f p
 
 atX :: Functor f => LensLike' f PcbnewAtT Double
 atX f (PcbnewAtT (x,y) o) = (\x' -> PcbnewAtT (x',y) o) `fmap` f x
@@ -612,3 +655,13 @@ strToFpTextType s = lookup s strToFpTextTypeMap
 
 fpTextTypeToStr :: PcbnewFpTextTypeT -> String
 fpTextTypeToStr t = fromMaybe "" $ lookup t $ map swap strToFpTextTypeMap
+
+type V2Double = (Double, Double)
+
+instance Num V2Double where
+    (+) (x1, y1) (x2, y2) = (x1 + x2, y1 + y2)
+    (-) (x1, y1) (x2, y2) = (x1 - x2, y1 - y2)
+    (*) (x1, y1) (x2, y2) = (x1 * x2, y1 * y2)
+    abs (x,y)     = (abs x, abs y)
+    signum (x,y)  = (signum x, signum y)
+    fromInteger i = (fromInteger i, fromInteger i)
