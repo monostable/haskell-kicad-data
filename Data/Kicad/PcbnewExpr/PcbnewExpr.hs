@@ -142,7 +142,7 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                             , itemSize       :: V2Double
                             , padLayers      :: [PcbnewLayerT]
                             , padAttributes_ :: [PcbnewAttribute]
-                           }
+                            }
     deriving (Show, Eq)
 
 
@@ -154,8 +154,7 @@ itemPoints f item = case item of
     PcbnewFpLine {}   -> startEndLense
     PcbnewFpCircle {} -> startEndLense
     PcbnewFpArc {}    -> startEndLense
-    PcbnewFpPoly {}   ->
-        (\ps -> item {fpPolyPts = ps}) `fmap` (f (fpPolyPts item))
+    PcbnewFpPoly {}   -> polyLense
     where
         atLense     = atSetter `fmap` (f [view atP (itemAt item)])
         atSetter ps =
@@ -168,6 +167,7 @@ itemPoints f item = case item of
         startEndSetter (p1:p2:_) = item {itemStart = p1, itemEnd = p2}
         startEndSetter (p1:[])   = item {itemStart = p1}
         startEndSetter _         = item
+        polyLense = (\ps -> item {fpPolyPts = ps}) `fmap` (f (fpPolyPts item))
 
 
 {-| Lense of the item handle, moving the handle will move the entire item -}
@@ -337,52 +337,52 @@ instance AEq PcbnewDrillT where
     PcbnewDrillT s1 o1 off1 ~== PcbnewDrillT s2 o2 off2
         = s1 ~== s2 && o1 == o2 && off1 ~== off2
 
-data PcbnewAttribute = PcbnewLayer PcbnewLayerT
-                    | PcbnewAt PcbnewAtT
-                    | PcbnewFpTextType PcbnewFpTextTypeT
-                    | PcbnewSize V2Double
-                    | PcbnewThickness Double
-                    | PcbnewTedit String
-                    | PcbnewItalic
-                    | PcbnewHide
-                    | PcbnewLocked
-                    | PcbnewStart V2Double
-                    | PcbnewEnd V2Double
-                    | PcbnewWidth Double
-                    | PcbnewDescr String
-                    | PcbnewTags String
-                    | PcbnewAttr String
-                    | PcbnewLayers [PcbnewLayerT]
-                    | PcbnewDrill PcbnewDrillT
-                    | PcbnewRectDelta V2Double
-                    | PcbnewFpTextEffects PcbnewAttribute
-                    | PcbnewFont { pcbnewFontSize :: V2Double
-                                 , pcbnewFontThickness :: Double
-                                 , pcbnewFontItalic :: Bool
-                                 }
-                    | PcbnewAngle Double
-                    | PcbnewXy V2Double
-                    | PcbnewPts [V2Double]
-                    | PcbnewModel { pcbnewModelPath   :: String
-                                  , pcbnewModelAt     :: PcbnewXyzT
-                                  , pcbnewModelScale  :: PcbnewXyzT
-                                  , pcbnewModelRotate :: PcbnewXyzT
+data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
+                     | PcbnewAt         PcbnewAtT
+                     | PcbnewFpTextType PcbnewFpTextTypeT
+                     | PcbnewSize       V2Double
+                     | PcbnewThickness  Double
+                     | PcbnewTedit      String
+                     | PcbnewItalic
+                     | PcbnewHide
+                     | PcbnewLocked
+                     | PcbnewStart      V2Double
+                     | PcbnewEnd        V2Double
+                     | PcbnewWidth      Double
+                     | PcbnewDescr      String
+                     | PcbnewTags       String
+                     | PcbnewAttr       String
+                     | PcbnewLayers     [PcbnewLayerT]
+                     | PcbnewDrill      PcbnewDrillT
+                     | PcbnewRectDelta  V2Double
+                     | PcbnewFpTextEffects PcbnewAttribute
+                     | PcbnewFont { pcbnewFontSize :: V2Double
+                                  , pcbnewFontThickness :: Double
+                                  , pcbnewFontItalic :: Bool
                                   }
-                    | PcbnewModelAt     PcbnewAttribute
-                    | PcbnewModelScale  PcbnewAttribute
-                    | PcbnewModelRotate PcbnewAttribute
-                    | PcbnewXyz         PcbnewXyzT
-                    | PcbnewCenter V2Double
-                    | PcbnewClearance   Double
-                    | PcbnewMaskMargin  Double
-                    | PcbnewPasteMargin Double
-                    | PcbnewPasteMarginRatio  Double
-                    | PcbnewOffset V2Double
-                    | PcbnewAutoplaceCost90 Int
-                    | PcbnewAutoplaceCost180 Int
-                    | PcbnewZoneConnect Int
-                    | PcbnewThermalWidth Double
-                    | PcbnewThermalGap Double
+                     | PcbnewAngle Double
+                     | PcbnewXy    V2Double
+                     | PcbnewPts   [V2Double]
+                     | PcbnewModel { pcbnewModelPath   :: String
+                                   , pcbnewModelAt     :: PcbnewXyzT
+                                   , pcbnewModelScale  :: PcbnewXyzT
+                                   , pcbnewModelRotate :: PcbnewXyzT
+                                   }
+                     | PcbnewModelAt           PcbnewAttribute
+                     | PcbnewModelScale        PcbnewAttribute
+                     | PcbnewModelRotate       PcbnewAttribute
+                     | PcbnewXyz               PcbnewXyzT
+                     | PcbnewCenter            V2Double
+                     | PcbnewClearance         Double
+                     | PcbnewMaskMargin        Double
+                     | PcbnewPasteMargin       Double
+                     | PcbnewPasteMarginRatio  Double
+                     | PcbnewOffset            V2Double
+                     | PcbnewAutoplaceCost90   Int
+                     | PcbnewAutoplaceCost180  Int
+                     | PcbnewZoneConnect       Int
+                     | PcbnewThermalWidth      Double
+                     | PcbnewThermalGap        Double
     deriving (Show, Eq)
 
 type PcbnewXyzT = (Double, Double, Double)
