@@ -507,7 +507,8 @@ defaultPcbnewModel = PcbnewModel { pcbnewModelPath   = ""
 data PcbnewLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS
                   | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
                   | FAdhes    | AllSilk   | FandBCu   | AllCu     | AllMask
-                  | EdgeCuts  | FCrtYd    | BCrtYd    | FFab      | BFab
+                  | AllPaste  | EdgeCuts  | FCrtYd    | BCrtYd    | FFab
+                  | BFab
                   | Inner1Cu  | Inner2Cu  | Inner3Cu  | Inner4Cu  | Inner5Cu
                   | Inner6Cu  | Inner7Cu  | Inner8Cu  | Inner9Cu  | Inner10Cu
                   | Inner11Cu | Inner12Cu | Inner13Cu | Inner14Cu | Inner15Cu
@@ -534,6 +535,7 @@ strToLayerMap =
     , ("*.Cu"      , AllCu  )
     , ("*.Mask"    , AllMask)
     , ("*.SilkS"   , AllSilk)
+    , ("*.Paste"   , AllPaste)
     , ("F.CrtYd"   , FCrtYd)
     , ("B.CrtYd"   , BCrtYd)
     , ("F.Fab"     , FFab)
