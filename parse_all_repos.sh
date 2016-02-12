@@ -2,15 +2,15 @@
 TEST_DIR=dist/build
 TEMP_DIR=$TEST_DIR/parse-tmp
 TEST_EXE=$TEST_DIR/parse
+ROOT=$(pwd)
 
-mkdir -p $TEMP_DIR $TEST_DIR
+mkdir -p $TEST_DIR
 
-echo "Cloning repos if needed."
-for repo in $(cat tests/kicad_mod_repo_list)
-do if [ ! -d "$TEMP_DIR/$repo" ]
-    then git clone --depth=1 "https://github.com/KiCad/$repo" "$TEMP_DIR/$repo" || exit 1 &
-   fi
-done;
+if [ ! -d "$TEMP_DIR" ]; then
+  git clone --depth=1 "https://github.com/kasbah/kicad_footprints" "$TEMP_DIR"
+fi
+cd "$TEMP_DIR" && ./update.sh
+cd "$ROOT"
 
 echo "Compiling."
 cabal exec -- ghc tests/Parse.hs -tmpdir "$TEMP_DIR" -o "$TEST_EXE"
