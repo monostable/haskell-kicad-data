@@ -20,6 +20,7 @@ parse input = case Parsec.parse parseList "SExpr" input of
 
 parseList :: Parser SExpr
 parseList = do
+    spaces
     char '('
     spaces
     first <- parseKeyword
