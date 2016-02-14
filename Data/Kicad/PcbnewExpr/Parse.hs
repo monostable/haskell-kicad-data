@@ -69,6 +69,8 @@ fromSExpr (List (AtomKey kw:sxs)) =
                 -> PcbnewExprAttribute <$> asDouble PcbnewMaskMargin  sxs
             KeyClearance
                 -> PcbnewExprAttribute <$> asDouble PcbnewClearance   sxs
+            KeySolderPasteRatio
+                -> PcbnewExprAttribute <$> asDouble PcbnewSolderPasteRatio sxs
             KeyFpLine
                 -> PcbnewExprItem <$> asFp defaultPcbnewFpLine        sxs
             KeyFpCircle

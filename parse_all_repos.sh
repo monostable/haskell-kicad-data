@@ -18,7 +18,7 @@ cabal exec -- ghc tests/Parse.hs -tmpdir "$TEMP_DIR" -o "$TEST_EXE"
 wait
 
 echo "Running parse on all files."
-find "$TEMP_DIR/" -name "*.kicad_mod" -print0 | xargs -0 "$TEST_EXE" > /dev/null
+find "$TEMP_DIR/" -name "*.kicad_mod" -print0 | xargs -0 -P 2 "$TEST_EXE" > /dev/null
 
 if [ $? -eq 0 ]
 then echo "- PARSE SUCEEDED -";

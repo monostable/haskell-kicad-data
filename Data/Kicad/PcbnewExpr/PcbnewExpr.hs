@@ -383,6 +383,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewXyz               PcbnewXyzT
                      | PcbnewCenter            V2Double
                      | PcbnewClearance         Double
+                     | PcbnewSolderPasteRatio  Double
                      | PcbnewMaskMargin        Double
                      | PcbnewPasteMargin       Double
                      | PcbnewPasteMarginRatio  Double
@@ -438,6 +439,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewModelScale  xyz)  = List [AtomKey KeyScale , toSExpr xyz]
     toSExpr (PcbnewModelRotate xyz)  = List [AtomKey KeyRotate, toSExpr xyz]
     toSExpr (PcbnewClearance   d) = toSxD KeyClearance              d
+    toSExpr (PcbnewSolderPasteRatio d) = toSxD KeySolderPasteRatio  d
     toSExpr (PcbnewMaskMargin  d) = toSxD KeySolderMaskMargin       d
     toSExpr (PcbnewPasteMargin d) = toSxD KeySolderPasteMargin      d
     toSExpr (PcbnewPasteMarginRatio  d) = toSxD KeySolderPasteMarginRatio d

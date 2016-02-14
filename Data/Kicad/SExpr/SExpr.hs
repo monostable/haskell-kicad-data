@@ -51,6 +51,7 @@ data Keyword = KeyZoneConnect
              | KeyDrill
              | KeyDescr
              | KeyClearance
+             | KeySolderPasteRatio
              | KeyCenter
              | KeyAutoplaceCost90
              | KeyAutoplaceCost180
