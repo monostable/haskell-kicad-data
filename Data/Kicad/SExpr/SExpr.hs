@@ -39,6 +39,7 @@ data Keyword = KeyZoneConnect
              | KeyModel
              | KeyLayers
              | KeyLayer
+             | KeyJustify
              | KeyFpText
              | KeyFpPoly
              | KeyFpLine

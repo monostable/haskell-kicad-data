@@ -7,6 +7,7 @@ import Data.Either
 import Data.Maybe
 import Control.Applicative
 import Lens.Family2 (over)
+import Data.List (intersperse)
 
 import Data.Kicad.SExpr hiding (parse)
 import qualified Data.Kicad.SExpr as SExpr (parse)
@@ -55,6 +56,7 @@ fromSExpr (List (AtomKey kw:sxs)) =
             KeyAngle     -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
             KeyThickness -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
             KeyWidth     -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
+            KeyJustify   -> PcbnewExprAttribute <$> asPcbnewJustifyT         sxs
             KeyThermalGap
                 -> PcbnewExprAttribute <$> asDouble PcbnewThermalGap sxs
             KeyThermalWidth
@@ -120,18 +122,26 @@ asPcbnewFpText (t:s:a:xs) = interpretType
             Right (PcbnewExprAttribute (PcbnewAt at)) ->
                 interpretRest xs fp_text {itemAt = at}
             _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
+        interpretEffects [] fp_text = fp_text
+        interpretEffects (e:efs) fp_text = case e of
+            (PcbnewJustify j) ->
+               interpretEffects efs (over fpTextJustify (j:) fp_text)
+            (PcbnewFont size thickness italic) ->
+               interpretEffects efs
+                   (fp_text
+                       { itemSize = size
+                       , fpTextThickness = thickness
+                       , fpTextItalic    = italic
+                       }
+                   )
+            _ -> fp_text
         interpretRest [] fp_text = Right fp_text
         interpretRest (sx:sxs) fp_text = case fromSExpr sx of
             Left err -> Left ('\t':err)
             Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
                 interpretRest sxs (fp_text {itemLayer = layer})
-            Right (PcbnewExprAttribute (PcbnewFpTextEffects
-                    (PcbnewFont size thickness italic))) ->
-                interpretRest sxs (fp_text {  itemSize        = size
-                                            , fpTextThickness = thickness
-                                            , fpTextItalic    = italic
-                                            }
-                                   )
+            Right (PcbnewExprAttribute (PcbnewFpTextEffects effects)) ->
+                interpretRest sxs (interpretEffects effects fp_text)
             Right (PcbnewExprAttribute PcbnewHide) ->
                 interpretRest sxs (fp_text {fpTextHide = True})
             _ -> expecting "layer or effects expression or 'hide'" sx
@@ -272,14 +282,19 @@ asPcbnewAt l@[List _] = asXyz PcbnewModelAt l
 asPcbnewAt x =
     expecting' "two or three floats or an 'xyz' expression" x
 
+
 asPcbnewEffects :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewEffects [e@(List _)] =
-    case fromSExpr e of
-        Left err -> Left ('\t':err)
-        Right (PcbnewExprAttribute font@(PcbnewFont {}))
-            -> Right $ PcbnewFpTextEffects font
-        _ -> expecting "font-expression" e
-asPcbnewEffects x = expecting' "one effects-expression (e.g. font)" x
+asPcbnewEffects xs = interpretRest xs []
+   where
+      interpretRest [] effects = Right (PcbnewFpTextEffects effects)
+      interpretRest (sx:sxs) effects = case fromSExpr sx of
+         Left err -> Left ('\t':err)
+         Right (PcbnewExprAttribute justify@(PcbnewJustify _))
+            -> interpretRest sxs (justify:effects)
+         Right (PcbnewExprAttribute font@(PcbnewFont _ _ _))
+            -> interpretRest sxs (font:effects)
+         _ -> expecting "font or justify expression" sx
+
 
 asPcbnewFont :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewFont xs = interpretRest xs defaultPcbnewFont
@@ -372,6 +387,20 @@ asPcbnewModel (AtomStr p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelP
                 interpretRest sxs model {pcbnewModelRotate = xyz}
             Right _ -> expecting "only at, scale and rotate" sx
 asPcbnewModel x = expecting' "model path, at, scale and rotate" x
+
+
+justifyOneOf :: String
+justifyOneOf = "one of '"
+   ++ concat (intersperse ", " (fmap justifyToString [minBound..]))
+   ++ "'"
+
+
+asPcbnewJustifyT :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewJustifyT [sx@(AtomStr s)] = case strToJustify s of
+   Just j -> Right (PcbnewJustify j)
+   Nothing -> expecting justifyOneOf sx
+asPcbnewJustifyT x = expecting' justifyOneOf x
+
 
 expecting :: String -> SExpr -> Either String a
 expecting x y =

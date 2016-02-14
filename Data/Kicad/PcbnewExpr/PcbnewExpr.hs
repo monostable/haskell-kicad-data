@@ -14,9 +14,11 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , PcbnewPadShapeT(..)
 , PcbnewPadTypeT(..)
 , PcbnewFpTextTypeT(..)
+, PcbnewJustifyT(..)
 , PcbnewXyzT
 , V2Double
 -- * Lenses and other getters/setters
+, fpTextJustify
 , moduleItems
 , moduleAttrs
 , itemLayers
@@ -36,6 +38,8 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , fpPadShapeToStr
 , strToFpTextType
 , fpTextTypeToStr
+, strToJustify
+, justifyToString
 -- * Default (empty) instances
 , defaultPcbnewModule
 , defaultPcbnewFpText
@@ -114,6 +118,7 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                                , itemSize        :: V2Double
                                , fpTextThickness :: Double
                                , fpTextItalic    :: Bool
+                               , fpTextJustify_  :: [PcbnewJustifyT]
                                }
                 | PcbnewFpLine { itemStart :: V2Double
                                , itemEnd   :: V2Double
@@ -179,14 +184,15 @@ itemHandle f item = setter `fmap` (f (headOr (0,0) (view itemPoints item)))
 
 
 instance SExpressable PcbnewItem where
-    toSExpr (PcbnewFpText t s a l h si th i) =
+    toSExpr (PcbnewFpText t s a l h si th i j) =
         List $ [ AtomKey KeyFpText
                , AtomStr $ fpTextTypeToStr t
                , AtomStr s
                , toSExpr (PcbnewAt a)
                , toSExpr (PcbnewLayer l)
                ] ++ [AtomStr "hide" | h] ++
-               [toSExpr $ PcbnewFpTextEffects $ PcbnewFont si th i]
+               [toSExpr $ PcbnewFpTextEffects ([PcbnewFont si th i]
+                   ++ (fmap PcbnewJustify j))]
     toSExpr (PcbnewFpLine s e l w) =
         List [ AtomKey KeyFpLine
              , toSExpr (PcbnewStart s)
@@ -236,7 +242,8 @@ padAttributes :: Functor f => LensLike' f PcbnewItem [PcbnewAttribute]
 padAttributes f i = (\as -> i {padAttributes_ = as}) `fmap` f (padAttributes_ i)
 
 instance AEq PcbnewItem where
-    (PcbnewFpText t1 s1 a1 l1 h1 si1 th1 i1) ~== (PcbnewFpText t2 s2 a2 l2 h2 si2 th2 i2) =
+    (PcbnewFpText t1 s1 a1 l1 h1 si1 th1 i1 j1)
+        ~== (PcbnewFpText t2 s2 a2 l2 h2 si2 th2 i2 j2) =
            t1   == t2
         && s1   == s2
         && a1  ~== a2
@@ -245,6 +252,7 @@ instance AEq PcbnewItem where
         && si1 ~== si2
         && th1 ~== th2
         && i1   == i2
+        && j1   == j2
     (PcbnewFpLine s1 e1 l1 w1) ~== (PcbnewFpLine s2 e2 l2 w2) =
            s1 ~== s2
         && e1 ~== e2
@@ -285,6 +293,7 @@ defaultPcbnewFpText = PcbnewFpText { fpTextType      = FpTextUser
                                    , itemSize        = (1.0, 1.0)
                                    , fpTextThickness = 1.0
                                    , fpTextItalic    = False
+                                   , fpTextJustify_  = []
                                    }
 
 defaultPcbnewFpLine :: PcbnewItem
@@ -355,7 +364,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewLayers     [PcbnewLayerT]
                      | PcbnewDrill      PcbnewDrillT
                      | PcbnewRectDelta  V2Double
-                     | PcbnewFpTextEffects PcbnewAttribute
+                     | PcbnewFpTextEffects [PcbnewAttribute]
                      | PcbnewFont { pcbnewFontSize :: V2Double
                                   , pcbnewFontThickness :: Double
                                   , pcbnewFontItalic :: Bool
@@ -383,7 +392,10 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewZoneConnect       Int
                      | PcbnewThermalWidth      Double
                      | PcbnewThermalGap        Double
+                     | PcbnewJustify           PcbnewJustifyT
     deriving (Show, Eq)
+
+
 
 type PcbnewXyzT = (Double, Double, Double)
 
@@ -420,7 +432,7 @@ instance SExpressable PcbnewAttribute where
              ++ [toSExpr (PcbnewOffset (fromJust off)) | isJust off]
     toSExpr (PcbnewXyz (x,y,z)) =
         List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
-    toSExpr (PcbnewFpTextEffects a)  = List [AtomKey KeyEffects, toSExpr a]
+    toSExpr (PcbnewFpTextEffects l)  = List $ [AtomKey KeyEffects] ++ fmap toSExpr l
     toSExpr (PcbnewFpTextType t)     = AtomStr $ fpTextTypeToStr t
     toSExpr (PcbnewModelAt     xyz)  = List [AtomKey KeyAt    , toSExpr xyz]
     toSExpr (PcbnewModelScale  xyz)  = List [AtomKey KeyScale , toSExpr xyz]
@@ -451,6 +463,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewAutoplaceCost90  i) = toSxD KeyAutoplaceCost90  (fromIntegral i)
     toSExpr (PcbnewAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)
     toSExpr (PcbnewZoneConnect      i) = toSxD KeyZoneConnect      (fromIntegral i)
+    toSExpr (PcbnewJustify          j) = toSxStr KeyJustify (justifyToString j)
 
 toSxD :: Keyword -> Double -> SExpr
 toSxD  kw d = List [AtomKey kw, AtomDbl d]
@@ -622,6 +635,26 @@ strToPadShape s = lookup s strToPadShapeMap
 fpPadShapeToStr :: PcbnewPadShapeT -> String
 fpPadShapeToStr t = fromMaybe "" $ lookup t $ map swap strToPadShapeMap
 
+data PcbnewJustifyT =
+    JustifyLeft | JustifyRight | JustifyTop | JustifyBottom | JustifyMirror
+        deriving (Show, Eq, Enum, Bounded)
+
+
+strToJustifyMap :: [(String, PcbnewJustifyT)]
+strToJustifyMap =
+    [ ("left"  , JustifyLeft)
+    , ("right" , JustifyRight)
+    , ("top"   , JustifyTop)
+    , ("bottom", JustifyBottom)
+    , ("mirror", JustifyMirror)
+    ]
+
+strToJustify :: String -> Maybe PcbnewJustifyT
+strToJustify s = lookup s strToJustifyMap
+
+justifyToString :: PcbnewJustifyT -> String
+justifyToString t = fromMaybe "" $ lookup t $ map swap strToJustifyMap
+
 data PcbnewAtT = PcbnewAtT { pcbnewAtPoint :: V2Double
                            , pcbnewAtOrientation :: Double
                            }
@@ -634,6 +667,12 @@ defaultPcbnewAtT :: PcbnewAtT
 defaultPcbnewAtT = PcbnewAtT { pcbnewAtPoint = (0,0)
                              , pcbnewAtOrientation = 0
                              }
+
+fpTextJustify :: Functor f => LensLike' f PcbnewItem [PcbnewJustifyT]
+fpTextJustify f (PcbnewFpText t s a l h si th i j) =
+    (\j' -> PcbnewFpText t s a l h si th i j') `fmap` f j
+fpTextJustify f x = (\_ -> x) `fmap` f []
+
 
 atP :: Functor f => LensLike' f PcbnewAtT V2Double
 atP f (PcbnewAtT p o) =  (\p' -> PcbnewAtT p' o) `fmap` f p

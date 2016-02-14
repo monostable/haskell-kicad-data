@@ -106,7 +106,8 @@ instance Arbitrary PcbnewItem where
                            si <- arbitrary
                            th <- arbitrary
                            i  <- arbitrary
-                           return $ PcbnewFpText t s a l h si th i
+                           j  <- arbitrary
+                           return $ PcbnewFpText t s a l h si th i j
                       , do s <- arbitrary
                            e <- arbitrary
                            l <- arbitrary
@@ -191,6 +192,11 @@ instance Arbitrary PcbnewAttribute where
                                    return $ PcbnewModel p a s r
                              ]
                     ]
+
+
+instance Arbitrary PcbnewJustifyT where
+    arbitrary = arbitraryBoundedEnum
+
 
 instance Arbitrary PcbnewLayerT where
     arbitrary = arbitraryBoundedEnum
