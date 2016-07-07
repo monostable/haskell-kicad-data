@@ -1,5 +1,8 @@
 #!/bin/bash
 # Run our parser on all the footprint files we found so far GitHub
+set -eu
+set -o verbose
+set -o pipefail
 TEST_DIR=dist/build
 TEMP_DIR=$TEST_DIR/parse-tmp
 TEST_EXE=$TEST_DIR/parse
@@ -15,10 +18,12 @@ else
 fi
 cd "$ROOT"
 
-wait
-
 echo "Compiling."
-cabal exec -- ghc tests/Parse.hs -tmpdir "$TEMP_DIR" -o "$TEST_EXE"
+if [[ -v TRAVIS ]]; then
+  ghc tests/Parse.hs -tmpdir "$TEMP_DIR" -o "$TEST_EXE"
+else
+  cabal exec -- ghc tests/Parse.hs -tmpdir "$TEMP_DIR" -o "$TEST_EXE"
+fi
 
 echo "Running parse on all files."
 find "$TEMP_DIR/" -name "*.kicad_mod" -print0 | xargs -0 -P 2 "$TEST_EXE" > /dev/null
