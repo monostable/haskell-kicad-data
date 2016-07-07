@@ -2,8 +2,6 @@ language: haskell
 ghc:
   - "7.6"
   - "7.8"
-  - "7.10"
-  - "8.0"
 script:
   - cabal test
   - ./parse_all_repos.sh
