@@ -1,4 +1,5 @@
 # Haskell KiCad Data
+[![Build Status](https://travis-ci.org/kasbah/haskell-kicad-data.svg?branch=master)](https://travis-ci.org/kasbah/haskell-kicad-data)
 
 Parse and write [KiCad](http://kicad-pcb.org) data (currently .kicad_mod files only).
 
