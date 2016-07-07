@@ -3,32 +3,32 @@
 set -eu
 set -o verbose
 set -o pipefail
-TEST_DIR=dist/build
-TEMP_DIR=$TEST_DIR/parse-tmp
-TEST_EXE=$TEST_DIR/parse
-ROOT=$(pwd)
+test_dir=dist/build
+temp_dir=$test_dir/parse-tmp
+test_executable=$test_dir/parse
+root_dir=$(pwd)
 
-mkdir -p $TEST_DIR
+mkdir -p $test_dir
 
-if [ ! -d "$TEMP_DIR" ]; then
-  git clone --depth=1 "https://github.com/kasbah/kicad_footprints" "$TEMP_DIR"
-  cd "$TEMP_DIR" && ./init.sh && ./update.sh
+if [ ! -d "$temp_dir" ]; then
+  git clone --depth=1 "https://github.com/kasbah/kicad_footprints" "$temp_dir"
+  cd "$temp_dir" && ./init.sh && ./update.sh
 else
-  cd "$TEMP_DIR" && ./update.sh
+  cd "$temp_dir" && ./update.sh
 fi
-cd "$ROOT"
+cd "$root_dir"
 
 echo "Compiling."
 if [[ -v TRAVIS ]]; then
-  ghc tests/Parse.hs -tmpdir "$TEMP_DIR" -o "$TEST_EXE"
+  ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 else
-  cabal exec -- ghc tests/Parse.hs -tmpdir "$TEMP_DIR" -o "$TEST_EXE"
+  cabal exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 fi
 
 echo "Running parse on all files."
-find "$TEMP_DIR/" -name "*.kicad_mod" -print0 | xargs -0 -P 2 "$TEST_EXE" > /dev/null
+find "$temp_dir/" -name "*.kicad_mod" -print0 | xargs -0 -P 2 "$test_executable" > /dev/null
 
 if [ $? -eq 0 ]
-then echo "- PARSE SUCEEDED -";
+then echo "- PARSE SUCCEEDED -";
 else echo "- PARSE FAILED -" && exit 2;
 fi
