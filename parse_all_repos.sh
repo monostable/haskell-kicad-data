@@ -1,7 +1,6 @@
 #!/bin/bash
 # Run our parser on all the footprint files we found so far GitHub
 set -eu
-set -o verbose
 set -o pipefail
 test_dir=dist/build
 temp_dir=$test_dir/parse-tmp
