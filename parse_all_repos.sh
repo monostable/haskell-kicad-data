@@ -15,6 +15,7 @@ if [ ! -d "$temp_dir" ]; then
 else
   cd "$temp_dir" && ./update
 fi
+
 cd "$root_dir"
 
 echo "Compiling."
@@ -24,10 +25,13 @@ else
   cabal exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 fi
 
-echo "Running parse on all files."
+mod_files=$(find "$temp_dir/" -name "*.kicad_mod")
+echo "Running parse on $(echo "${mod_files}" | wc -l) kicad_mod files"
 find "$temp_dir/" -name "*.kicad_mod" -print0 | xargs -0 -P 2 "$test_executable" > /dev/null
 
-if [ $? -eq 0 ]
-then echo "- PARSE SUCCEEDED -";
-else echo "- PARSE FAILED -" && exit 2;
+if [ $? -eq 0 ]; then
+  echo "- PARSE SUCCEEDED -"
+else
+  echo "- PARSE FAILED -"
+  exit 2
 fi
