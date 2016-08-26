@@ -11,9 +11,9 @@ mkdir -p $test_dir
 
 if [ ! -d "$temp_dir" ]; then
   git clone --depth=1 "https://github.com/kasbah/kicad_footprints" "$temp_dir"
-  cd "$temp_dir" && ./init.sh && ./update.sh
+  cd "$temp_dir" && ./init && ./update
 else
-  cd "$temp_dir" && ./update.sh
+  cd "$temp_dir" && ./update
 fi
 cd "$root_dir"
 
