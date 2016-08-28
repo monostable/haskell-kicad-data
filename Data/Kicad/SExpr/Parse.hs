@@ -43,6 +43,9 @@ parseList = do
         AtomKey KeyDescr  -> do s <- parseString
                                 spaces
                                 return [s]
+        AtomKey KeyTags   -> do s <- parseString
+                                spaces
+                                return [s]
         AtomKey KeyPad    -> do n <- parseString
                                 spaces1
                                 t <- parseString
