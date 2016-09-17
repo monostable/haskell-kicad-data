@@ -30,6 +30,7 @@ data Keyword = KeyZoneConnect
              | KeySolderMaskMargin
              | KeySize
              | KeyScale
+             | KeyRoundrectRratio
              | KeyRotate
              | KeyRectDelta
              | KeyPts

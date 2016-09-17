@@ -81,6 +81,8 @@ fromSExpr (List (AtomKey kw:sxs)) =
                 -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost90 sxs
             KeyZoneConnect
                 -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
+            KeyRoundrectRratio
+                -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
 fromSExpr sx@(AtomStr s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
     "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
@@ -260,6 +262,8 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
             Right (PcbnewExprAttribute a@(PcbnewThermalWidth _))
                 -> pushToAttrs sxs a pad
             Right (PcbnewExprAttribute a@(PcbnewThermalGap _))
+                -> pushToAttrs sxs a pad
+            Right (PcbnewExprAttribute a@(PcbnewRoundrectRratio _))
                 -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)

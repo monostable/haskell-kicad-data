@@ -387,6 +387,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewMaskMargin        Double
                      | PcbnewPasteMargin       Double
                      | PcbnewPasteMarginRatio  Double
+                     | PcbnewRoundrectRratio   Double
                      | PcbnewOffset            V2Double
                      | PcbnewAutoplaceCost90   Int
                      | PcbnewAutoplaceCost180  Int
@@ -442,12 +443,13 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewSolderPasteRatio d) = toSxD KeySolderPasteRatio  d
     toSExpr (PcbnewMaskMargin  d) = toSxD KeySolderMaskMargin       d
     toSExpr (PcbnewPasteMargin d) = toSxD KeySolderPasteMargin      d
-    toSExpr (PcbnewPasteMarginRatio  d) = toSxD KeySolderPasteMarginRatio d
-    toSExpr (PcbnewThickness   d) = toSxD KeyThickness              d
-    toSExpr (PcbnewWidth       d) = toSxD KeyWidth                  d
-    toSExpr (PcbnewAngle       d) = toSxD KeyAngle                  d
-    toSExpr (PcbnewThermalWidth d) = toSxD KeyThermalWidth          d
-    toSExpr (PcbnewThermalGap   d) = toSxD KeyThermalGap            d
+    toSExpr (PcbnewPasteMarginRatio d) = toSxD KeySolderPasteMarginRatio d
+    toSExpr (PcbnewRoundrectRratio  d) = toSxD KeyRoundrectRratio d
+    toSExpr (PcbnewThickness   d) = toSxD KeyThickness      d
+    toSExpr (PcbnewWidth       d) = toSxD KeyWidth          d
+    toSExpr (PcbnewAngle       d) = toSxD KeyAngle          d
+    toSExpr (PcbnewThermalWidth d) = toSxD KeyThermalWidth  d
+    toSExpr (PcbnewThermalGap   d) = toSxD KeyThermalGap    d
     toSExpr (PcbnewSize      xy)  = toSxDD KeySize      xy
     toSExpr (PcbnewStart     xy)  = toSxDD KeyStart     xy
     toSExpr (PcbnewCenter    xy)  = toSxDD KeyCenter    xy
@@ -622,13 +624,14 @@ strToPadType s = lookup s strToPadTypeMap
 fpPadTypeToStr :: PcbnewPadTypeT -> String
 fpPadTypeToStr t = fromMaybe "" $ lookup t $ map swap strToPadTypeMap
 
-data PcbnewPadShapeT = Circle | Oval | Rect | Trapezoid
+data PcbnewPadShapeT = Circle | Oval | Rect | Trapezoid | RoundRect
     deriving (Show, Eq, Enum, Bounded)
 
 strToPadShapeMap :: [(String, PcbnewPadShapeT)]
 strToPadShapeMap = [ ("circle"   , Circle)
                    , ("oval"     , Oval)
                    , ("rect"     , Rect)
+                   , ("roundrect", RoundRect)
                    , ("trapezoid", Trapezoid)
                    ]
 
