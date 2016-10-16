@@ -192,7 +192,7 @@ instance SExpressable PcbnewItem where
                , toSExpr (PcbnewLayer l)
                ] ++ [AtomStr "hide" | h] ++
                [toSExpr $ PcbnewFpTextEffects ([PcbnewFont si th i]
-                   ++ (fmap PcbnewJustify j))]
+                   ++ [PcbnewJustify j])]
     toSExpr (PcbnewFpLine s e l w) =
         List [ AtomKey KeyFpLine
              , toSExpr (PcbnewStart s)
@@ -394,7 +394,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewZoneConnect       Int
                      | PcbnewThermalWidth      Double
                      | PcbnewThermalGap        Double
-                     | PcbnewJustify           PcbnewJustifyT
+                     | PcbnewJustify           [PcbnewJustifyT]
     deriving (Show, Eq)
 
 
@@ -467,7 +467,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewAutoplaceCost90  i) = toSxD KeyAutoplaceCost90  (fromIntegral i)
     toSExpr (PcbnewAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)
     toSExpr (PcbnewZoneConnect      i) = toSxD KeyZoneConnect      (fromIntegral i)
-    toSExpr (PcbnewJustify          j) = toSxStr KeyJustify (justifyToString j)
+    toSExpr (PcbnewJustify         js) = List $ AtomKey KeyJustify:map (AtomStr . justifyToString) js
 
 toSxD :: Keyword -> Double -> SExpr
 toSxD  kw d = List [AtomKey kw, AtomDbl d]

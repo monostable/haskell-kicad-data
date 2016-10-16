@@ -12,6 +12,7 @@ import Data.List (intersperse)
 import Data.Kicad.SExpr hiding (parse)
 import qualified Data.Kicad.SExpr as SExpr (parse)
 import Data.Kicad.PcbnewExpr.PcbnewExpr
+import Data.Kicad.Util (headOr)
 
 {-| Parse a 'PcbnewExpr' from a 'String'. Returns an 'String' with an error or
    a 'PcbnewExpr'. -}
@@ -128,8 +129,8 @@ asPcbnewFpText (t:s:a:xs) = interpretType
             _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
         interpretEffects [] fp_text = fp_text
         interpretEffects (e:efs) fp_text = case e of
-            (PcbnewJustify j) ->
-               interpretEffects efs (over fpTextJustify (j:) fp_text)
+            (PcbnewJustify js) ->
+               interpretEffects efs (over fpTextJustify (++ js) fp_text)
             (PcbnewFont size thickness italic) ->
                interpretEffects efs
                    (fp_text
@@ -402,10 +403,16 @@ justifyOneOf = "one of '"
 
 
 asPcbnewJustifyT :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewJustifyT [sx@(AtomStr s)] = case strToJustify s of
-   Just j -> Right (PcbnewJustify j)
+asPcbnewJustifyT sx = case lefts js of
+   [] -> Right (PcbnewJustify (rights js))
+   es -> Left (headOr "" es)
+   where js = fmap oneJustifyT sx
+
+oneJustifyT :: SExpr -> Either String PcbnewJustifyT
+oneJustifyT sx@(AtomStr s) = case strToJustify s of
+   Just j -> Right j
    Nothing -> expecting justifyOneOf sx
-asPcbnewJustifyT x = expecting' justifyOneOf x
+oneJustifyT x = expecting justifyOneOf x
 
 
 expecting :: String -> SExpr -> Either String a
