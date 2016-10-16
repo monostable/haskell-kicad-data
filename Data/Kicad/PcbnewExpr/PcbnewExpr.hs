@@ -190,9 +190,11 @@ instance SExpressable PcbnewItem where
                , AtomStr s
                , toSExpr (PcbnewAt a)
                , toSExpr (PcbnewLayer l)
-               ] ++ [AtomStr "hide" | h] ++
-               [toSExpr $ PcbnewFpTextEffects ([PcbnewFont si th i]
-                   ++ [PcbnewJustify j])]
+               ]
+               ++ [AtomStr "hide" | h]
+               ++ [toSExpr $ PcbnewFpTextEffects $
+                      [PcbnewFont si th i]
+                      ++ if j == [] then [] else [PcbnewJustify j]]
     toSExpr (PcbnewFpLine s e l w) =
         List [ AtomKey KeyFpLine
              , toSExpr (PcbnewStart s)

@@ -181,6 +181,7 @@ instance Arbitrary PcbnewAttribute where
                               , liftM PcbnewPasteMarginRatio  arbitrary
                               , liftM PcbnewAutoplaceCost90   arbitrary
                               , liftM PcbnewAutoplaceCost180  arbitrary
+                              , liftM PcbnewJustify arbitrary
                               , do s <- arbitrary
                                    t <- arbitrary
                                    i <- arbitrary
