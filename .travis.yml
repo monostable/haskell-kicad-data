@@ -6,5 +6,5 @@ before_install:
   - sudo apt-get update -q
   - sudo apt-get install kicad cabal-install -y
 script:
-  - sudo find / -name pcbnew.py
+  - cp /usr/lib/python2.7/dist-packages/pcbnew.py .
   - python test.py
