@@ -1,3 +1,4 @@
+language: python
 sudo: required
 dist: trusty
 before_install:
@@ -5,8 +6,7 @@ before_install:
   - sudo apt-get update -q
   - sudo apt-get install kicad cabal-install -y
 script:
-  - cabal update
-  - cabal install --only-dependencies --enable-tests
-  - cabal configure --enable-tests
-  - cabal test
-  - ./parse_all_repos.sh
+  - echo $PYTHON_PATH
+  - export PYTHON_PATH=$PYTHON_PATH:/usr/lib/python2.7/dist-packages
+  - ls /usr/lib/python2.7/pcbnew.py
+  - python test.py
