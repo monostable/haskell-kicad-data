@@ -1,4 +1,10 @@
 language: haskell
+sudo: required
+dist: trusty
+before_install:
+  - sudo add-apt-repository ppa:js-reynaud/ppa-kicad -y
+  - sudo apt-get update -q
+  - sudo apt-get install kicad cabal-install -y
 ghc:
   - "7.4"
   - "7.6"

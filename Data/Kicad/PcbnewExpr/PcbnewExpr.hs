@@ -204,10 +204,10 @@ instance SExpressable PcbnewItem where
              ]
     toSExpr (PcbnewFpCircle s e l w) =
         List [ AtomKey KeyFpCircle
-             , toSExpr (PcbnewStart s)
-             , toSExpr (PcbnewEnd   e)
-             , toSExpr (PcbnewLayer l)
-             , toSExpr (PcbnewWidth w)
+             , toSExpr (PcbnewCenter s)
+             , toSExpr (PcbnewEnd    e)
+             , toSExpr (PcbnewLayer  l)
+             , toSExpr (PcbnewWidth  w)
              ]
     toSExpr (PcbnewFpArc s e a l w) =
         List [ AtomKey KeyFpArc
@@ -358,6 +358,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewHide
                      | PcbnewLocked
                      | PcbnewStart      V2Double
+                     | PcbnewCenter     V2Double
                      | PcbnewEnd        V2Double
                      | PcbnewWidth      Double
                      | PcbnewDescr      String
@@ -383,7 +384,6 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewModelScale        PcbnewAttribute
                      | PcbnewModelRotate       PcbnewAttribute
                      | PcbnewXyz               PcbnewXyzT
-                     | PcbnewCenter            V2Double
                      | PcbnewClearance         Double
                      | PcbnewSolderPasteRatio  Double
                      | PcbnewMaskMargin        Double

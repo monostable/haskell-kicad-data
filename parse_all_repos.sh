@@ -5,6 +5,7 @@ set -o pipefail
 test_dir=dist/build
 temp_dir=$test_dir/parse-tmp
 kicad_mod_dir=$temp_dir/kicad-data
+kicad_mod_output_dir=$temp_dir/mod-output
 test_executable=$test_dir/parse
 root_dir=$(pwd)
 
@@ -26,13 +27,29 @@ else
   cabal exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 fi
 
-mod_files=$(find "$temp_dir/" -name "*.kicad_mod")
+mod_files=$(find "$kicad_mod_dir/" -name "*.kicad_mod")
 echo "Running parse on $(echo "${mod_files}" | wc -l) kicad_mod files"
-find "$temp_dir/" -name "*.kicad_mod" -print0 | xargs -0 -P 2 "$test_executable" > /dev/null
+IFS=$'\n'
+for f in $mod_files; do
+  out=$(echo "$f" | sed "s!$kicad_mod_dir!$kicad_mod_output_dir!")
+  mkdir -p "$out"
+  $test_executable "$f" > "$out/file.kicad_mod" &
+done
+
+wait
 
 if [ $? -eq 0 ]; then
   echo "- PARSE SUCCEEDED -"
 else
   echo "- PARSE FAILED -"
   exit 2
+fi
+
+python kicad_footprint_load.py "$kicad_mod_output_dir"
+
+if [ $? -eq 0 ]; then
+  echo "- LOAD SUCCEEDED -"
+else
+  echo "- LOAD FAILED -"
+  exit 3
 fi
