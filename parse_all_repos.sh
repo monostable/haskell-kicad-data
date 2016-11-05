@@ -2,7 +2,7 @@
 # Run our parser on all the footprint files we found so far GitHub
 set -eu
 set -o pipefail
-set -o verbose
+
 test_dir=dist/build
 temp_dir=$test_dir/parse-tmp
 kicad_mod_dir=$temp_dir/kicad-data
@@ -14,10 +14,7 @@ mkdir -p $test_dir
 mkdir -p $temp_dir
 
 if [ ! -d "$kicad_mod_dir" ]; then
-  git clone "https://github.com/kasbah/kicad_footprints" "$kicad_mod_dir"
-  cd "$kicad_mod_dir"
-  ./init
-  ./update
+  git clone --recursive "https://github.com/kasbah/kicad_footprints" "$kicad_mod_dir"
 else
   cd "$kicad_mod_dir"
   ./update
