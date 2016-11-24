@@ -14,8 +14,7 @@ mkdir -p $test_dir
 mkdir -p $temp_dir
 
 if [ ! -d "$kicad_mod_dir" ]; then
-  git clone "https://github.com/kasbah/kicad_footprints" "$kicad_mod_dir"
-  cd "$kicad_mod_dir" && ./init
+  git clone --recursive "https://github.com/kasbah/kicad_footprints" "$kicad_mod_dir"
 else
   cd "$kicad_mod_dir"
   ./update
