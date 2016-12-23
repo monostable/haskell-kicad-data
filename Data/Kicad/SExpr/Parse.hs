@@ -24,7 +24,6 @@ parseListOrComment :: Parser SExpr
 parseListOrComment = do
     spaces
     skipMany parseComment
-    spaces
     s <- parseList
     return s
 
@@ -34,6 +33,7 @@ parseComment = do
     char '#'
     s <- many (noneOf "\r\n")
     endOfLine
+    spaces
     return s
 
 
