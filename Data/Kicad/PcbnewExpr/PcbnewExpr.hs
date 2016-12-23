@@ -356,6 +356,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewTedit      String
                      | PcbnewItalic
                      | PcbnewHide
+                     | PcbnewPlaced
                      | PcbnewLocked
                      | PcbnewStart      V2Double
                      | PcbnewCenter     V2Double
@@ -465,6 +466,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewAttr  s)       = toSxStr KeyAttr  s
     toSExpr PcbnewItalic = AtomStr "italic"
     toSExpr PcbnewHide   = AtomStr "hide"
+    toSExpr PcbnewPlaced = AtomStr "placed"
     toSExpr PcbnewLocked = AtomStr "locked"
     toSExpr (PcbnewAutoplaceCost90  i) = toSxD KeyAutoplaceCost90  (fromIntegral i)
     toSExpr (PcbnewAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)

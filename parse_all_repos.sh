@@ -18,7 +18,6 @@ if [ ! -d "$kicad_mod_dir" ]; then
   cd "$kicad_mod_dir" && ./init
 else
   cd "$kicad_mod_dir"
-  ./update
 fi
 cd "$root_dir"
 

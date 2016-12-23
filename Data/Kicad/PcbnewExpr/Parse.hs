@@ -88,6 +88,7 @@ fromSExpr sx@(AtomStr s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
     "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
     "locked" -> Right $ PcbnewExprAttribute PcbnewLocked
+    "placed" -> Right $ PcbnewExprAttribute PcbnewPlaced
     _ -> expecting "'italic' or 'hide' or 'locked' " sx
 fromSExpr x = expecting "List with a key or a string atom" x
 
