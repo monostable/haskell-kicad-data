@@ -364,6 +364,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewWidth      Double
                      | PcbnewDescr      String
                      | PcbnewTags       String
+                     | PcbnewPath       String
                      | PcbnewAttr       String
                      | PcbnewLayers     [PcbnewLayerT]
                      | PcbnewDrill      PcbnewDrillT
@@ -463,6 +464,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewTedit s)       = toSxStr KeyTedit s
     toSExpr (PcbnewDescr s)       = toSxStr KeyDescr s
     toSExpr (PcbnewTags  s)       = toSxStr KeyTags  s
+    toSExpr (PcbnewPath  s)       = toSxStr KeyPath  s
     toSExpr (PcbnewAttr  s)       = toSxStr KeyAttr  s
     toSExpr PcbnewItalic = AtomStr "italic"
     toSExpr PcbnewHide   = AtomStr "hide"

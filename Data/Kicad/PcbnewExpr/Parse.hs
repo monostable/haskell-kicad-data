@@ -52,6 +52,7 @@ fromSExpr (List (AtomKey kw:sxs)) =
             KeyRotate    -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
             KeyDescr     -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
             KeyTags      -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
+            KeyPath      -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
             KeyAttr      -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
             KeyTedit     -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
             KeyAngle     -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs

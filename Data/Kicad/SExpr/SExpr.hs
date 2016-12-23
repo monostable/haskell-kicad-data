@@ -34,6 +34,7 @@ data Keyword = KeyZoneConnect
              | KeyRotate
              | KeyRectDelta
              | KeyPts
+             | KeyPath
              | KeyPad
              | KeyOffset
              | KeyModule
