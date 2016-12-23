@@ -7,6 +7,7 @@ where
 import Text.ParserCombinators.Parsec hiding (spaces, parse)
 import qualified Text.ParserCombinators.Parsec as Parsec (parse)
 import Text.ParserCombinators.Parsec.Number
+import Text.Parsec.Char (endOfLine)
 import Control.Monad
 
 import Data.Kicad.SExpr.SExpr
@@ -14,13 +15,30 @@ import Data.Kicad.SExpr.Write (writeKeyword)
 
 {-| Parse a 'String' as a 'SExpr' or return an error. -}
 parse :: String -> Either String SExpr
-parse input = case Parsec.parse parseList "SExpr" input of
+parse input = case Parsec.parse parseListOrComment "SExpr" input of
     Left err -> Left $ "Parse Error: " ++ show err
     Right val -> Right val
 
+
+parseListOrComment :: Parser SExpr
+parseListOrComment = do
+    spaces
+    skipMany parseComment
+    spaces
+    s <- parseList
+    return s
+
+
+parseComment :: Parser String
+parseComment = do
+    char '#'
+    s <- many (noneOf "\r\n")
+    endOfLine
+    return s
+
+
 parseList :: Parser SExpr
 parseList = do
-    spaces
     char '('
     spaces
     first <- parseKeyword
@@ -86,12 +104,12 @@ parseString = liftM AtomStr (parseQuotedString <|> parseUnquotedString <?> "stri
 parseDouble :: Parser SExpr
 parseDouble = do
     negate_or_id <- sign
-    -- the Bool in floating3 is requireDigit which affects whether many (False)
-    -- or many1 (True) is used
+    -- the Bool in floating3 is requireDigit which affects whether many (False,
+    -- 0 or more) or many1 (True, 1 or more) is used
     x <- floating3 True
     lookAhead (char ')' <|> spaceChar)
     return $ AtomDbl $ negate_or_id x
 
 spaces1 = skipMany1 spaceChar
 spaces = skipMany spaceChar
-spaceChar = newline <|> space
+spaceChar = endOfLine <|> space
