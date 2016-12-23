@@ -82,7 +82,7 @@ parseList = do
 parseAtom :: Parser SExpr
 parseAtom =  try parseDouble
          <|> try parseString
-         <|> try parseList
+         <|> try parseListOrComment
          <?> "a double, string or s-expression"
 
 parseOneKeyword :: Keyword -> Parser SExpr
