@@ -15,51 +15,52 @@ data SExpr = AtomKey Keyword
  - kicad_mod files as the parser and writer use the derived 'Show' instance.
  - The parser will also try them in the order they appear below so KeyAttr has
  - to appear before KeyAt for instance. -}
-data Keyword = KeyZoneConnect
-             | KeyXyz
-             | KeyXy
-             | KeyWidth
-             | KeyThickness
-             | KeyThermalWidth
-             | KeyThermalGap
-             | KeyTedit
-             | KeyTags
-             | KeyStart
-             | KeySolderPasteMarginRatio
-             | KeySolderPasteMargin
-             | KeySolderMaskMargin
-             | KeySize
-             | KeyScale
-             | KeyRoundrectRratio
-             | KeyRotate
-             | KeyRectDelta
-             | KeyPts
-             | KeyPath
-             | KeyPad
-             | KeyOffset
-             | KeyModule
-             | KeyModel
-             | KeyLayers
-             | KeyLayer
-             | KeyJustify
-             | KeyFpText
-             | KeyFpPoly
-             | KeyFpLine
-             | KeyFpCircle
-             | KeyFpArc
-             | KeyFont
-             | KeyEnd
-             | KeyEffects
-             | KeyDrill
-             | KeyDescr
-             | KeyClearance
-             | KeySolderPasteRatio
-             | KeyCenter
-             | KeyAutoplaceCost90
-             | KeyAutoplaceCost180
+data Keyword =
+               KeyAngle
              | KeyAttr
              | KeyAt
-             | KeyAngle
+             | KeyAutoplaceCost180
+             | KeyAutoplaceCost90
+             | KeyCenter
+             | KeyClearance
+             | KeyDescr
+             | KeyDrill
+             | KeyEffects
+             | KeyEnd
+             | KeyFont
+             | KeyFpArc
+             | KeyFpCircle
+             | KeyFpLine
+             | KeyFpPoly
+             | KeyFpText
+             | KeyJustify
+             | KeyLayers
+             | KeyLayer
+             | KeyModel
+             | KeyModule
+             | KeyOffset
+             | KeyPad
+             | KeyPath
+             | KeyPts
+             | KeyRectDelta
+             | KeyRotate
+             | KeyRoundrectRratio
+             | KeyScale
+             | KeySize
+             | KeySolderMaskMargin
+             | KeySolderPasteMarginRatio
+             | KeySolderPasteMargin
+             | KeySolderPasteRatio
+             | KeyStart
+             | KeyTags
+             | KeyTedit
+             | KeyThermalGap
+             | KeyThermalWidth
+             | KeyThickness
+             | KeyWidth
+             | KeyXyz
+             | KeyXy
+             | KeyZoneConnect
     deriving (Show, Eq, Enum, Bounded)
 
 class SExpressable a where
