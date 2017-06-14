@@ -112,4 +112,4 @@ parseDouble = do
 
 spaces1 = skipMany1 spaceChar
 spaces = skipMany spaceChar
-spaceChar = endOfLine <|> space
+spaceChar = endOfLine <|> char '\r' <|> space
