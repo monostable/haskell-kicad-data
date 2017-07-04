@@ -28,7 +28,8 @@ library
     , Data.Kicad.SExpr.SExpr
     , Data.Kicad.SExpr.Parse
     , Data.Kicad.SExpr.Write
-  -- other-modules:
+  other-modules:
+      Data.Kicad.Util
   -- other-extensions:
   build-depends:
       base >=4.4 && <4.9
