@@ -2,9 +2,6 @@ import pcbnew
 import sys
 import os
 
-reload(sys)
-sys.setdefaultencoding('utf8')
-
 pretties = []
 for dirname, dirnames, filenames in os.walk(sys.argv[1]):
     # don't go into any .git directories.
@@ -20,8 +17,4 @@ src_plugin = pcbnew.IO_MGR.PluginFind(1)
 
 for libpath in pretties:
     #Ignore paths with unicode as KiCad can't deal with them in enumerate
-    try:
-        libpath.decode('ascii')
-    except:
-        continue
-    list_of_footprints = src_plugin.FootprintEnumerate(libpath)
+    list_of_footprints = src_plugin.FootprintEnumerate(libpath, False)
