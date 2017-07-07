@@ -12,6 +12,9 @@ category:      Data
 build-type:    Simple
 extra-source-files: README.md
 cabal-version: >=1.10
+description:
+            Parse and write <http://kicad-pcb.org/ KiCAD> data
+            (currently @.kicad_mod@ files only).
 
 source-repository head
   type: git
