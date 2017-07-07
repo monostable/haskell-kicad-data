@@ -48,6 +48,10 @@ test-suite kicad-data-quickcheck
   hs-source-dirs: tests
   default-language: Haskell2010
   main-is: Test.hs
+  other-modules:
+      PcbnewExpr
+      SExpr
+      Utils
 
   build-depends:
       base >=4.4 && <4.10
