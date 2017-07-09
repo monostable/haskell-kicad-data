@@ -10,8 +10,11 @@ bug-reports:   http://github.com/kasbah/haskell-kicad-data/issues
 copyright:     2014
 category:      Data
 build-type:    Simple
--- extra-source-files:
+extra-source-files: README.md
 cabal-version: >=1.10
+description:
+            Parse and write <http://kicad-pcb.org/ KiCAD> data
+            (currently @.kicad_mod@ files only).
 
 source-repository head
   type: git
@@ -32,11 +35,11 @@ library
       Data.Kicad.Util
   -- other-extensions:
   build-depends:
-      base >=4.4 && <4.9
+      base >=4.4 && <4.10
     , parsec >=3.1.6 && <3.2
     , parsec-numbers >= 0.1.0  && <0.2.0
-    , lens-family >= 1.1 && <1.2
-    , ieee754 >= 0.7.4 && <0.8
+    , lens-family >= 1.1 && <1.3
+    , ieee754 >= 0.7.4 && <0.9
     , pretty-compact >= 1.0 && < 2
   -- hs-source-dirs:
   default-language:    Haskell2010
@@ -48,13 +51,17 @@ test-suite kicad-data-quickcheck
   hs-source-dirs: tests
   default-language: Haskell2010
   main-is: Test.hs
+  other-modules:
+      PcbnewExpr
+      SExpr
+      Utils
 
   build-depends:
-      base >=4.4 && <4.9
+      base >=4.4 && <4.10
     , parsec >=3.1 && <3.2
     , parsec-numbers >= 0.1.0  && <0.2.0
-    , lens-family >= 1.1 && <1.2
-    , ieee754 >= 0.7.4 && <0.8
+    , lens-family >= 1.1 && <1.3
+    , ieee754 >= 0.7.4 && <0.9
     , QuickCheck >= 2
     , test-framework >= 0.8 && < 1
     , test-framework-quickcheck2 >= 0.3 && < 1
