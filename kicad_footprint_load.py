@@ -16,5 +16,4 @@ for dirname, dirnames, filenames in os.walk(sys.argv[1]):
 src_plugin = pcbnew.IO_MGR.PluginFind(1)
 
 for libpath in pretties:
-    #Ignore paths with unicode as KiCad can't deal with them in enumerate
-    list_of_footprints = src_plugin.FootprintEnumerate(libpath, False)
+    list_of_footprints = src_plugin.FootprintEnumerate(libpath)
