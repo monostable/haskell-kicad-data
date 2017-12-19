@@ -89,7 +89,7 @@ data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
 instance SExpressable PcbnewModule where
     toSExpr (PcbnewModule name l attrs items) =
         List $ [ Atom "module"
-               , atomStr name
+               , Atom name
                , toSExpr (PcbnewLayer l)
                ] ++ map toSExpr attrs
                ++ map toSExpr items
@@ -413,7 +413,7 @@ instance SExpressable PcbnewAttribute where
         List $ [ Atom "at"
                , atomDbl x
                , atomDbl y
-               ] ++ [Atom o | o /= 0]
+               ] ++ [atomDbl o | o /= 0]
     toSExpr (PcbnewLayers ls) =
         List (Atom "layers" : map (Atom . layerToStr) ls)
     toSExpr (PcbnewFont s t i) =
@@ -423,7 +423,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewPts xys) =
         List $ Atom "pts" : map (toSExpr . PcbnewXy) xys
     toSExpr (PcbnewModel p a s r) =
-        List [Atom "model"
+        List [ Atom "model"
              , Atom p
              , toSExpr (PcbnewModelAt     (PcbnewXyz a))
              , toSExpr (PcbnewModelScale  (PcbnewXyz s))
@@ -479,13 +479,13 @@ instance SExpressable PcbnewAttribute where
 atomDbl = Atom . show
 
 toSxD :: String -> Double -> SExpr
-toSxD kw d = List [Atom kw, Atom d]
+toSxD kw d = List [Atom kw, atomDbl d]
 
 toSxDD :: String -> V2Double -> SExpr
 toSxDD kw (x,y) = List [Atom kw, atomDbl x, atomDbl y]
 
 toSxStr :: String -> String -> SExpr
-toSxStr kw s = List [Atom kw, atomStr s]
+toSxStr kw s = List [Atom kw, Atom s]
 
 instance AEq PcbnewAttribute where
     (PcbnewAt                x) ~== (PcbnewAt                y) = x ~== y

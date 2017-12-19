@@ -6,7 +6,6 @@ module Data.Kicad.SExpr.Parse
 where
 import Text.ParserCombinators.Parsec hiding (spaces, parse)
 import qualified Text.ParserCombinators.Parsec as Parsec (parse)
-import Text.ParserCombinators.Parsec.Number
 import Text.Parsec.Char (endOfLine)
 import Control.Monad
 
@@ -40,38 +39,38 @@ parseList :: Parser SExpr
 parseList = do
     char '('
     spaces
-    first <- parseKeyword
+    first <- parseString
     spaces
     rest <- let parseRest = try parseAtom `sepEndBy` spaces in case first of
-        AtomKey KeyFpText -> do t <- parseString
-                                  <?> "string designating type e.g. 'user'"
-                                spaces1
-                                s <- parseString
-                                spaces
-                                r <- parseRest
-                                return (t:s:r)
-        AtomKey KeyModule -> do t <- parseString
-                                spaces
-                                r <- parseRest
-                                return (t:r)
-        AtomKey KeyTedit  -> do s <- parseString
-                                spaces
-                                return [s]
-        AtomKey KeyDescr  -> do s <- parseString
-                                spaces
-                                return [s]
-        AtomKey KeyTags   -> do s <- parseString
-                                spaces
-                                return [s]
-        AtomKey KeyPad    -> do n <- parseString
-                                spaces1
-                                t <- parseString
-                                  <?> "string designating type e.g. 'smd'"
-                                spaces1
-                                s <- parseString
-                                spaces
-                                r <- parseRest
-                                return (n:t:s:r)
+        Atom "fp_text" -> do t <- parseString
+                               <?> "string designating type e.g. 'user'"
+                             spaces1
+                             s <- parseString
+                             spaces
+                             r <- parseRest
+                             return (t:s:r)
+        Atom "module" -> do t <- parseString
+                            spaces
+                            r <- parseRest
+                            return (t:r)
+        Atom "tedit"  -> do s <- parseString
+                            spaces
+                            return [s]
+        Atom "descr"  -> do s <- parseString
+                            spaces
+                            return [s]
+        Atom "tags"   -> do s <- parseString
+                            spaces
+                            return [s]
+        Atom "pad"    -> do n <- parseString
+                            spaces1
+                            t <- parseString
+                              <?> "string designating type e.g. 'smd'"
+                            spaces1
+                            s <- parseString
+                            spaces
+                            r <- parseRest
+                            return (n:t:s:r)
         _                 -> parseRest
     spaces
     char ')'
@@ -79,16 +78,9 @@ parseList = do
     return $ List (first:rest)
 
 parseAtom :: Parser SExpr
-parseAtom =  try parseDouble
-         <|> try parseString
+parseAtom =  try parseString
          <|> try parseListOrComment
          <?> "a double, string or s-expression"
-
-parseOneKeyword :: String -> Parser SExpr
-parseOneKeyword kw = try $ string kw >> return (Atom kw)
-
-parseKeyword :: Parser SExpr
-parseKeyword = choice (map parseOneKeyword [minBound..maxBound]) <?> "keyword"
 
 parseString :: Parser SExpr
 parseString = liftM Atom (parseQuotedString <|> parseUnquotedString <?> "string")
@@ -99,15 +91,6 @@ parseString = liftM Atom (parseQuotedString <|> parseUnquotedString <?> "string"
                 char '"'
                 return x
             parseUnquotedString = many1 (noneOf "\" ()\r\n")
-
-parseDouble :: Parser SExpr
-parseDouble = do
-    negate_or_id <- sign
-    -- the Bool in floating3 is requireDigit which affects whether many (False,
-    -- 0 or more) or many1 (True, 1 or more) is used
-    x <- floating3 True
-    lookAhead (char ')' <|> spaceChar)
-    return $ AtomDbl $ negate_or_id x
 
 spaces1 = skipMany1 spaceChar
 spaces = skipMany spaceChar

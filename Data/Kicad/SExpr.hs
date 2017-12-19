@@ -4,12 +4,10 @@ module Data.Kicad.SExpr
 (
 -- * Types
   SExpr(..)
-, Keyword(..)
 , SExpressable(..)
 -- * Writing
 , pretty
 , write
-, writeKeyword
 -- * Parsing
 , parse
 )

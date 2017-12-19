@@ -5,9 +5,9 @@ module Data.Kicad.PcbnewExpr.Parse
 where
 import Data.Either
 import Data.Maybe
-import Control.Applicative
 import Lens.Family2 (over)
 import Data.List (intersperse)
+import Text.Read (readMaybe)
 
 import Data.Kicad.SExpr hiding (parse)
 import qualified Data.Kicad.SExpr as SExpr (parse)
@@ -21,71 +21,72 @@ parse = either Left fromSExpr . SExpr.parse
 
 {-| Interpret a 'SExpr' as a 'PcbnewExpr'. -}
 fromSExpr :: SExpr -> Either String PcbnewExpr
-fromSExpr (List (AtomKey kw:sxs)) =
+fromSExpr (List (Atom kw:sxs)) =
     case go of
-        Left err   -> Left $ "Could not interpret '" ++ writeKeyword kw ++
+        Left err   -> Left $ "Could not interpret '" ++ kw ++
                         "' because:\n\t" ++ err
         Right expr -> Right expr
     where go = case kw of
-            KeyModule    -> PcbnewExprModule    <$> asPcbnewModule           sxs
-            KeyPad       -> PcbnewExprItem      <$> asPcbnewPad              sxs
-            KeyFpText    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
-            KeyFpArc     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
-            KeyFpPoly    -> PcbnewExprItem      <$> asPcbnewFpPoly           sxs
-            KeyLayer     -> PcbnewExprAttribute <$> asPcbnewLayer            sxs
-            KeyAt        -> PcbnewExprAttribute <$> asPcbnewAt               sxs
-            KeyEffects   -> PcbnewExprAttribute <$> asPcbnewEffects          sxs
-            KeyFont      -> PcbnewExprAttribute <$> asPcbnewFont             sxs
-            KeyLayers    -> PcbnewExprAttribute <$> asPcbnewLayers           sxs
-            KeyPts       -> PcbnewExprAttribute <$> asPcbnewPts              sxs
-            KeyXyz       -> PcbnewExprAttribute <$> asPcbnewXyz              sxs
-            KeyModel     -> PcbnewExprAttribute <$> asPcbnewModel            sxs
-            KeyDrill     -> PcbnewExprAttribute <$> asPcbnewDrill            sxs
-            KeySize      -> PcbnewExprAttribute <$> asXy PcbnewSize          sxs
-            KeyStart     -> PcbnewExprAttribute <$> asXy PcbnewStart         sxs
-            KeyEnd       -> PcbnewExprAttribute <$> asXy PcbnewEnd           sxs
-            KeyCenter    -> PcbnewExprAttribute <$> asXy PcbnewCenter        sxs
-            KeyRectDelta -> PcbnewExprAttribute <$> asXy PcbnewRectDelta     sxs
-            KeyXy        -> PcbnewExprAttribute <$> asXy PcbnewXy            sxs
-            KeyOffset    -> PcbnewExprAttribute <$> asXy PcbnewOffset        sxs
-            KeyScale     -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
-            KeyRotate    -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
-            KeyDescr     -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
-            KeyTags      -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
-            KeyPath      -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
-            KeyAttr      -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
-            KeyTedit     -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
-            KeyAngle     -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
-            KeyThickness -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
-            KeyWidth     -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
-            KeyJustify   -> PcbnewExprAttribute <$> asPcbnewJustifyT         sxs
-            KeyThermalGap
+            "module"     -> PcbnewExprModule    <$> asPcbnewModule           sxs
+            "pad"        -> PcbnewExprItem      <$> asPcbnewPad              sxs
+            "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
+            "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
+            "fp_poly"    -> PcbnewExprItem      <$> asPcbnewFpPoly           sxs
+            "layer"      -> PcbnewExprAttribute <$> asPcbnewLayer            sxs
+            "at"         -> PcbnewExprAttribute <$> asPcbnewAt               sxs
+            "effects"    -> PcbnewExprAttribute <$> asPcbnewEffects          sxs
+            "font"       -> PcbnewExprAttribute <$> asPcbnewFont             sxs
+            "layers"     -> PcbnewExprAttribute <$> asPcbnewLayers           sxs
+            "pts"        -> PcbnewExprAttribute <$> asPcbnewPts              sxs
+            "xyz"        -> PcbnewExprAttribute <$> asPcbnewXyz              sxs
+            "model"      -> PcbnewExprAttribute <$> asPcbnewModel            sxs
+            "drill"      -> PcbnewExprAttribute <$> asPcbnewDrill            sxs
+            "size"       -> PcbnewExprAttribute <$> asXy PcbnewSize          sxs
+            "start"      -> PcbnewExprAttribute <$> asXy PcbnewStart         sxs
+            "end"        -> PcbnewExprAttribute <$> asXy PcbnewEnd           sxs
+            "center"     -> PcbnewExprAttribute <$> asXy PcbnewCenter        sxs
+            "rect_delta" -> PcbnewExprAttribute <$> asXy PcbnewRectDelta     sxs
+            "xy"         -> PcbnewExprAttribute <$> asXy PcbnewXy            sxs
+            "offset"     -> PcbnewExprAttribute <$> asXy PcbnewOffset        sxs
+            "scale"      -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
+            "rotate"     -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
+            "descr"      -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
+            "tags"       -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
+            "path"       -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
+            "attr"       -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
+            "tedit"      -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
+            "angle"      -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
+            "thickness"  -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
+            "width"      -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
+            "justify"    -> PcbnewExprAttribute <$> asPcbnewJustifyT         sxs
+            "thermal_gap"
                 -> PcbnewExprAttribute <$> asDouble PcbnewThermalGap sxs
-            KeyThermalWidth
+            "thermal_width"
                 -> PcbnewExprAttribute <$> asDouble PcbnewThermalWidth sxs
-            KeySolderPasteMarginRatio
-                -> PcbnewExprAttribute <$> asDouble PcbnewPasteMarginRatio  sxs
-            KeySolderPasteMargin
+            "solder_paste_margin_ratio"
+                -> PcbnewExprAttribute <$> asDouble PcbnewPasteMarginRatio sxs
+            "solder_paste_margin"
                 -> PcbnewExprAttribute <$> asDouble PcbnewPasteMargin sxs
-            KeySolderMaskMargin
-                -> PcbnewExprAttribute <$> asDouble PcbnewMaskMargin  sxs
-            KeyClearance
-                -> PcbnewExprAttribute <$> asDouble PcbnewClearance   sxs
-            KeySolderPasteRatio
+            "solder_mask_margin"
+                -> PcbnewExprAttribute <$> asDouble PcbnewMaskMargin sxs
+            "clearance"
+                -> PcbnewExprAttribute <$> asDouble PcbnewClearance sxs
+            "solder_paste_ratio"
                 -> PcbnewExprAttribute <$> asDouble PcbnewSolderPasteRatio sxs
-            KeyFpLine
-                -> PcbnewExprItem <$> asFp defaultPcbnewFpLine        sxs
-            KeyFpCircle
-                -> PcbnewExprItem <$> asFp defaultPcbnewFpCircle      sxs
-            KeyAutoplaceCost180
+            "fp_line"
+                -> PcbnewExprItem <$> asFp defaultPcbnewFpLine sxs
+            "fp_circle"
+                -> PcbnewExprItem <$> asFp defaultPcbnewFpCircle sxs
+            "autoplace_cost180"
                 -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost180 sxs
-            KeyAutoplaceCost90
+            "autoplace_cost90"
                 -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost90 sxs
-            KeyZoneConnect
+            "zone_connect"
                 -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
-            KeyRoundrectRratio
+            "roundrect_rratio"
                 -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
-fromSExpr sx@(AtomStr s) = case s of
+            _   -> Left $ "Unknown expression type '" ++ kw ++ "'"
+fromSExpr sx@(Atom s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
     "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
     "locked" -> Right $ PcbnewExprAttribute PcbnewLocked
@@ -94,7 +95,7 @@ fromSExpr sx@(AtomStr s) = case s of
 fromSExpr x = expecting "List with a key or a string atom" x
 
 asPcbnewModule :: [SExpr] -> Either String PcbnewModule
-asPcbnewModule (AtomStr n:xs) =
+asPcbnewModule (Atom n:xs) =
     interpretRest xs defaultPcbnewModule { pcbnewModuleName = n }
     where
         interpretRest [] m = Right m
@@ -114,15 +115,15 @@ asPcbnewFpText :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpText (t:s:a:xs) = interpretType
     where
         interpretType = case t of
-            (AtomStr "reference") ->
+            (Atom "reference") ->
                 interpretString (defaultPcbnewFpText {fpTextType = FpTextReference})
-            (AtomStr "value")     ->
+            (Atom "value")     ->
                 interpretString (defaultPcbnewFpText {fpTextType = FpTextValue})
-            (AtomStr "user")     ->
+            (Atom "user")     ->
                 interpretString (defaultPcbnewFpText {fpTextType = FpTextUser})
             _           -> expecting "'reference', 'value' or 'user'" t
         interpretString fp_text = case s of
-            (AtomStr string) -> interpretAt fp_text {fpTextStr = string}
+            (Atom string) -> interpretAt fp_text {fpTextStr = string}
             _           -> expecting "string" s
         interpretAt fp_text = case fromSExpr a of
             Left err -> Left ('\t':err)
@@ -222,18 +223,18 @@ asPcbnewPad :: [SExpr] -> Either String PcbnewItem
 asPcbnewPad (n:t:s:xs) = interpretNumber
     where
         interpretNumber = case n of
-            (AtomStr num) -> interpretType defaultPcbnewPad {padNumber = num}
+            (Atom num) -> interpretType defaultPcbnewPad {padNumber = num}
             _ -> expecting "string designating pad number" n
         interpretType :: PcbnewItem -> Either String PcbnewItem
         interpretType pad = case t of
-            (AtomStr str) -> case strToPadType str of
+            (Atom str) -> case strToPadType str of
                     Just d  -> interpretShape pad {padType = d}
                     Nothing ->
                         expecting "pad type (e.g. 'smd')" t
             _ -> expecting "pad type string (e.g. 'smd')" t
         interpretShape :: PcbnewItem -> Either String PcbnewItem
         interpretShape pad = case s of
-            (AtomStr str) -> case strToPadShape str of
+            (Atom str) -> case strToPadShape str of
                     Just d  -> interpretRest xs pad {padShape = d}
                     Nothing ->
                         expecting "pad shape (e.g. 'circle')" s
@@ -277,19 +278,35 @@ asPcbnewLayer [sx] = onePcbnewLayer sx
 asPcbnewLayer x    = expecting' "only one layer name" x
 
 onePcbnewLayer :: SExpr -> Either String PcbnewAttribute
-onePcbnewLayer (AtomStr n) = case strToLayer n of
+onePcbnewLayer (Atom n) = case strToLayer n of
     Just l  -> Right $ PcbnewLayer l
     Nothing -> Left ("-> Unknown layer name: " ++ n)
 onePcbnewLayer x = expecting "layer name" x
 
 asPcbnewAt :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewAt (AtomDbl x:[AtomDbl y]) =
-    Right $ PcbnewAt $ defaultPcbnewAtT {pcbnewAtPoint = (x,y)}
-asPcbnewAt (AtomDbl x:AtomDbl y:[AtomDbl o]) =
-    Right $ PcbnewAt $ PcbnewAtT (x,y) o
+asPcbnewAt sx@(Atom x:[Atom y]) = case readXy x y of
+    Just xy -> Right $ PcbnewAt $ defaultPcbnewAtT {pcbnewAtPoint = xy}
+    Nothing -> expecting' "x y coordinates" sx
+asPcbnewAt sx@(Atom x:Atom y:[Atom o]) = case readXyz x y o of
+    Just (x', y', o') -> Right $ PcbnewAt $ PcbnewAtT (x',y') o'
+    Nothing -> expecting' "x y coordinates and orientation" sx
 asPcbnewAt l@[List _] = asXyz PcbnewModelAt l
 asPcbnewAt x =
-    expecting' "two or three floats or an 'xyz' expression" x
+    expecting' "x y coordinates and orientation" x
+
+readXy :: String -> String -> Maybe (Double, Double)
+readXy x y = do
+   x' <- readMaybe x
+   y' <- readMaybe y
+   return (x', y')
+
+
+readXyz :: String -> String -> String -> Maybe (Double, Double, Double)
+readXyz x y z = do
+   x' <- readMaybe x
+   y' <- readMaybe y
+   z' <- readMaybe z
+   return (x', y', z')
 
 
 asPcbnewEffects :: [SExpr] -> Either String PcbnewAttribute
@@ -320,7 +337,9 @@ asPcbnewFont xs = interpretRest xs defaultPcbnewFont
             Right _ -> expecting "size, thickness or 'italic'" sx
 
 asXy :: ((Double, Double) -> a) -> [SExpr] -> Either String a
-asXy constructor [AtomDbl x, AtomDbl y] = Right $ constructor (x,y)
+asXy constructor sx@[Atom x, Atom y] = case readXy x y of
+   Just xy -> Right $ constructor xy
+   Nothing -> expecting' "two floats (e.g. 1.0 1.0)" sx
 asXy _ x = expecting' "two floats (e.g. 1.0 1.0)" x
 
 asPcbnewPts :: [SExpr] -> Either String PcbnewAttribute
@@ -332,7 +351,7 @@ asPcbnewPts = fmap PcbnewPts . foldr interpretXys (Right [])
                         Right _ -> expecting "'xy' (e.g. '(xy 1.0 1.0)')" sx
 
 asString :: (String -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
-asString pcbnew [AtomStr s] =  Right $ pcbnew s
+asString pcbnew [Atom s] =  Right $ pcbnew s
 asString _ x = expecting' "string" x
 
 asPcbnewLayers :: [SExpr] -> Either String PcbnewAttribute
@@ -343,11 +362,15 @@ asPcbnewLayers xs = let layers = map onePcbnewLayer xs in case lefts layers of
                     ++ unlines (map ("\t\t"++) (lefts layers))
 
 asDouble :: (Double -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
-asDouble constructor [AtomDbl d] = Right $ constructor d
+asDouble constructor [sx@(Atom d)] = case readMaybe d of
+   Just d' -> Right $ constructor d'
+   Nothing -> expecting "one float (e.g. '1.0')" sx
 asDouble _ x = expecting' "one float (e.g. '1.0')" x
 
 asInt :: (Int -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
-asInt constructor [AtomDbl d] = Right $ constructor $ round d
+asInt constructor [sx@(Atom i)] = case readMaybe i of
+   Just i' -> Right $ constructor i'
+   Nothing -> expecting "one int (e.g. '1')" sx
 asInt _ x = expecting' "one int (e.g. '1')" x
 
 asPcbnewDrill :: [SExpr] -> Either String PcbnewAttribute
@@ -355,24 +378,27 @@ asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
     where
         interpretRest [] drill = Right $ PcbnewDrill drill
         interpretRest (sx:sxs) drill = case sx of
-            AtomDbl d  -> if isNothing (pcbnewDrillSize drill)
-                          then interpretRest sxs drill
-                                { pcbnewDrillSize = Just (d,d) }
-                          else interpretRest sxs drill
-                               { pcbnewDrillSize =
-                                    fmap (\(x,_) -> (x,d)) (pcbnewDrillSize drill)
-                               }
-            AtomStr "oval"  -> interpretRest sxs drill {pcbnewDrillOval = True}
+            Atom "oval"  -> interpretRest sxs drill {pcbnewDrillOval = True}
             (List _) -> case fromSExpr sx of
                 Left err -> Left ('\t':err)
                 Right (PcbnewExprAttribute (PcbnewOffset xy))
                     -> interpretRest sxs drill {pcbnewDrillOffset = Just xy}
                 Right _ -> expecting "offset or nothing" sx
+            Atom d  -> case readMaybe d of
+                Just d' -> if isNothing (pcbnewDrillSize drill)
+                           then interpretRest sxs drill
+                                { pcbnewDrillSize = Just (d',d') }
+                           else interpretRest sxs drill
+                                { pcbnewDrillSize =
+                                     fmap (\(x,_) -> (x,d')) (pcbnewDrillSize drill)
+                                }
+                Nothing -> expecting "float, 'oval' or offset" sx
             _ -> expecting "float, 'oval' or offset" sx
 
 asPcbnewXyz :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewXyz (AtomDbl x:AtomDbl y:[AtomDbl z]) =
-    Right $ PcbnewXyz (x,y,z)
+asPcbnewXyz sx@(Atom x:Atom y:[Atom z]) = case readXyz x y z of
+    Just xyz -> Right $ PcbnewXyz xyz
+    Nothing -> expecting' "three floats" sx
 asPcbnewXyz x = expecting' "three floats" x
 
 asXyz :: (PcbnewAttribute -> a) -> [SExpr] -> Either String a
@@ -383,7 +409,7 @@ asXyz constructor [l@(List _)] = case fromSExpr l of
 asXyz _ x = expecting' "xyz (e.g. '(xyz 1 1 1)')" x
 
 asPcbnewModel :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewModel (AtomStr p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPath = p}
+asPcbnewModel (Atom p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPath = p}
     where
         interpretRest [] model = Right model
         interpretRest (sx:sxs) model = case fromSExpr sx of
@@ -411,7 +437,7 @@ asPcbnewJustifyT sx = case lefts js of
    where js = fmap oneJustifyT sx
 
 oneJustifyT :: SExpr -> Either String PcbnewJustifyT
-oneJustifyT sx@(AtomStr s) = case strToJustify s of
+oneJustifyT sx@(Atom s) = case strToJustify s of
    Just j -> Right j
    Nothing -> expecting justifyOneOf sx
 oneJustifyT x = expecting justifyOneOf x
