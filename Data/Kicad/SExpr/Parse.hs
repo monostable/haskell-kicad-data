@@ -11,7 +11,6 @@ import Text.Parsec.Char (endOfLine)
 import Control.Monad
 
 import Data.Kicad.SExpr.SExpr
-import Data.Kicad.SExpr.Write (writeKeyword)
 
 {-| Parse a 'String' as a 'SExpr' or return an error. -}
 parse :: String -> Either String SExpr
@@ -85,14 +84,14 @@ parseAtom =  try parseDouble
          <|> try parseListOrComment
          <?> "a double, string or s-expression"
 
-parseOneKeyword :: Keyword -> Parser SExpr
-parseOneKeyword kw = try $ string (writeKeyword kw) >> return (AtomKey kw)
+parseOneKeyword :: String -> Parser SExpr
+parseOneKeyword kw = try $ string kw >> return (Atom kw)
 
 parseKeyword :: Parser SExpr
 parseKeyword = choice (map parseOneKeyword [minBound..maxBound]) <?> "keyword"
 
 parseString :: Parser SExpr
-parseString = liftM AtomStr (parseQuotedString <|> parseUnquotedString <?> "string")
+parseString = liftM Atom (parseQuotedString <|> parseUnquotedString <?> "string")
         where
             parseQuotedString  = do
                 char '"'
