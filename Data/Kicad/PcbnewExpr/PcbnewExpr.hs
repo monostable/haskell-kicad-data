@@ -453,7 +453,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewWidth       d)      = toSxD "width"                     d
     toSExpr (PcbnewAngle       d)      = toSxD "angle"                     d
     toSExpr (PcbnewThermalWidth d)     = toSxD "thermal_width"             d
-    toSExpr (PcbnewThermalGap   d)     = toSxD "key_thermal_gap"           d
+    toSExpr (PcbnewThermalGap   d)     = toSxD "thermal_gap"               d
     toSExpr (PcbnewSize      xy)       = toSxDD "size"       xy
     toSExpr (PcbnewStart     xy)       = toSxDD "start"      xy
     toSExpr (PcbnewCenter    xy)       = toSxDD "center"     xy
@@ -470,10 +470,14 @@ instance SExpressable PcbnewAttribute where
     toSExpr PcbnewHide                 = Atom "hide"
     toSExpr PcbnewPlaced               = Atom "placed"
     toSExpr PcbnewLocked               = Atom "locked"
-    toSExpr (PcbnewAutoplaceCost90  i) = toSxD "autoplace_cost90"  (fromIntegral i)
-    toSExpr (PcbnewAutoplaceCost180 i) = toSxD "autoplace_cost180" (fromIntegral i)
-    toSExpr (PcbnewZoneConnect      i) = toSxD "zone_connect"      (fromIntegral i)
-    toSExpr (PcbnewJustify         js) = List $ (Atom "justify"):map (Atom . justifyToString) js
+    toSExpr (PcbnewAutoplaceCost90  i) =
+        List [Atom "autoplace_cost90"  , Atom (show i)]
+    toSExpr (PcbnewAutoplaceCost180 i) =
+        List [Atom "autoplace_cost180" , Atom (show i)]
+    toSExpr (PcbnewZoneConnect      i) =
+        List [Atom "zone_connect"      , Atom (show i)]
+    toSExpr (PcbnewJustify         js) =
+        List $ (Atom "justify"):map (Atom . justifyToString) js
 
 
 atomDbl = Atom . show
