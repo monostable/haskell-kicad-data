@@ -39,46 +39,13 @@ parseList :: Parser SExpr
 parseList = do
     char '('
     spaces
-    first <- parseString
-    spaces
-    rest <- let parseRest = try parseAtom `sepEndBy` spaces in case first of
-        Atom "fp_text" -> do t <- parseString
-                               <?> "string designating type e.g. 'user'"
-                             spaces1
-                             s <- parseString
-                             spaces
-                             r <- parseRest
-                             return (t:s:r)
-        Atom "module" -> do t <- parseString
-                            spaces
-                            r <- parseRest
-                            return (t:r)
-        Atom "tedit"  -> do s <- parseString
-                            spaces
-                            return [s]
-        Atom "descr"  -> do s <- parseString
-                            spaces
-                            return [s]
-        Atom "tags"   -> do s <- parseString
-                            spaces
-                            return [s]
-        Atom "pad"    -> do n <- parseString
-                            spaces1
-                            t <- parseString
-                              <?> "string designating type e.g. 'smd'"
-                            spaces1
-                            s <- parseString
-                            spaces
-                            r <- parseRest
-                            return (n:t:s:r)
-        _                 -> parseRest
-    spaces
+    list <- try parseExpr `sepEndBy` spaces
     char ')'
     spaces
-    return $ List (first:rest)
+    return $ List list
 
-parseAtom :: Parser SExpr
-parseAtom =  try parseString
+parseExpr :: Parser SExpr
+parseExpr =  try parseString
          <|> try parseListOrComment
          <?> "a double, string or s-expression"
 
