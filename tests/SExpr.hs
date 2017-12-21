@@ -52,17 +52,19 @@ deterministic1 sx = tracedPropEq t1 t2
 allowQuoteMarks1 :: IO ()
 allowQuoteMarks1 =
     let sx = parse "(x\")" in
-    if sx /= Right (List (newPos "SExpr" 1 1) [Atom (newPos "SExpr" 1 2) "x\""])
+    if sx /= Right (List (newPos "" 1 1) [Atom (newPos "" 1 2) "x\""])
     then assertFailure ("could not parse quote mark, got: " ++ show sx)
     else return ()
 
+
 allowQuoteMarks2 :: IO ()
 allowQuoteMarks2 =
-    let sx = parse "(xxxx\"yyyy yyyy\"xxxx)"
-        expected = Right $ List (newPos "SExpr" 1 1)
-            [ Atom (newPos "SExpr" 1 2)"xxxx\"yyyy"
-            , Atom (newPos "SExpr" 1 12)"yyyy\"xxxx"
-            ]
+    let f = "foo"
+        sx = parseWithFilename f "(xxxx\"yyyy yyyy\"xxxx)"
+        expected = Right $ List (newPos f 1 1)
+            [ Atom (newPos f 1 2)"xxxx\"yyyy"
+            , Atom (newPos f 1 12)"yyyy\"xxxx"
+            ] :: Either String SExpr
     in if sx /= expected
-       then assertFailure ("could not parse quote mark, got: " ++ show sx)
+       then assertFailure ("could not parse quote mark, got: " ++ show sx ++ "\n\texpecting: " ++ (show expected))
        else return ()

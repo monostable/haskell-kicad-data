@@ -2,6 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Data.Kicad.SExpr.Parse
 ( parse
+, parseWithFilename
 )
 where
 import Text.ParserCombinators.Parsec hiding (spaces, parse)
@@ -14,9 +15,14 @@ import Data.Kicad.SExpr.SExpr
 
 {-| Parse a 'String' as a 'SExpr' or return an error. -}
 parse :: String -> Either String SExpr
-parse input = case Parsec.parse parseListOrComment "SExpr" input of
-    Left err -> Left $ "Parse Error: " ++ show err
-    Right val -> Right val
+parse = parseWithFilename ""
+
+{-| Parse a 'String' as a 'SExpr' giving a filename to use in the source code location -}
+parseWithFilename :: String -> String -> Either String SExpr
+parseWithFilename filename input =
+    case Parsec.parse parseListOrComment filename input of
+        Left err -> Left $ "Parse Error: " ++ show err
+        Right val -> Right val
 
 
 parseListOrComment :: Parser SExpr

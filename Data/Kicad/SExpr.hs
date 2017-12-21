@@ -10,6 +10,7 @@ module Data.Kicad.SExpr
 , write
 -- * Parsing
 , parse
+, parseWithFilename
 , getPos
 )
 where
