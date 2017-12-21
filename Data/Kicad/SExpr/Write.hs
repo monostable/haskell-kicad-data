@@ -11,16 +11,16 @@ import Data.Kicad.SExpr.SExpr
 
 {-| Pretty-print a 'SExpr' as a readable 'Doc'. -}
 pretty :: SExpr -> Doc
-pretty (List xs) = text "(" <> align (sep $ map pretty xs) <> text ")"
+pretty (List _ xs) = text "(" <> align (sep $ map pretty xs) <> text ")"
 pretty atm = text $ write atm
 
 
 {-| Serialize an SExpr as a compact s-expression 'String'. -}
 write :: SExpr -> String
-write (Atom atm) |  (atm == "")
-                     || head atm `elem` '.':'-':['0'..'9']
-                     || foldr
-                         (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0'..' '])
-                             False atm = show atm -- escaped string with quotes
-                 | otherwise       = atm
-write (List    sxs) = "(" ++ unwords (map write sxs) ++ ")"
+write (Atom _ str) |  (str == "")
+                       || head str `elem` '.':'-':['0'..'9']
+                       || foldr
+                           (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0'..' '])
+                               False str = show str -- escaped string with quotes
+                   | otherwise       = str
+write (List _ sxs) = "(" ++ unwords (map write sxs) ++ ")"

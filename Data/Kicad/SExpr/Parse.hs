@@ -7,6 +7,7 @@ where
 import Text.ParserCombinators.Parsec hiding (spaces, parse)
 import qualified Text.ParserCombinators.Parsec as Parsec (parse)
 import Text.Parsec.Char (endOfLine)
+import Text.Parsec (getPosition)
 import Control.Monad
 
 import Data.Kicad.SExpr.SExpr
@@ -37,12 +38,13 @@ parseComment = do
 
 parseList :: Parser SExpr
 parseList = do
+    pos <- getPosition
     char '('
     spaces
     list <- try parseExpr `sepEndBy` spaces
     char ')'
     spaces
-    return $ List list
+    return $ List pos list
 
 
 parseExpr :: Parser SExpr
@@ -52,14 +54,17 @@ parseExpr =  try parseString
 
 
 parseString :: Parser SExpr
-parseString = liftM Atom (parseQuotedString <|> parseUnquotedString <?> "string")
-        where
-            parseQuotedString  = do
-                char '"'
-                x <- many (noneOf "\\\"" <|> (char '\\' >> anyChar))
-                char '"'
-                return x
-            parseUnquotedString = many1 (noneOf " ()\r\n")
+parseString =
+    do pos <- getPosition
+       str <- parseQuotedString <|> parseUnquotedString <?> "string"
+       return $ Atom pos str
+            where
+                parseQuotedString  = do
+                    char '"'
+                    x <- many (noneOf "\\\"" <|> (char '\\' >> anyChar))
+                    char '"'
+                    return x
+                parseUnquotedString = many1 (noneOf " ()\r\n")
 
 
 spaces = skipMany spaceChar

@@ -10,6 +10,7 @@ module Data.Kicad.SExpr
 , write
 -- * Parsing
 , parse
+, getPos
 )
 where
 import Data.Kicad.SExpr.SExpr

@@ -59,6 +59,7 @@ import Data.AEq
 import Data.Tuple (swap)
 import Data.Maybe
 import Data.Foldable (foldMap)
+import Text.Parsec.Pos (newPos)
 
 import Data.Kicad.SExpr.SExpr
 import Data.Kicad.Util
@@ -86,10 +87,13 @@ data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
                                  }
     deriving (Show, Eq)
 
+
+pos = newPos "" 0 0
+
 instance SExpressable PcbnewModule where
     toSExpr (PcbnewModule name l attrs items) =
-        List $ [ Atom "module"
-               , Atom name
+        List pos $ [ Atom pos "module"
+               , Atom pos name
                , toSExpr (PcbnewLayer l)
                ] ++ map toSExpr attrs
                ++ map toSExpr items
@@ -185,32 +189,32 @@ itemHandle f item = setter `fmap` (f (headOr (0,0) (view itemPoints item)))
 
 instance SExpressable PcbnewItem where
     toSExpr (PcbnewFpText t s a l h si th i j) =
-        List $ [ Atom "fp_text"
-               , Atom $ fpTextTypeToStr t
-               , Atom s
+        List pos $ [ Atom pos "fp_text"
+               , Atom pos $ fpTextTypeToStr t
+               , Atom pos s
                , toSExpr (PcbnewAt a)
                , toSExpr (PcbnewLayer l)
                ]
-               ++ [Atom "hide" | h]
+               ++ [Atom pos "hide" | h]
                ++ [toSExpr $ PcbnewFpTextEffects $
                       [PcbnewFont si th i]
                       ++ if j == [] then [] else [PcbnewJustify j]]
     toSExpr (PcbnewFpLine s e l w) =
-        List [ Atom "fp_line"
+        List pos [ Atom pos "fp_line"
              , toSExpr (PcbnewStart s)
              , toSExpr (PcbnewEnd   e)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
              ]
     toSExpr (PcbnewFpCircle s e l w) =
-        List [ Atom "fp_circle"
+        List pos [ Atom pos "fp_circle"
              , toSExpr (PcbnewCenter s)
              , toSExpr (PcbnewEnd    e)
              , toSExpr (PcbnewLayer  l)
              , toSExpr (PcbnewWidth  w)
              ]
     toSExpr (PcbnewFpArc s e a l w) =
-        List [ Atom "fp_arc"
+        List pos [ Atom pos "fp_arc"
              , toSExpr (PcbnewStart s)
              , toSExpr (PcbnewEnd   e)
              , toSExpr (PcbnewAngle a)
@@ -218,16 +222,16 @@ instance SExpressable PcbnewItem where
              , toSExpr (PcbnewWidth w)
              ]
     toSExpr (PcbnewFpPoly ps l w) =
-        List [ Atom "fp_poly"
+        List pos [ Atom pos "fp_poly"
              , toSExpr (PcbnewPts ps)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
              ]
     toSExpr (PcbnewPad n t s a si l attrs) =
-        List $ [ Atom "pad"
-               , Atom n
-               , Atom $ fpPadTypeToStr t
-               , Atom $ fpPadShapeToStr s
+        List pos $ [ Atom pos "pad"
+               , Atom pos n
+               , Atom pos $ fpPadTypeToStr t
+               , Atom pos $ fpPadShapeToStr s
                , toSExpr $ PcbnewAt a
                , toSExpr $ PcbnewSize si
                , toSExpr $ PcbnewLayers l
@@ -406,43 +410,43 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
 type PcbnewXyzT = (Double, Double, Double)
 
 instance SExpressable PcbnewAttribute where
-    toSExpr (PcbnewLayer l) = List [ Atom "layer"
-                                   , Atom $ layerToStr l
+    toSExpr (PcbnewLayer l) = List pos [ Atom pos "layer"
+                                   , Atom pos $ layerToStr l
                                    ]
     toSExpr (PcbnewAt (PcbnewAtT (x,y) o)) =
-        List $ [ Atom "at"
+        List pos $ [ Atom pos "at"
                , atomDbl x
                , atomDbl y
                ] ++ [atomDbl o | o /= 0]
     toSExpr (PcbnewLayers ls) =
-        List (Atom "layers" : map (Atom . layerToStr) ls)
+        List pos (Atom pos "layers" : map (Atom pos . layerToStr) ls)
     toSExpr (PcbnewFont s t i) =
-        List $ [ Atom "font", toSExpr (PcbnewSize s)
+        List pos $ [ Atom pos "font", toSExpr (PcbnewSize s)
                , toSExpr (PcbnewThickness t)
-               ] ++ [Atom "italic" | i]
+               ] ++ [Atom pos "italic" | i]
     toSExpr (PcbnewPts xys) =
-        List $ Atom "pts" : map (toSExpr . PcbnewXy) xys
+        List pos $ Atom pos "pts" : map (toSExpr . PcbnewXy) xys
     toSExpr (PcbnewModel p a s r) =
-        List [ Atom "model"
-             , Atom p
+        List pos [ Atom pos "model"
+             , Atom pos p
              , toSExpr (PcbnewModelAt     (PcbnewXyz a))
              , toSExpr (PcbnewModelScale  (PcbnewXyz s))
              , toSExpr (PcbnewModelRotate (PcbnewXyz r))
              ]
     toSExpr (PcbnewDrill (PcbnewDrillT s o off)) =
-        List $ [Atom "drill"]
-             ++ [Atom "oval" | o]
+        List pos $ [Atom pos "drill"]
+             ++ [Atom pos "oval" | o]
              ++ (if o && isJust s
                 then [atomDbl (fst (fromJust s)), atomDbl (snd (fromJust s))]
                 else [atomDbl (fst (fromJust s)) | isJust s])
              ++ [toSExpr (PcbnewOffset (fromJust off)) | isJust off]
     toSExpr (PcbnewXyz (x,y,z)) =
-        List [Atom "xyz", atomDbl x, atomDbl y, atomDbl z]
-    toSExpr (PcbnewFpTextEffects l)  = List $ [Atom "effects"] ++ fmap toSExpr l
-    toSExpr (PcbnewFpTextType t)     = Atom $ fpTextTypeToStr t
-    toSExpr (PcbnewModelAt     xyz)  = List [Atom "at"    , toSExpr xyz]
-    toSExpr (PcbnewModelScale  xyz)  = List [Atom "scale" , toSExpr xyz]
-    toSExpr (PcbnewModelRotate xyz)  = List [Atom "rotate", toSExpr xyz]
+        List pos [Atom pos "xyz", atomDbl x, atomDbl y, atomDbl z]
+    toSExpr (PcbnewFpTextEffects l)  = List pos $ [Atom pos "effects"] ++ fmap toSExpr l
+    toSExpr (PcbnewFpTextType t)     = Atom pos $ fpTextTypeToStr t
+    toSExpr (PcbnewModelAt     xyz)  = List pos [Atom pos "at"    , toSExpr xyz]
+    toSExpr (PcbnewModelScale  xyz)  = List pos [Atom pos "scale" , toSExpr xyz]
+    toSExpr (PcbnewModelRotate xyz)  = List pos [Atom pos "rotate", toSExpr xyz]
     toSExpr (PcbnewClearance   d)      = toSxD "clearance"                 d
     toSExpr (PcbnewSolderPasteRatio d) = toSxD "solder_paste_ratio"        d
     toSExpr (PcbnewMaskMargin  d)      = toSxD "solder_mask_margin"        d
@@ -466,30 +470,30 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewTags  s)            = toSxStr "tags"  s
     toSExpr (PcbnewPath  s)            = toSxStr "path"  s
     toSExpr (PcbnewAttr  s)            = toSxStr "attr"  s
-    toSExpr PcbnewItalic               = Atom "italic"
-    toSExpr PcbnewHide                 = Atom "hide"
-    toSExpr PcbnewPlaced               = Atom "placed"
-    toSExpr PcbnewLocked               = Atom "locked"
+    toSExpr PcbnewItalic               = Atom pos "italic"
+    toSExpr PcbnewHide                 = Atom pos "hide"
+    toSExpr PcbnewPlaced               = Atom pos "placed"
+    toSExpr PcbnewLocked               = Atom pos "locked"
     toSExpr (PcbnewAutoplaceCost90  i) =
-        List [Atom "autoplace_cost90"  , Atom (show i)]
+        List pos [Atom pos "autoplace_cost90"  , Atom pos (show i)]
     toSExpr (PcbnewAutoplaceCost180 i) =
-        List [Atom "autoplace_cost180" , Atom (show i)]
+        List pos [Atom pos "autoplace_cost180" , Atom pos (show i)]
     toSExpr (PcbnewZoneConnect      i) =
-        List [Atom "zone_connect"      , Atom (show i)]
+        List pos [Atom pos "zone_connect"      , Atom pos (show i)]
     toSExpr (PcbnewJustify         js) =
-        List $ (Atom "justify"):map (Atom . justifyToString) js
+        List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
 
 
-atomDbl = Atom . show
+atomDbl = Atom pos . show
 
 toSxD :: String -> Double -> SExpr
-toSxD kw d = List [Atom kw, atomDbl d]
+toSxD kw d = List pos [Atom pos kw, atomDbl d]
 
 toSxDD :: String -> V2Double -> SExpr
-toSxDD kw (x,y) = List [Atom kw, atomDbl x, atomDbl y]
+toSxDD kw (x,y) = List pos [Atom pos kw, atomDbl x, atomDbl y]
 
 toSxStr :: String -> String -> SExpr
-toSxStr kw s = List [Atom kw, Atom s]
+toSxStr kw s = List pos [Atom pos kw, Atom pos s]
 
 instance AEq PcbnewAttribute where
     (PcbnewAt                x) ~== (PcbnewAt                y) = x ~== y
