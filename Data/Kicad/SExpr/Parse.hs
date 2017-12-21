@@ -44,10 +44,12 @@ parseList = do
     spaces
     return $ List list
 
+
 parseExpr :: Parser SExpr
 parseExpr =  try parseString
          <|> try parseListOrComment
          <?> "a double, string or s-expression"
+
 
 parseString :: Parser SExpr
 parseString = liftM Atom (parseQuotedString <|> parseUnquotedString <?> "string")
@@ -57,8 +59,8 @@ parseString = liftM Atom (parseQuotedString <|> parseUnquotedString <?> "string"
                 x <- many (noneOf "\\\"" <|> (char '\\' >> anyChar))
                 char '"'
                 return x
-            parseUnquotedString = many1 (noneOf "\" ()\r\n")
+            parseUnquotedString = many1 (noneOf " ()\r\n")
 
-spaces1 = skipMany1 spaceChar
+
 spaces = skipMany spaceChar
 spaceChar = oneOf "\r\n "

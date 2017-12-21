@@ -4,7 +4,9 @@ module SExpr
 )
 where
 import Test.Framework (Test)
-import Test.Framework.Providers.QuickCheck2
+import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.Framework.Providers.HUnit  (testCase)
+import Test.HUnit (assertFailure)
 import Test.QuickCheck
 import Control.Monad (liftM)
 import Data.Either (rights)
@@ -16,6 +18,8 @@ import Data.Kicad.SExpr
 tests :: [Test]
 tests = [ testProperty "deterministic 1" deterministic1
         , testProperty "deterministic 2" deterministic2
+        , testCase "allows quote marks in unquoted strings" allowQuoteMarks1
+        , testCase "allows quote marks in unquoted strings 2" allowQuoteMarks2
         ]
 
 
@@ -49,3 +53,18 @@ deterministic2 sx = tracedPropEq t1 t2
         where sx' = List [sx]
               t1 = Right sx'
               t2 = parse $ write $ head  $ rights [t1]
+
+
+allowQuoteMarks1 :: IO ()
+allowQuoteMarks1 =
+    let sx = parse "(x\")" in
+    if sx /= Right (List [Atom "x\""])
+    then assertFailure ("could not parse quote mark, got: " ++ show sx)
+    else return ()
+
+allowQuoteMarks2 :: IO ()
+allowQuoteMarks2 =
+    let sx = parse "(xxxx\"yyyy yyyy\"xxxx)" in
+    if sx /= Right (List [Atom "xxxx\"yyyy", Atom "yyyy\"xxxx"])
+    then assertFailure ("could not parse quote mark, got: " ++ show sx)
+    else return ()

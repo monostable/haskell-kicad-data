@@ -63,7 +63,10 @@ test-suite kicad-data-quickcheck
     , lens-family >= 1.1 && <1.3
     , ieee754 >= 0.7.4 && <0.9
     , QuickCheck >= 2
+    , HUnit >= 1.5 && < 1.7
     , test-framework >= 0.8 && < 1
+    , test-framework-quickcheck2 >= 0.3 && < 0.4
+    , test-framework-hunit >= 0.3 && < 0.4
     , test-framework-quickcheck2 >= 0.3 && < 1
     , pretty-compact >= 1.0 && < 2
     , kicad-data
