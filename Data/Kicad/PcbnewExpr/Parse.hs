@@ -1,5 +1,6 @@
 module Data.Kicad.PcbnewExpr.Parse
 ( parse
+, parseWithFilename
 , fromSExpr
 )
 where
@@ -10,15 +11,20 @@ import Data.List (intersperse)
 import Text.Read (readMaybe)
 import Text.Parsec.Pos (newPos)
 
-import Data.Kicad.SExpr hiding (parse)
-import qualified Data.Kicad.SExpr as SExpr (parse)
+import Data.Kicad.SExpr hiding (parse, parseWithFilename)
+import qualified Data.Kicad.SExpr as SExpr (parse, parseWithFilename)
 import Data.Kicad.PcbnewExpr.PcbnewExpr
 import Data.Kicad.Util (headOr)
 
-{-| Parse a 'PcbnewExpr' from a 'String'. Returns an 'String' with an error or
-   a 'PcbnewExpr'. -}
+{-| Parse a Pcbnew expression from a string. Returns an 'String' with an error
+ - or a 'PcbnewExpr'. -}
 parse :: String -> Either String PcbnewExpr
-parse = either Left fromSExpr . SExpr.parse
+parse = parseWithFilename ""
+
+{-| Parse a Pcbnew expression from a string giving a filename argument to be used in error strings. -}
+parseWithFilename :: String -> String -> Either String PcbnewExpr
+parseWithFilename filename =
+   either Left fromSExpr . SExpr.parseWithFilename filename
 
 {-| Interpret a 'SExpr' as a 'PcbnewExpr'. -}
 fromSExpr :: SExpr -> Either String PcbnewExpr
