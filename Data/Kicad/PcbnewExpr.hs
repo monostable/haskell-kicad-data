@@ -4,6 +4,7 @@ module Data.Kicad.PcbnewExpr
   PcbnewExpr(..)
 -- * Parse
 , parse
+, parseWithFilename
 , fromSExpr
 -- * Write
 , pretty

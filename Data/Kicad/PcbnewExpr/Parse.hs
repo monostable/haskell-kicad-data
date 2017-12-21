@@ -24,75 +24,70 @@ parse = parseWithFilename ""
 {-| Parse a Pcbnew expression from a string giving a filename argument to be used in error strings. -}
 parseWithFilename :: String -> String -> Either String PcbnewExpr
 parseWithFilename filename =
-   either Left fromSExpr . SExpr.parseWithFilename filename
+    either Left fromSExpr . SExpr.parseWithFilename filename
 
 {-| Interpret a 'SExpr' as a 'PcbnewExpr'. -}
 fromSExpr :: SExpr -> Either String PcbnewExpr
-fromSExpr (List _ (Atom pos kw:sxs)) =
-    case go of
-        Left err   -> Left $ "Could not interpret '" ++ kw ++
-                        "' because:\n\t" ++ err
-        Right expr -> Right expr
-    where go = case kw of
-            "module"     -> PcbnewExprModule    <$> asPcbnewModule           sxs
-            "pad"        -> PcbnewExprItem      <$> asPcbnewPad              sxs
-            "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
-            "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
-            "fp_poly"    -> PcbnewExprItem      <$> asPcbnewFpPoly           sxs
-            "layer"      -> PcbnewExprAttribute <$> asPcbnewLayer            sxs
-            "at"         -> PcbnewExprAttribute <$> asPcbnewAt               sxs
-            "effects"    -> PcbnewExprAttribute <$> asPcbnewEffects          sxs
-            "font"       -> PcbnewExprAttribute <$> asPcbnewFont             sxs
-            "layers"     -> PcbnewExprAttribute <$> asPcbnewLayers           sxs
-            "pts"        -> PcbnewExprAttribute <$> asPcbnewPts              sxs
-            "xyz"        -> PcbnewExprAttribute <$> asPcbnewXyz              sxs
-            "model"      -> PcbnewExprAttribute <$> asPcbnewModel            sxs
-            "drill"      -> PcbnewExprAttribute <$> asPcbnewDrill            sxs
-            "size"       -> PcbnewExprAttribute <$> asXy PcbnewSize          sxs
-            "start"      -> PcbnewExprAttribute <$> asXy PcbnewStart         sxs
-            "end"        -> PcbnewExprAttribute <$> asXy PcbnewEnd           sxs
-            "center"     -> PcbnewExprAttribute <$> asXy PcbnewCenter        sxs
-            "rect_delta" -> PcbnewExprAttribute <$> asXy PcbnewRectDelta     sxs
-            "xy"         -> PcbnewExprAttribute <$> asXy PcbnewXy            sxs
-            "offset"     -> PcbnewExprAttribute <$> asXy PcbnewOffset        sxs
-            "scale"      -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
-            "rotate"     -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
-            "descr"      -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
-            "tags"       -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
-            "path"       -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
-            "attr"       -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
-            "tedit"      -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
-            "angle"      -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
-            "thickness"  -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
-            "width"      -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
-            "justify"    -> PcbnewExprAttribute <$> asPcbnewJustifyT         sxs
-            "thermal_gap"
-                -> PcbnewExprAttribute <$> asDouble PcbnewThermalGap sxs
-            "thermal_width"
-                -> PcbnewExprAttribute <$> asDouble PcbnewThermalWidth sxs
-            "solder_paste_margin_ratio"
-                -> PcbnewExprAttribute <$> asDouble PcbnewPasteMarginRatio sxs
-            "solder_paste_margin"
-                -> PcbnewExprAttribute <$> asDouble PcbnewPasteMargin sxs
-            "solder_mask_margin"
-                -> PcbnewExprAttribute <$> asDouble PcbnewMaskMargin sxs
-            "clearance"
-                -> PcbnewExprAttribute <$> asDouble PcbnewClearance sxs
-            "solder_paste_ratio"
-                -> PcbnewExprAttribute <$> asDouble PcbnewSolderPasteRatio sxs
-            "fp_line"
-                -> PcbnewExprItem <$> asFp defaultPcbnewFpLine sxs
-            "fp_circle"
-                -> PcbnewExprItem <$> asFp defaultPcbnewFpCircle sxs
-            "autoplace_cost180"
-                -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost180 sxs
-            "autoplace_cost90"
-                -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost90 sxs
-            "zone_connect"
-                -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
-            "roundrect_rratio"
-                -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
-            _   -> Left $ "Unknown expression type '" ++ kw ++ "' in " ++ show pos
+fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
+    "module"     -> PcbnewExprModule    <$> asPcbnewModule           sxs
+    "pad"        -> PcbnewExprItem      <$> asPcbnewPad              sxs
+    "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
+    "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
+    "fp_poly"    -> PcbnewExprItem      <$> asPcbnewFpPoly           sxs
+    "layer"      -> PcbnewExprAttribute <$> asPcbnewLayer            sxs
+    "at"         -> PcbnewExprAttribute <$> asPcbnewAt               sxs
+    "effects"    -> PcbnewExprAttribute <$> asPcbnewEffects          sxs
+    "font"       -> PcbnewExprAttribute <$> asPcbnewFont             sxs
+    "layers"     -> PcbnewExprAttribute <$> asPcbnewLayers           sxs
+    "pts"        -> PcbnewExprAttribute <$> asPcbnewPts              sxs
+    "xyz"        -> PcbnewExprAttribute <$> asPcbnewXyz              sxs
+    "model"      -> PcbnewExprAttribute <$> asPcbnewModel            sxs
+    "drill"      -> PcbnewExprAttribute <$> asPcbnewDrill            sxs
+    "size"       -> PcbnewExprAttribute <$> asXy PcbnewSize          sxs
+    "start"      -> PcbnewExprAttribute <$> asXy PcbnewStart         sxs
+    "end"        -> PcbnewExprAttribute <$> asXy PcbnewEnd           sxs
+    "center"     -> PcbnewExprAttribute <$> asXy PcbnewCenter        sxs
+    "rect_delta" -> PcbnewExprAttribute <$> asXy PcbnewRectDelta     sxs
+    "xy"         -> PcbnewExprAttribute <$> asXy PcbnewXy            sxs
+    "offset"     -> PcbnewExprAttribute <$> asXy PcbnewOffset        sxs
+    "scale"      -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
+    "rotate"     -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
+    "descr"      -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
+    "tags"       -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
+    "path"       -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
+    "attr"       -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
+    "tedit"      -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
+    "angle"      -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
+    "thickness"  -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
+    "width"      -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
+    "justify"    -> PcbnewExprAttribute <$> asPcbnewJustifyT         sxs
+    "thermal_gap"
+        -> PcbnewExprAttribute <$> asDouble PcbnewThermalGap sxs
+    "thermal_width"
+        -> PcbnewExprAttribute <$> asDouble PcbnewThermalWidth sxs
+    "solder_paste_margin_ratio"
+        -> PcbnewExprAttribute <$> asDouble PcbnewPasteMarginRatio sxs
+    "solder_paste_margin"
+        -> PcbnewExprAttribute <$> asDouble PcbnewPasteMargin sxs
+    "solder_mask_margin"
+        -> PcbnewExprAttribute <$> asDouble PcbnewMaskMargin sxs
+    "clearance"
+        -> PcbnewExprAttribute <$> asDouble PcbnewClearance sxs
+    "solder_paste_ratio"
+        -> PcbnewExprAttribute <$> asDouble PcbnewSolderPasteRatio sxs
+    "fp_line"
+        -> PcbnewExprItem <$> asFp defaultPcbnewFpLine sxs
+    "fp_circle"
+        -> PcbnewExprItem <$> asFp defaultPcbnewFpCircle sxs
+    "autoplace_cost180"
+        -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost180 sxs
+    "autoplace_cost90"
+        -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost90 sxs
+    "zone_connect"
+        -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
+    "roundrect_rratio"
+        -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
+    _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
     "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
@@ -107,7 +102,7 @@ asPcbnewModule (Atom _ n:xs) =
     where
         interpretRest [] m = Right m
         interpretRest (sx:sxs) m = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
                 interpretRest sxs m {pcbnewModuleLayer = layer}
             Right (PcbnewExprItem item) ->
@@ -133,7 +128,7 @@ asPcbnewFpText (t:s:a:xs) = interpretType
             (Atom _ string) -> interpretAt fp_text {fpTextStr = string}
             _           -> expecting "string" s
         interpretAt fp_text = case fromSExpr a of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewAt at)) ->
                 interpretRest xs fp_text {itemAt = at}
             _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
@@ -152,7 +147,7 @@ asPcbnewFpText (t:s:a:xs) = interpretType
             _ -> fp_text
         interpretRest [] fp_text = Right fp_text
         interpretRest (sx:sxs) fp_text = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
                 interpretRest sxs (fp_text {itemLayer = layer})
             Right (PcbnewExprAttribute (PcbnewFpTextEffects effects)) ->
@@ -166,20 +161,20 @@ asFp :: PcbnewItem -> [SExpr] -> Either String PcbnewItem
 asFp defaultFp (s:e:xs) = interpretStart defaultFp
     where
         interpretStart fp_shape = case fromSExpr s of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewStart start)) ->
                 interpretEnd fp_shape {itemStart = start}
             Right (PcbnewExprAttribute (PcbnewCenter center)) ->
                 interpretEnd fp_shape {itemStart = center}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
         interpretEnd fp_shape = case fromSExpr e of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewEnd end)) ->
                 interpretRest xs fp_shape {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_shape = Right fp_shape
         interpretRest (sx:sxs) fp_shape = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_shape {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
@@ -191,18 +186,18 @@ asPcbnewFpArc :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpArc (s:e:xs) = interpretStart defaultPcbnewFpArc
     where
         interpretStart fp_arc = case fromSExpr s of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewStart start)) ->
                 interpretEnd fp_arc {itemStart = start}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
         interpretEnd fp_arc = case fromSExpr e of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewEnd end)) ->
                 interpretRest xs fp_arc {itemEnd = end}
             Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_arc = Right fp_arc
         interpretRest (sx:sxs) fp_arc = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_arc {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
@@ -217,7 +212,7 @@ asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
     where
         interpretRest [] fp_poly = Right fp_poly
         interpretRest (sx:sxs) fp_poly = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewPts   d))
                 -> interpretRest sxs fp_poly {fpPolyPts = d}
             Right (PcbnewExprAttribute (PcbnewWidth d))
@@ -249,7 +244,7 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
         interpretRest :: [SExpr] -> PcbnewItem -> Either String PcbnewItem
         interpretRest [] pad = Right pad
         interpretRest (sx:sxs) pad = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewAt d))
                 -> interpretRest sxs pad {itemAt = d}
             Right (PcbnewExprAttribute (PcbnewLayers d))
@@ -321,7 +316,7 @@ asPcbnewEffects xs = interpretRest xs []
    where
       interpretRest [] effects = Right (PcbnewFpTextEffects effects)
       interpretRest (sx:sxs) effects = case fromSExpr sx of
-         Left err -> Left ('\t':err)
+         Left err -> Left err
          Right (PcbnewExprAttribute justify@(PcbnewJustify _))
             -> interpretRest sxs (justify:effects)
          Right (PcbnewExprAttribute font@(PcbnewFont _ _ _))
@@ -334,7 +329,7 @@ asPcbnewFont xs = interpretRest xs defaultPcbnewFont
     where
         interpretRest [] font = Right font
         interpretRest (sx:sxs) font = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewSize size)) ->
                 interpretRest sxs font {pcbnewFontSize = size}
             Right (PcbnewExprAttribute (PcbnewThickness t)) ->
@@ -352,7 +347,7 @@ asXy _ x = expecting' "two floats (e.g. 1.0 1.0)" x
 asPcbnewPts :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewPts = fmap PcbnewPts . foldr interpretXys (Right [])
     where interpretXys sx z = case fromSExpr sx of
-                        Left err -> Left ('\t':err)
+                        Left err -> Left err
                         Right (PcbnewExprAttribute (PcbnewXy xy))
                             -> Right (xy:) <*> z
                         Right _ -> expecting "'xy' (e.g. '(xy 1.0 1.0)')" sx
@@ -387,7 +382,7 @@ asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
         interpretRest (sx:sxs) drill = case sx of
             Atom _ "oval"  -> interpretRest sxs drill {pcbnewDrillOval = True}
             (List _ _) -> case fromSExpr sx of
-                Left err -> Left ('\t':err)
+                Left err -> Left err
                 Right (PcbnewExprAttribute (PcbnewOffset xy))
                     -> interpretRest sxs drill {pcbnewDrillOffset = Just xy}
                 Right _ -> expecting "offset or nothing" sx
@@ -409,7 +404,7 @@ asPcbnewXyz x = expecting' "three floats" x
 
 asXyz :: (PcbnewAttribute -> a) -> [SExpr] -> Either String a
 asXyz constructor [l@(List _ _)] = case fromSExpr l of
-    Left err -> Left ('\t':err)
+    Left err -> Left err
     Right (PcbnewExprAttribute xyz) -> Right $ constructor xyz
     Right _ -> expecting "xyz (e.g. '(xyz 1 1 1)')" l
 asXyz _ x = expecting' "xyz (e.g. '(xyz 1 1 1)')" x
@@ -419,7 +414,7 @@ asPcbnewModel (Atom _ p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPa
     where
         interpretRest [] model = Right model
         interpretRest (sx:sxs) model = case fromSExpr sx of
-            Left err -> Left ('\t':err)
+            Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewModelAt (PcbnewXyz xyz))) ->
                 interpretRest sxs model {pcbnewModelAt = xyz}
             Right (PcbnewExprAttribute (PcbnewModelScale (PcbnewXyz xyz))) ->
@@ -451,8 +446,8 @@ oneJustifyT x = expecting justifyOneOf x
 
 expecting :: String -> SExpr -> Either String a
 expecting x y =
-    Left $ "Expecting " ++ x ++ " but got " ++
-        nothing_or (strip_brackets (write y)) ++ " instead in " ++ pos
+    Left $ "Error in " ++ pos ++ ": expecting " ++ x ++ " but got " ++
+        nothing_or (strip_brackets (write y)) ++ " instead"
     where
         nothing_or y' = case y' of
             "" -> "nothing"
