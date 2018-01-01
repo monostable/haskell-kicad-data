@@ -544,7 +544,8 @@ data PcbnewLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS
                   | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
                   | FAdhes    | AllSilk   | FandBCu   | AllCu     | AllMask
                   | AllPaste  | EdgeCuts  | FCrtYd    | BCrtYd    | FFab
-                  | BFab      | Margin    | Eco1User  | Eco2User  | BAdhes
+                  | BFab      | AllFab    | Margin    | Eco1User  | Eco2User
+                  | BAdhes
                   | Inner1Cu  | Inner2Cu  | Inner3Cu  | Inner4Cu  | Inner5Cu
                   | Inner6Cu  | Inner7Cu  | Inner8Cu  | Inner9Cu  | Inner10Cu
                   | Inner11Cu | Inner12Cu | Inner13Cu | Inner14Cu | Inner15Cu
@@ -577,6 +578,7 @@ strToLayerMap =
     , ("B.CrtYd"   , BCrtYd)
     , ("F.Fab"     , FFab)
     , ("B.Fab"     , BFab)
+    , ("*.Fab"     , AllFab)
     , ("Edge.Cuts" , EdgeCuts)
     , ("Margin"    , Margin)
     , ("Eco1.User" , Eco1User)
