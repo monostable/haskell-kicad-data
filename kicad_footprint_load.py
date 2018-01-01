@@ -16,4 +16,8 @@ for dirname, dirnames, filenames in os.walk(sys.argv[1]):
 src_plugin = pcbnew.IO_MGR.PluginFind(1)
 
 for libpath in pretties:
-    list_of_footprints = src_plugin.FootprintEnumerate(libpath)
+    try:
+        list_of_footprints = src_plugin.FootprintEnumerate(libpath)
+    except Exception as e:
+        print(libpath)
+        raise e
