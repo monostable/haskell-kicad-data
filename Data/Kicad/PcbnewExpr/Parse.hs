@@ -325,6 +325,8 @@ asPcbnewEffects xs = interpretRest xs []
             -> interpretRest sxs (justify:effects)
          Right (PcbnewExprAttribute font@(PcbnewFont _ _ _))
             -> interpretRest sxs (font:effects)
+         Right (PcbnewExprAttribute PcbnewHide)
+            -> interpretRest sxs (PcbnewHide:effects)
          _ -> expecting "font or justify expression" sx
 
 
