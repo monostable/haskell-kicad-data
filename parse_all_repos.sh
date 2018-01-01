@@ -39,18 +39,4 @@ done
 
 wait
 
-if [ $? -eq 0 ]; then
-  echo "- PARSE SUCCEEDED -"
-else
-  echo "- PARSE FAILED -"
-  exit 2
-fi
-
 python kicad_footprint_load.py "$kicad_mod_output_dir"
-
-if [ $? -eq 0 ]; then
-  echo "- LOAD SUCCEEDED -"
-else
-  echo "- LOAD FAILED -"
-  exit 3
-fi
