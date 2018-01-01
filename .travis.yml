@@ -11,4 +11,5 @@ script:
   - cabal configure --enable-tests
   - cabal build
   - cabal test
+  - bash keep_alive.sh &
   - PYTHONPATH=/usr/lib/python2.7/dist-packages ./parse_all_repos.sh
