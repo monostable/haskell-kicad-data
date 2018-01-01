@@ -14,7 +14,7 @@ parseAndDisplay :: [String] -> IO ()
 parseAndDisplay [] = return ()
 parseAndDisplay (f:fs) = do
             input <- readFile f
-            case PcbnewExpr.parse input of
-                Left err -> hPutStrLn stderr "FAILED:" >> hPutStrLn stderr f >> hPutStrLn stderr err >> exitFailure
+            case PcbnewExpr.parseWithFilename f input of
+                Left err -> hPutStrLn stderr err >> exitFailure
                 Right px -> print (PcbnewExpr.pretty px) >> parseAndDisplay fs
 

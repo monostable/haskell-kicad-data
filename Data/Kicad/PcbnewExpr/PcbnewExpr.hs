@@ -59,6 +59,7 @@ import Data.AEq
 import Data.Tuple (swap)
 import Data.Maybe
 import Data.Foldable (foldMap)
+import Text.Parsec.Pos (newPos)
 
 import Data.Kicad.SExpr.SExpr
 import Data.Kicad.Util
@@ -86,10 +87,13 @@ data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
                                  }
     deriving (Show, Eq)
 
+
+pos = newPos "" 0 0
+
 instance SExpressable PcbnewModule where
     toSExpr (PcbnewModule name l attrs items) =
-        List $ [ AtomKey KeyModule
-               , AtomStr name
+        List pos $ [ Atom pos "module"
+               , Atom pos name
                , toSExpr (PcbnewLayer l)
                ] ++ map toSExpr attrs
                ++ map toSExpr items
@@ -185,32 +189,32 @@ itemHandle f item = setter `fmap` (f (headOr (0,0) (view itemPoints item)))
 
 instance SExpressable PcbnewItem where
     toSExpr (PcbnewFpText t s a l h si th i j) =
-        List $ [ AtomKey KeyFpText
-               , AtomStr $ fpTextTypeToStr t
-               , AtomStr s
+        List pos $ [ Atom pos "fp_text"
+               , Atom pos $ fpTextTypeToStr t
+               , Atom pos s
                , toSExpr (PcbnewAt a)
                , toSExpr (PcbnewLayer l)
                ]
-               ++ [AtomStr "hide" | h]
+               ++ [Atom pos "hide" | h]
                ++ [toSExpr $ PcbnewFpTextEffects $
                       [PcbnewFont si th i]
                       ++ if j == [] then [] else [PcbnewJustify j]]
     toSExpr (PcbnewFpLine s e l w) =
-        List [ AtomKey KeyFpLine
+        List pos [ Atom pos "fp_line"
              , toSExpr (PcbnewStart s)
              , toSExpr (PcbnewEnd   e)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
              ]
     toSExpr (PcbnewFpCircle s e l w) =
-        List [ AtomKey KeyFpCircle
+        List pos [ Atom pos "fp_circle"
              , toSExpr (PcbnewCenter s)
              , toSExpr (PcbnewEnd    e)
              , toSExpr (PcbnewLayer  l)
              , toSExpr (PcbnewWidth  w)
              ]
     toSExpr (PcbnewFpArc s e a l w) =
-        List [ AtomKey KeyFpArc
+        List pos [ Atom pos "fp_arc"
              , toSExpr (PcbnewStart s)
              , toSExpr (PcbnewEnd   e)
              , toSExpr (PcbnewAngle a)
@@ -218,16 +222,16 @@ instance SExpressable PcbnewItem where
              , toSExpr (PcbnewWidth w)
              ]
     toSExpr (PcbnewFpPoly ps l w) =
-        List [ AtomKey KeyFpPoly
+        List pos [ Atom pos "fp_poly"
              , toSExpr (PcbnewPts ps)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
              ]
     toSExpr (PcbnewPad n t s a si l attrs) =
-        List $ [ AtomKey KeyPad
-               , AtomStr n
-               , AtomStr $ fpPadTypeToStr t
-               , AtomStr $ fpPadShapeToStr s
+        List pos $ [ Atom pos "pad"
+               , Atom pos n
+               , Atom pos $ fpPadTypeToStr t
+               , Atom pos $ fpPadShapeToStr s
                , toSExpr $ PcbnewAt a
                , toSExpr $ PcbnewSize si
                , toSExpr $ PcbnewLayers l
@@ -406,83 +410,90 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
 type PcbnewXyzT = (Double, Double, Double)
 
 instance SExpressable PcbnewAttribute where
-    toSExpr (PcbnewLayer l) = List [ AtomKey KeyLayer
-                                  , AtomStr $ layerToStr l
-                                  ]
+    toSExpr (PcbnewLayer l) = List pos [ Atom pos "layer"
+                                   , Atom pos $ layerToStr l
+                                   ]
     toSExpr (PcbnewAt (PcbnewAtT (x,y) o)) =
-        List $ [ AtomKey KeyAt
-               , AtomDbl x
-               , AtomDbl y
-               ] ++ [AtomDbl o | o /= 0]
+        List pos $ [ Atom pos "at"
+               , atomDbl x
+               , atomDbl y
+               ] ++ [atomDbl o | o /= 0]
     toSExpr (PcbnewLayers ls) =
-        List (AtomKey KeyLayers : map (AtomStr . layerToStr) ls)
+        List pos (Atom pos "layers" : map (Atom pos . layerToStr) ls)
     toSExpr (PcbnewFont s t i) =
-        List $ [ AtomKey KeyFont, toSExpr (PcbnewSize s)
+        List pos $ [ Atom pos "font", toSExpr (PcbnewSize s)
                , toSExpr (PcbnewThickness t)
-               ] ++ [AtomStr "italic" | i]
+               ] ++ [Atom pos "italic" | i]
     toSExpr (PcbnewPts xys) =
-        List $ AtomKey KeyPts : map (toSExpr . PcbnewXy) xys
+        List pos $ Atom pos "pts" : map (toSExpr . PcbnewXy) xys
     toSExpr (PcbnewModel p a s r) =
-        List [AtomKey KeyModel
-             , AtomStr p
+        List pos [ Atom pos "model"
+             , Atom pos p
              , toSExpr (PcbnewModelAt     (PcbnewXyz a))
              , toSExpr (PcbnewModelScale  (PcbnewXyz s))
              , toSExpr (PcbnewModelRotate (PcbnewXyz r))
              ]
     toSExpr (PcbnewDrill (PcbnewDrillT s o off)) =
-        List $ [AtomKey KeyDrill]
-             ++ [AtomStr "oval" | o]
+        List pos $ [Atom pos "drill"]
+             ++ [Atom pos "oval" | o]
              ++ (if o && isJust s
-                then [AtomDbl (fst (fromJust s)), AtomDbl (snd (fromJust s))]
-                else [AtomDbl (fst (fromJust s)) | isJust s])
+                then [atomDbl (fst (fromJust s)), atomDbl (snd (fromJust s))]
+                else [atomDbl (fst (fromJust s)) | isJust s])
              ++ [toSExpr (PcbnewOffset (fromJust off)) | isJust off]
     toSExpr (PcbnewXyz (x,y,z)) =
-        List [AtomKey KeyXyz, AtomDbl x, AtomDbl y, AtomDbl z]
-    toSExpr (PcbnewFpTextEffects l)  = List $ [AtomKey KeyEffects] ++ fmap toSExpr l
-    toSExpr (PcbnewFpTextType t)     = AtomStr $ fpTextTypeToStr t
-    toSExpr (PcbnewModelAt     xyz)  = List [AtomKey KeyAt    , toSExpr xyz]
-    toSExpr (PcbnewModelScale  xyz)  = List [AtomKey KeyScale , toSExpr xyz]
-    toSExpr (PcbnewModelRotate xyz)  = List [AtomKey KeyRotate, toSExpr xyz]
-    toSExpr (PcbnewClearance   d) = toSxD KeyClearance              d
-    toSExpr (PcbnewSolderPasteRatio d) = toSxD KeySolderPasteRatio  d
-    toSExpr (PcbnewMaskMargin  d) = toSxD KeySolderMaskMargin       d
-    toSExpr (PcbnewPasteMargin d) = toSxD KeySolderPasteMargin      d
-    toSExpr (PcbnewPasteMarginRatio d) = toSxD KeySolderPasteMarginRatio d
-    toSExpr (PcbnewRoundrectRratio  d) = toSxD KeyRoundrectRratio d
-    toSExpr (PcbnewThickness   d) = toSxD KeyThickness      d
-    toSExpr (PcbnewWidth       d) = toSxD KeyWidth          d
-    toSExpr (PcbnewAngle       d) = toSxD KeyAngle          d
-    toSExpr (PcbnewThermalWidth d) = toSxD KeyThermalWidth  d
-    toSExpr (PcbnewThermalGap   d) = toSxD KeyThermalGap    d
-    toSExpr (PcbnewSize      xy)  = toSxDD KeySize      xy
-    toSExpr (PcbnewStart     xy)  = toSxDD KeyStart     xy
-    toSExpr (PcbnewCenter    xy)  = toSxDD KeyCenter    xy
-    toSExpr (PcbnewRectDelta xy)  = toSxDD KeyRectDelta xy
-    toSExpr (PcbnewEnd       xy)  = toSxDD KeyEnd       xy
-    toSExpr (PcbnewXy        xy)  = toSxDD KeyXy        xy
-    toSExpr (PcbnewOffset    xy)  = toSxDD KeyOffset    xy
-    toSExpr (PcbnewTedit s)       = toSxStr KeyTedit s
-    toSExpr (PcbnewDescr s)       = toSxStr KeyDescr s
-    toSExpr (PcbnewTags  s)       = toSxStr KeyTags  s
-    toSExpr (PcbnewPath  s)       = toSxStr KeyPath  s
-    toSExpr (PcbnewAttr  s)       = toSxStr KeyAttr  s
-    toSExpr PcbnewItalic = AtomStr "italic"
-    toSExpr PcbnewHide   = AtomStr "hide"
-    toSExpr PcbnewPlaced = AtomStr "placed"
-    toSExpr PcbnewLocked = AtomStr "locked"
-    toSExpr (PcbnewAutoplaceCost90  i) = toSxD KeyAutoplaceCost90  (fromIntegral i)
-    toSExpr (PcbnewAutoplaceCost180 i) = toSxD KeyAutoplaceCost180 (fromIntegral i)
-    toSExpr (PcbnewZoneConnect      i) = toSxD KeyZoneConnect      (fromIntegral i)
-    toSExpr (PcbnewJustify         js) = List $ AtomKey KeyJustify:map (AtomStr . justifyToString) js
+        List pos [Atom pos "xyz", atomDbl x, atomDbl y, atomDbl z]
+    toSExpr (PcbnewFpTextEffects l)  = List pos $ [Atom pos "effects"] ++ fmap toSExpr l
+    toSExpr (PcbnewFpTextType t)     = Atom pos $ fpTextTypeToStr t
+    toSExpr (PcbnewModelAt     xyz)  = List pos [Atom pos "at"    , toSExpr xyz]
+    toSExpr (PcbnewModelScale  xyz)  = List pos [Atom pos "scale" , toSExpr xyz]
+    toSExpr (PcbnewModelRotate xyz)  = List pos [Atom pos "rotate", toSExpr xyz]
+    toSExpr (PcbnewClearance   d)      = toSxD "clearance"                 d
+    toSExpr (PcbnewSolderPasteRatio d) = toSxD "solder_paste_ratio"        d
+    toSExpr (PcbnewMaskMargin  d)      = toSxD "solder_mask_margin"        d
+    toSExpr (PcbnewPasteMargin d)      = toSxD "solder_paste_margin"       d
+    toSExpr (PcbnewPasteMarginRatio d) = toSxD "solder_paste_margin_ratio" d
+    toSExpr (PcbnewRoundrectRratio  d) = toSxD "roundrect_rratio"          d
+    toSExpr (PcbnewThickness   d)      = toSxD "thickness"                 d
+    toSExpr (PcbnewWidth       d)      = toSxD "width"                     d
+    toSExpr (PcbnewAngle       d)      = toSxD "angle"                     d
+    toSExpr (PcbnewThermalWidth d)     = toSxD "thermal_width"             d
+    toSExpr (PcbnewThermalGap   d)     = toSxD "thermal_gap"               d
+    toSExpr (PcbnewSize      xy)       = toSxDD "size"       xy
+    toSExpr (PcbnewStart     xy)       = toSxDD "start"      xy
+    toSExpr (PcbnewCenter    xy)       = toSxDD "center"     xy
+    toSExpr (PcbnewRectDelta xy)       = toSxDD "rect_delta" xy
+    toSExpr (PcbnewEnd       xy)       = toSxDD "end"        xy
+    toSExpr (PcbnewXy        xy)       = toSxDD "xy"         xy
+    toSExpr (PcbnewOffset    xy)       = toSxDD "offset"     xy
+    toSExpr (PcbnewTedit s)            = toSxStr "tedit" s
+    toSExpr (PcbnewDescr s)            = toSxStr "descr" s
+    toSExpr (PcbnewTags  s)            = toSxStr "tags"  s
+    toSExpr (PcbnewPath  s)            = toSxStr "path"  s
+    toSExpr (PcbnewAttr  s)            = toSxStr "attr"  s
+    toSExpr PcbnewItalic               = Atom pos "italic"
+    toSExpr PcbnewHide                 = Atom pos "hide"
+    toSExpr PcbnewPlaced               = Atom pos "placed"
+    toSExpr PcbnewLocked               = Atom pos "locked"
+    toSExpr (PcbnewAutoplaceCost90  i) =
+        List pos [Atom pos "autoplace_cost90"  , Atom pos (show i)]
+    toSExpr (PcbnewAutoplaceCost180 i) =
+        List pos [Atom pos "autoplace_cost180" , Atom pos (show i)]
+    toSExpr (PcbnewZoneConnect      i) =
+        List pos [Atom pos "zone_connect"      , Atom pos (show i)]
+    toSExpr (PcbnewJustify         js) =
+        List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
 
-toSxD :: Keyword -> Double -> SExpr
-toSxD  kw d = List [AtomKey kw, AtomDbl d]
 
-toSxDD :: Keyword -> V2Double -> SExpr
-toSxDD kw (x,y) = List [AtomKey kw, AtomDbl x, AtomDbl y]
+atomDbl = Atom pos . show
 
-toSxStr :: Keyword -> String -> SExpr
-toSxStr kw s = List [AtomKey kw, AtomStr s]
+toSxD :: String -> Double -> SExpr
+toSxD kw d = List pos [Atom pos kw, atomDbl d]
+
+toSxDD :: String -> V2Double -> SExpr
+toSxDD kw (x,y) = List pos [Atom pos kw, atomDbl x, atomDbl y]
+
+toSxStr :: String -> String -> SExpr
+toSxStr kw s = List pos [Atom pos kw, Atom pos s]
 
 instance AEq PcbnewAttribute where
     (PcbnewAt                x) ~== (PcbnewAt                y) = x ~== y
