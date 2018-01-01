@@ -74,4 +74,4 @@ parseString =
 
 
 spaces = skipMany spaceChar
-spaceChar = oneOf "\r\n "
+spaceChar = oneOf "\r\n\t "
