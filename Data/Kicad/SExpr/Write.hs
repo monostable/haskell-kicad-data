@@ -18,7 +18,6 @@ pretty atm = text $ write atm
 {-| Serialize an SExpr as a compact s-expression 'String'. -}
 write :: SExpr -> String
 write (Atom _ str) |  (str == "")
-                       || head str `elem` '.':'-':['0'..'9']
                        || foldr
                            (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0'..' '])
                                False str = show str -- escaped string with quotes
