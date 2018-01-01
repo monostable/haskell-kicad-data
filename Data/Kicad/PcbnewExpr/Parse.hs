@@ -10,6 +10,7 @@ import Lens.Family2 (over)
 import Data.List (intersperse)
 import Text.Read (readMaybe)
 import Text.Parsec.Pos (newPos)
+import Control.Applicative ((<$>), (<*>))
 
 import Data.Kicad.SExpr hiding (parse, parseWithFilename)
 import qualified Data.Kicad.SExpr as SExpr (parse, parseWithFilename)
