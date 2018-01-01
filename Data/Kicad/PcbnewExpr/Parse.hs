@@ -87,6 +87,8 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
     "roundrect_rratio"
         -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
+    "die_length"
+        -> PcbnewExprAttribute <$> asDouble PcbnewDieLength sxs
     _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
@@ -270,6 +272,8 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
             Right (PcbnewExprAttribute a@(PcbnewThermalGap _))
                 -> pushToAttrs sxs a pad
             Right (PcbnewExprAttribute a@(PcbnewRoundrectRratio _))
+                -> pushToAttrs sxs a pad
+            Right (PcbnewExprAttribute a@(PcbnewDieLength _))
                 -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)

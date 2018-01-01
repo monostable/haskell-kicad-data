@@ -403,6 +403,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewThermalWidth      Double
                      | PcbnewThermalGap        Double
                      | PcbnewJustify           [PcbnewJustifyT]
+                     | PcbnewDieLength         Double
     deriving (Show, Eq)
 
 
@@ -458,6 +459,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewAngle       d)      = toSxD "angle"                     d
     toSExpr (PcbnewThermalWidth d)     = toSxD "thermal_width"             d
     toSExpr (PcbnewThermalGap   d)     = toSxD "thermal_gap"               d
+    toSExpr (PcbnewDieLength   d)      = toSxD "die_length"                d
     toSExpr (PcbnewSize      xy)       = toSxDD "size"       xy
     toSExpr (PcbnewStart     xy)       = toSxDD "start"      xy
     toSExpr (PcbnewCenter    xy)       = toSxDD "center"     xy
