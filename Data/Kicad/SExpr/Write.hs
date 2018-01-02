@@ -17,5 +17,5 @@ pretty atm = text $ write atm
 write :: SExpr -> String
 write (Atom _ str) | (str == "") || needs_quotes = show str -- escaped string with quotes
                    | otherwise                   = str      -- bare string without quotes
-    where needs_quotes = foldr (\c z -> z || c `elem` ')':'(':'\\':'\"':['\0'..' ']) False str
+    where needs_quotes = foldr (\c z -> z || c `elem` '#':')':'(':'\\':'\"':['\0'..' ']) False str
 write (List _ sxs) = "(" ++ unwords (map write sxs) ++ ")"
