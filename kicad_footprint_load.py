@@ -18,6 +18,8 @@ src_plugin = pcbnew.IO_MGR.PluginFind(1)
 for libpath in pretties:
     try:
         list_of_footprints = src_plugin.FootprintEnumerate(libpath)
+    except UnicodeDecodeError:
+        pass
     except Exception as e:
         print(libpath)
         raise e
