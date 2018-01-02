@@ -19,6 +19,9 @@ for libpath in pretties:
     try:
         list_of_footprints = src_plugin.FootprintEnumerate(libpath)
     except UnicodeDecodeError:
+        # pcbnew python modules (at least git-7d6230a and v4.x) have an issue
+        # with loading unicode paths
+        # https://bugs.launchpad.net/kicad/+bug/1740881
         pass
     except Exception as e:
         print(libpath)
