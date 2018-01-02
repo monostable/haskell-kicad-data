@@ -6,6 +6,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 -- * Types
   PcbnewExpr(..)
 , PcbnewModule(..)
+, PcbnewKicadPcb(..)
 , PcbnewItem(..)
 , PcbnewAttribute(..)
 -- * Attribute types
@@ -22,6 +23,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , fpTextJustify
 , moduleItems
 , moduleAttrs
+, kicadPcbAttrs
 , itemLayers
 , padAttributes
 , atP
@@ -43,6 +45,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , justifyToString
 -- * Default (empty) instances
 , defaultPcbnewModule
+, defaultPcbnewKicadPcb
 , defaultPcbnewFpText
 , defaultPcbnewFpLine
 , defaultPcbnewFpCircle
@@ -66,12 +69,14 @@ import Data.Kicad.SExpr.SExpr
 import Data.Kicad.Util
 
 data PcbnewExpr = PcbnewExprModule PcbnewModule
+                | PcbnewExprKicadPcb PcbnewKicadPcb
                 | PcbnewExprItem PcbnewItem
                 | PcbnewExprAttribute PcbnewAttribute
     deriving (Show, Eq)
 
 instance AEq PcbnewExpr where
     PcbnewExprModule    x ~== PcbnewExprModule    y = x ~== y
+    PcbnewExprKicadPcb  x ~== PcbnewExprKicadPcb  y = x ~== y
     PcbnewExprItem      x ~== PcbnewExprItem      y = x ~== y
     PcbnewExprAttribute x ~== PcbnewExprAttribute y = x ~== y
     _ ~== _ = False
@@ -87,6 +92,29 @@ data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
                                  , pcbnewModuleItems :: [PcbnewItem]
                                  }
     deriving (Show, Eq)
+
+data PcbnewKicadPcb = PcbnewKicadPcb
+    { pcbnewKicadPcbAttrs   :: [PcbnewAttribute]
+    , pcbnewKicadPcbNets    :: [PcbnewItem]
+    , pcbnewKicadPcbModules :: [PcbnewModule]
+    , pcbnewKicadPcbItems   :: [PcbnewItem]
+    }
+        deriving (Show, Eq)
+
+defaultPcbnewKicadPcb :: PcbnewKicadPcb
+defaultPcbnewKicadPcb = PcbnewKicadPcb
+    { pcbnewKicadPcbAttrs   = []
+    , pcbnewKicadPcbNets    = []
+    , pcbnewKicadPcbModules = []
+    , pcbnewKicadPcbItems   = []
+    }
+
+instance AEq PcbnewKicadPcb where
+    PcbnewKicadPcb as1 ns1 ms1 is1 ~== PcbnewKicadPcb as2 ns2 ms2 is2 =
+          as1 ~== as2
+       && ns1 ~== ns2
+       && ms1 ~== ms2
+       && is1 ~== is2
 
 
 pos :: SourcePos
@@ -108,6 +136,9 @@ moduleItems f (PcbnewModule n l a i) = PcbnewModule n l a `fmap` f i
 
 moduleAttrs :: Functor f => LensLike' f PcbnewModule [PcbnewAttribute]
 moduleAttrs f (PcbnewModule n l a i) = (\a' -> PcbnewModule n l a' i) `fmap` f a
+
+kicadPcbAttrs :: Functor f => LensLike' f PcbnewKicadPcb [PcbnewAttribute]
+kicadPcbAttrs f (PcbnewKicadPcb a n m i) = (\a' -> PcbnewKicadPcb a' n m i) `fmap` f a
 
 instance AEq PcbnewModule where
     PcbnewModule n1 l1 as1 is1 ~== PcbnewModule n2 l2 as2 is2 =
