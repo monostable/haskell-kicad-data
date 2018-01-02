@@ -1,6 +1,9 @@
 sudo: required
 language: python
 dist: trusty
+cache:
+    directories:
+        - $HOME/.stack
 before_install:
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
