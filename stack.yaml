@@ -23,7 +23,7 @@ user-message: ! 'Warning (added by new or init): Specified resolver could not sa
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-8.23
+resolver: lts-9.21
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -50,6 +50,9 @@ packages:
 extra-deps:
 - parsec-numbers-0.1.0
 - pretty-compact-1.0
+- charsetdetect-1.1.0.2
+- encoding-0.8.2
+- regex-compat-0.93.1
 
 # Override default flag values for local packages and extra-deps
 flags: {}

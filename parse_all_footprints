@@ -25,7 +25,7 @@ echo "Compiling."
 if [[ -v TRAVIS ]]; then
   ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 else
-  cabal exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
+  stack exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 fi
 
 mod_files=$(find "$kicad_mod_dir/" -name "*.kicad_mod")
