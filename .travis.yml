@@ -9,7 +9,7 @@ before_install:
   - sudo apt-get update -q
   - sudo apt-get install kicad cabal-install -y
 script:
+  - bash keep_alive.sh &
   - stack build
   - stack test
-  - bash keep_alive.sh &
   - PYTHONPATH=/usr/lib/python2.7/dist-packages ./parse_all_footprints
