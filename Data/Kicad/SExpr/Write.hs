@@ -3,8 +3,6 @@ module Data.Kicad.SExpr.Write
 , write
 )
 where
-import Data.Char (toLower, isLower, isNumber)
-import Data.List (intercalate)
 import Text.PrettyPrint.Compact
 
 import Data.Kicad.SExpr.SExpr

@@ -9,7 +9,6 @@ import Text.ParserCombinators.Parsec hiding (spaces, parse)
 import qualified Text.ParserCombinators.Parsec as Parsec (parse)
 import Text.Parsec.Char (endOfLine)
 import Text.Parsec (getPosition)
-import Control.Monad
 
 import Data.Kicad.SExpr.SExpr
 

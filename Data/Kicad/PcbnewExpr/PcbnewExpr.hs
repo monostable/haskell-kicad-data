@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Kicad.PcbnewExpr.PcbnewExpr
 (
 -- * Types
@@ -59,7 +60,7 @@ import Data.AEq
 import Data.Tuple (swap)
 import Data.Maybe
 import Data.Foldable (foldMap)
-import Text.Parsec.Pos (newPos)
+import Text.Parsec.Pos (newPos, SourcePos)
 
 import Data.Kicad.SExpr.SExpr
 import Data.Kicad.Util
@@ -88,6 +89,7 @@ data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
     deriving (Show, Eq)
 
 
+pos :: SourcePos
 pos = newPos "" 0 0
 
 instance SExpressable PcbnewModule where
@@ -486,6 +488,7 @@ instance SExpressable PcbnewAttribute where
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
 
 
+atomDbl :: Double -> SExpr
 atomDbl = Atom pos . show
 
 toSxD :: String -> Double -> SExpr

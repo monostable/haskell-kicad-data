@@ -13,7 +13,7 @@ import Text.Parsec.Pos (newPos)
 import Control.Applicative ((<$>), (<*>))
 
 import Data.Kicad.SExpr hiding (parse, parseWithFilename)
-import qualified Data.Kicad.SExpr as SExpr (parse, parseWithFilename)
+import qualified Data.Kicad.SExpr as SExpr (parseWithFilename)
 import Data.Kicad.PcbnewExpr.PcbnewExpr
 import Data.Kicad.Util (headOr)
 
