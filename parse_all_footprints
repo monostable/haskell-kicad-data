@@ -22,11 +22,7 @@ fi
 cd "$root_dir"
 
 echo "Compiling."
-if [[ -v TRAVIS ]]; then
-  ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
-else
-  stack exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
-fi
+stack exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 
 mod_files=$(find "$kicad_mod_dir/" -name "*.kicad_mod")
 echo "Running parse on $(echo "${mod_files}" | wc -l) kicad_mod files"
