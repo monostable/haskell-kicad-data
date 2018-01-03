@@ -22,11 +22,7 @@ fi
 cd "$root_dir"
 
 echo "Compiling."
-if [[ -v TRAVIS ]]; then
-  ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
-else
-  cabal exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
-fi
+stack exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
 
 mod_files=$(find "$kicad_mod_dir/" -name "*.kicad_mod")
 echo "Running parse on $(echo "${mod_files}" | wc -l) kicad_mod files"
@@ -39,18 +35,4 @@ done
 
 wait
 
-if [ $? -eq 0 ]; then
-  echo "- PARSE SUCCEEDED -"
-else
-  echo "- PARSE FAILED -"
-  exit 2
-fi
-
 python kicad_footprint_load.py "$kicad_mod_output_dir"
-
-if [ $? -eq 0 ]; then
-  echo "- LOAD SUCCEEDED -"
-else
-  echo "- LOAD FAILED -"
-  exit 3
-fi

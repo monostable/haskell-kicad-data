@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Data.Kicad.PcbnewExpr.PcbnewExpr
 (
 -- * Types
@@ -59,7 +60,7 @@ import Data.AEq
 import Data.Tuple (swap)
 import Data.Maybe
 import Data.Foldable (foldMap)
-import Text.Parsec.Pos (newPos)
+import Text.Parsec.Pos (newPos, SourcePos)
 
 import Data.Kicad.SExpr.SExpr
 import Data.Kicad.Util
@@ -88,6 +89,7 @@ data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
     deriving (Show, Eq)
 
 
+pos :: SourcePos
 pos = newPos "" 0 0
 
 instance SExpressable PcbnewModule where
@@ -403,6 +405,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewThermalWidth      Double
                      | PcbnewThermalGap        Double
                      | PcbnewJustify           [PcbnewJustifyT]
+                     | PcbnewDieLength         Double
     deriving (Show, Eq)
 
 
@@ -458,6 +461,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewAngle       d)      = toSxD "angle"                     d
     toSExpr (PcbnewThermalWidth d)     = toSxD "thermal_width"             d
     toSExpr (PcbnewThermalGap   d)     = toSxD "thermal_gap"               d
+    toSExpr (PcbnewDieLength   d)      = toSxD "die_length"                d
     toSExpr (PcbnewSize      xy)       = toSxDD "size"       xy
     toSExpr (PcbnewStart     xy)       = toSxDD "start"      xy
     toSExpr (PcbnewCenter    xy)       = toSxDD "center"     xy
@@ -484,6 +488,7 @@ instance SExpressable PcbnewAttribute where
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
 
 
+atomDbl :: Double -> SExpr
 atomDbl = Atom pos . show
 
 toSxD :: String -> Double -> SExpr
@@ -542,7 +547,8 @@ data PcbnewLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS
                   | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
                   | FAdhes    | AllSilk   | FandBCu   | AllCu     | AllMask
                   | AllPaste  | EdgeCuts  | FCrtYd    | BCrtYd    | FFab
-                  | BFab      | Margin    | Eco1User  | Eco2User  | BAdhes
+                  | BFab      | AllFab    | Margin    | Eco1User  | Eco2User
+                  | BAdhes
                   | Inner1Cu  | Inner2Cu  | Inner3Cu  | Inner4Cu  | Inner5Cu
                   | Inner6Cu  | Inner7Cu  | Inner8Cu  | Inner9Cu  | Inner10Cu
                   | Inner11Cu | Inner12Cu | Inner13Cu | Inner14Cu | Inner15Cu
@@ -575,6 +581,7 @@ strToLayerMap =
     , ("B.CrtYd"   , BCrtYd)
     , ("F.Fab"     , FFab)
     , ("B.Fab"     , BFab)
+    , ("*.Fab"     , AllFab)
     , ("Edge.Cuts" , EdgeCuts)
     , ("Margin"    , Margin)
     , ("Eco1.User" , Eco1User)

@@ -1,14 +1,18 @@
 sudo: required
 language: python
 dist: trusty
+cache:
+    directories:
+        - $HOME/.stack
 before_install:
+  - mkdir -p ~/.local/bin
+  - export PATH=$HOME/.local/bin:$PATH
+  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - sudo add-apt-repository ppa:js-reynaud/ppa-kicad -y
   - sudo apt-get update -q
-  - sudo apt-get install kicad cabal-install -y
+  - sudo apt-get install --no-install-recommends kicad -y
 script:
-  - cabal update
-  - cabal install --only-dependencies --enable-tests
-  - cabal configure --enable-tests
-  - cabal build
-  - cabal test
-  - PYTHONPATH=/usr/lib/python2.7/dist-packages ./parse_all_repos.sh
+  - bash keep_alive.sh &
+  - stack build
+  - stack test
+  - PYTHONPATH=/usr/lib/python2.7/dist-packages ./parse_all_footprints

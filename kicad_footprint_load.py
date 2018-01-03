@@ -16,4 +16,13 @@ for dirname, dirnames, filenames in os.walk(sys.argv[1]):
 src_plugin = pcbnew.IO_MGR.PluginFind(1)
 
 for libpath in pretties:
-    list_of_footprints = src_plugin.FootprintEnumerate(libpath)
+    try:
+        list_of_footprints = src_plugin.FootprintEnumerate(libpath)
+    except UnicodeDecodeError:
+        # pcbnew python modules (at least git-7d6230a and v4.x) have an issue
+        # with loading unicode paths
+        # https://bugs.launchpad.net/kicad/+bug/1740881
+        pass
+    except Exception as e:
+        print(libpath)
+        raise e

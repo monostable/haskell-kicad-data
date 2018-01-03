@@ -10,9 +10,10 @@ import Lens.Family2 (over)
 import Data.List (intersperse)
 import Text.Read (readMaybe)
 import Text.Parsec.Pos (newPos)
+import Control.Applicative ((<$>), (<*>))
 
 import Data.Kicad.SExpr hiding (parse, parseWithFilename)
-import qualified Data.Kicad.SExpr as SExpr (parse, parseWithFilename)
+import qualified Data.Kicad.SExpr as SExpr (parseWithFilename)
 import Data.Kicad.PcbnewExpr.PcbnewExpr
 import Data.Kicad.Util (headOr)
 
@@ -87,6 +88,8 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
     "roundrect_rratio"
         -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
+    "die_length"
+        -> PcbnewExprAttribute <$> asDouble PcbnewDieLength sxs
     _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
@@ -271,6 +274,8 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
                 -> pushToAttrs sxs a pad
             Right (PcbnewExprAttribute a@(PcbnewRoundrectRratio _))
                 -> pushToAttrs sxs a pad
+            Right (PcbnewExprAttribute a@(PcbnewDieLength _))
+                -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)
 asPcbnewPad xs = expecting' "number, type and shape" xs
@@ -298,16 +303,16 @@ asPcbnewAt x =
 
 readXy :: String -> String -> Maybe (Double, Double)
 readXy x y = do
-   x' <- readMaybe x
-   y' <- readMaybe y
+   x' <- readMaybeDouble x
+   y' <- readMaybeDouble y
    return (x', y')
 
 
 readXyz :: String -> String -> String -> Maybe (Double, Double, Double)
 readXyz x y z = do
-   x' <- readMaybe x
-   y' <- readMaybe y
-   z' <- readMaybe z
+   x' <- readMaybeDouble x
+   y' <- readMaybeDouble y
+   z' <- readMaybeDouble z
    return (x', y', z')
 
 
@@ -321,6 +326,8 @@ asPcbnewEffects xs = interpretRest xs []
             -> interpretRest sxs (justify:effects)
          Right (PcbnewExprAttribute font@(PcbnewFont _ _ _))
             -> interpretRest sxs (font:effects)
+         Right (PcbnewExprAttribute PcbnewHide)
+            -> interpretRest sxs (PcbnewHide:effects)
          _ -> expecting "font or justify expression" sx
 
 
@@ -364,7 +371,7 @@ asPcbnewLayers xs = let layers = map onePcbnewLayer xs in case lefts layers of
                     ++ unlines (map ("\t\t"++) (lefts layers))
 
 asDouble :: (Double -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
-asDouble constructor [sx@(Atom _ d)] = case readMaybe d of
+asDouble constructor [sx@(Atom _ d)] = case readMaybeDouble d of
    Just d' -> Right $ constructor d'
    Nothing -> expecting "one float (e.g. '1.0')" sx
 asDouble _ x = expecting' "one float (e.g. '1.0')" x
@@ -386,7 +393,7 @@ asPcbnewDrill xs = interpretRest xs defaultPcbnewDrillT
                 Right (PcbnewExprAttribute (PcbnewOffset xy))
                     -> interpretRest sxs drill {pcbnewDrillOffset = Just xy}
                 Right _ -> expecting "offset or nothing" sx
-            Atom _ d  -> case readMaybe d of
+            Atom _ d  -> case readMaybeDouble d of
                 Just d' -> if isNothing (pcbnewDrillSize drill)
                            then interpretRest sxs drill
                                 { pcbnewDrillSize = Just (d',d') }
@@ -457,5 +464,17 @@ expecting x y =
                 _   -> y'
         pos = show (getPos y)
 
+
 expecting' :: String -> [SExpr] -> Either String a
 expecting' x y = expecting x $ List (newPos "" 0 0) y
+
+
+{- Like readMaybe but allows for '.1' and '-.1' style doubles -}
+readMaybeDouble :: String -> Maybe Double
+readMaybeDouble str@(c1:c2:rest) = case c1 of
+   '.' -> readMaybe ('0':str)
+   '-' -> case c2 of
+      '.' -> readMaybe ('-':'0':rest)
+      _   -> readMaybe str
+   _  -> readMaybe str
+readMaybeDouble str = readMaybe str
