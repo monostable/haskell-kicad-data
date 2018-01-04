@@ -20,5 +20,13 @@ Rect, itemAt = PcbnewAtT {pcbnewAtPoint = (1.0,1.0), pcbnewAtOrientation =
 Right "(pad \"1\" smd rect (at 1 1) (size 1 1) (layers F.Cu))"
 ```
 
-
 See [docs on Hackage](https://hackage.haskell.org/package/kicad-data).
+
+
+# Projects Using This
+
+- [ppelleti/footprint-to-script](https://github.com/ppelleti/footprint-to-script) - Converts a KiCad footprint to a [KicadModTree](https://github.com/pointhi/kicad-footprint-generator) Python script.
+
+# License
+
+This project is MIT licensed but [one dependency](https://hackage.haskell.org/package/pretty-compact) is licensed under GPLv3 thus the GPLv3 applies to the project as a whole.

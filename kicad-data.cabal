@@ -7,14 +7,15 @@ author:        Kaspar Emanuel
 maintainer:    kaspar@monostable.co.uk
 homepage:      http://github.com/kasbah/haskell-kicad-data
 bug-reports:   http://github.com/kasbah/haskell-kicad-data/issues
-copyright:     2014
+copyright:     2018
 category:      Data
 build-type:    Simple
 extra-source-files: README.md
 cabal-version: >=1.10
 description:
-            Parse and write <http://kicad-pcb.org/ KiCAD> data
+            Parse and write <http://kicad-pcb.org/ KiCad> data
             (currently @.kicad_mod@ files only).
+Extra-Source-Files: changelog.md
 
 source-repository head
   type: git
