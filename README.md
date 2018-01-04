@@ -6,7 +6,7 @@ Parse and write [KiCad](http://kicad-pcb.org) data (currently .kicad_mod files o
 This library is tested with QuickCheck to ensure it can parse whatever it outputs. 
 The parser is also fairly regularily checked against over 38,000 kicad_mod files currently part of [monostable/kicad_footprints](https://github.com/monostable/kicad_footprints). The resulting output of these parsed files is then checked with KiCad scripting to make sure they are still valid.
 
-# Usage
+## Usage
 
     $ cabal repl
 
@@ -23,10 +23,10 @@ Right "(pad \"1\" smd rect (at 1 1) (size 1 1) (layers F.Cu))"
 See [docs on Hackage](https://hackage.haskell.org/package/kicad-data).
 
 
-# Projects Using This
+## Projects Using This
 
 - [ppelleti/footprint-to-script](https://github.com/ppelleti/footprint-to-script) - Converts a KiCad footprint to a [KicadModTree](https://github.com/pointhi/kicad-footprint-generator) Python script.
 
-# License
+## License
 
 This project is MIT licensed but [one dependency](https://hackage.haskell.org/package/pretty-compact) is licensed under GPLv3 thus the GPLv3 applies to the project as a whole.
