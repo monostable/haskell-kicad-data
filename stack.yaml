@@ -48,7 +48,6 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- parsec-numbers-0.1.0
 - pretty-compact-1.0
 - charsetdetect-1.1.0.2
 - encoding-0.8.2
