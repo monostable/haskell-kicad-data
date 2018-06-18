@@ -17,6 +17,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , PcbnewFpTextTypeT(..)
 , PcbnewJustifyT(..)
 , PcbnewXyzT
+, PcbnewAnchorShapeT
 , V2Double
 -- * Lenses and other getters/setters
 , fpTextJustify
@@ -41,6 +42,8 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , fpTextTypeToStr
 , strToJustify
 , justifyToString
+, strToAnchorShape
+, anchorShapeToStr
 -- * Default (empty) instances
 , defaultPcbnewModule
 , defaultPcbnewFpText
@@ -406,11 +409,26 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewThermalGap        Double
                      | PcbnewJustify           [PcbnewJustifyT]
                      | PcbnewDieLength         Double
+                     | PcbnewPadOptions        { pcbnewPadAnchor :: PcbnewAnchorShapeT }
     deriving (Show, Eq)
 
 
 
 type PcbnewXyzT = (Double, Double, Double)
+
+data PcbnewAnchorShapeT = PadAnchorCircle | PadAnchorRect
+    deriving (Show, Eq, Enum, Bounded)
+
+strToAnchorShapeMap :: [(String, PcbnewAnchorShapeT)]
+strToAnchorShapeMap = [ ("circle"   , PadAnchorCircle)
+                      , ("rect"     , PadAnchorRect)
+                      ]
+
+strToAnchorShape :: String -> Maybe PcbnewAnchorShapeT
+strToAnchorShape s = lookup s strToAnchorShapeMap
+
+anchorShapeToStr :: PcbnewAnchorShapeT -> String
+anchorShapeToStr t = fromMaybe "" $ lookup t $ map swap strToAnchorShapeMap
 
 instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewLayer l) = List pos [ Atom pos "layer"
@@ -486,6 +504,10 @@ instance SExpressable PcbnewAttribute where
         List pos [Atom pos "zone_connect"      , Atom pos (show i)]
     toSExpr (PcbnewJustify         js) =
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
+    toSExpr (PcbnewPadOptions t) = List pos
+        [ Atom pos "options", toSxStr "clearance" "outline"
+        , toSxStr "anchor" (anchorShapeToStr t)
+        ]
 
 
 atomDbl :: Double -> SExpr
