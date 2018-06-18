@@ -648,7 +648,7 @@ strToPadType s = lookup s strToPadTypeMap
 fpPadTypeToStr :: PcbnewPadTypeT -> String
 fpPadTypeToStr t = fromMaybe "" $ lookup t $ map swap strToPadTypeMap
 
-data PcbnewPadShapeT = Circle | Oval | Rect | Trapezoid | RoundRect
+data PcbnewPadShapeT = Circle | Oval | Rect | Trapezoid | RoundRect | Custom
     deriving (Show, Eq, Enum, Bounded)
 
 strToPadShapeMap :: [(String, PcbnewPadShapeT)]
@@ -657,6 +657,7 @@ strToPadShapeMap = [ ("circle"   , Circle)
                    , ("rect"     , Rect)
                    , ("roundrect", RoundRect)
                    , ("trapezoid", Trapezoid)
+                   , ("custom"   , Custom)
                    ]
 
 strToPadShape :: String -> Maybe PcbnewPadShapeT
