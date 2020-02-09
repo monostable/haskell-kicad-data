@@ -160,7 +160,7 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
     deriving (Show, Eq)
 
 
-{-| Lense of the points that define this item -}
+{-| Lense of all the points that define this item -}
 itemPoints :: Functor f => LensLike' f PcbnewItem [V2Double]
 itemPoints f item = case item of
     PcbnewFpText {}   -> atLense
@@ -184,7 +184,7 @@ itemPoints f item = case item of
         polyLense = (\ps -> item {fpPolyPts = ps}) `fmap` (f (fpPolyPts item))
 
 
-{-| Lense of the item handle, moving the handle will move the entire item -}
+{-| Lense of the item handle, modifying the handle will move the entire item -}
 itemHandle :: Functor f => LensLike' f PcbnewItem V2Double
 itemHandle f item = setter `fmap` (f (headOr (0,0) (view itemPoints item)))
     where
@@ -409,10 +409,18 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewThermalGap        Double
                      | PcbnewJustify           [PcbnewJustifyT]
                      | PcbnewDieLength         Double
-                     | PcbnewPadOptions        { pcbnewPadAnchor :: PcbnewAnchorShapeT }
+                     | PcbnewAnchorPadOptions
+                          { pcbnewAnchorPadClearance :: PcbnewAnchorPadClearanceT
+                          , pcbnewAnchorPadShape :: PcbnewAnchorShapeT
+                          }
+                     | PcbnewAnchorPadClearance PcbnewAnchorPadClearanceT
+                     | PcbnewAnchorPadShape     PcbnewAnchorShapeT
     deriving (Show, Eq)
 
 
+-- just one clearance type: "outline", for now
+data PcbnewAnchorPadClearanceT = AnchorPadClearanceOutline
+    deriving (Show, Eq, Enum, Bounded)
 
 type PcbnewXyzT = (Double, Double, Double)
 
@@ -504,10 +512,14 @@ instance SExpressable PcbnewAttribute where
         List pos [Atom pos "zone_connect"      , Atom pos (show i)]
     toSExpr (PcbnewJustify         js) =
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
-    toSExpr (PcbnewPadOptions t) = List pos
-        [ Atom pos "options", toSxStr "clearance" "outline"
-        , toSxStr "anchor" (anchorShapeToStr t)
+    toSExpr (PcbnewAnchorPadOptions c s) = List pos
+        [ Atom pos "options"
+        , toSExpr (PcbnewAnchorPadClearance c)
+        , toSExpr (PcbnewAnchorPadShape s)
         ]
+    toSExpr PcbnewAnchorPadClearance _ = toSxStr "clearance" "outline"
+    toSExpr PcbnewAnchorPadShape t = toSxStr "anchor" (anchorShapeToStr t)
+
 
 
 atomDbl :: Double -> SExpr

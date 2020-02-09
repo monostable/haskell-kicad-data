@@ -90,7 +90,12 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
     "die_length"
         -> PcbnewExprAttribute <$> asDouble PcbnewDieLength sxs
+    "options"
+        -> PcbnewExprAttribute <$> asDouble PcbnewDieLength sxs
+     "clearance" -> PcbnewExprAttribute <$> asAnchorClearance sxs
+     "anchor" -> PcbnewExprAttribute <$> asAnchorShape sxs
     _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
+
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
     "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
@@ -276,6 +281,8 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
                 -> pushToAttrs sxs a pad
             Right (PcbnewExprAttribute a@(PcbnewDieLength _))
                 -> pushToAttrs sxs a pad
+            Right (PcbnewExprAttribute a@(PcbnewPadOptions _))
+                -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)
 asPcbnewPad xs = expecting' "number, type and shape" xs
@@ -431,6 +438,9 @@ asPcbnewModel (Atom _ p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPa
             Right _ -> expecting "only at, scale and rotate" sx
 asPcbnewModel x = expecting' "model path, at, scale and rotate" x
 
+asPcbnewAnchorPadOptions :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewAnchorPadOptions [c@(List _ _),  =
+
 
 justifyOneOf :: String
 justifyOneOf = "one of '"
@@ -450,6 +460,16 @@ oneJustifyT sx@(Atom _ s) = case strToJustify s of
    Nothing -> expecting justifyOneOf sx
 oneJustifyT x = expecting justifyOneOf x
 
+asAnchorShape :: [SExpr] -> Either String PcbnewAttribute
+asAnchorShape [sx@(Atom _ s)] = case strToAnchorShape s of
+   Just t -> Left $ PcbnewAnchorShape t
+   _ -> expecting "circle or rect" sx
+asAnchorShape sxs = expecting' "single anchor shape expression" sxs
+
+
+asAnchorClearance :: [SExpr] -> Either String PcbnewAttribute
+asAnchorClearance [sx@Atom _ "outline"] = Left (PcbnewAnchorPadClearance AnchorPadClearanceOutline)
+asAnchorShape sxs = expecting' "anchor option (clearance outline)" sxs
 
 expecting :: String -> SExpr -> Either String a
 expecting x y =
