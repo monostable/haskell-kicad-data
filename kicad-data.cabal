@@ -13,7 +13,7 @@ build-type:    Simple
 extra-source-files: README.md
 cabal-version: >=1.10
 description:
-            Parse and write <http://kicad-pcb.org/ KiCad> data
+            Parse and write <https://kicad.org/ KiCad> data
             (currently @.kicad_mod@ files only).
 Extra-Source-Files: changelog.md
 

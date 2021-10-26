@@ -1,7 +1,7 @@
 # Haskell KiCad Data
 [![Build Status](https://travis-ci.org/monostable/haskell-kicad-data.svg?branch=master)](https://travis-ci.org/monostable/haskell-kicad-data)
 
-Parse and write [KiCad](http://kicad-pcb.org) data (currently .kicad_mod files only).
+Parse and write [KiCad](https://kicad.org/) data (currently .kicad_mod files only).
 
 This library is tested with QuickCheck to ensure it can parse whatever it outputs. 
 The parser is also fairly regularily checked against over 38,000 kicad_mod files currently part of [monostable/kicad_footprints](https://github.com/monostable/kicad_footprints). The resulting output of these parsed files is then checked with KiCad scripting to make sure they are still valid.
