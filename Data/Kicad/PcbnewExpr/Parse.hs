@@ -31,6 +31,7 @@ parseWithFilename filename =
 fromSExpr :: SExpr -> Either String PcbnewExpr
 fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "module"     -> PcbnewExprModule    <$> asPcbnewModule           sxs
+    "kicad_pcb"  -> PcbnewExprKicadPcb  <$> asPcbnewKicadPcb         sxs
     "pad"        -> PcbnewExprItem      <$> asPcbnewPad              sxs
     "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
     "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
@@ -98,6 +99,15 @@ fromSExpr sx@(Atom _ s) = case s of
     "placed" -> Right $ PcbnewExprAttribute PcbnewPlaced
     _ -> expecting "'italic' or 'hide' or 'locked' " sx
 fromSExpr x = expecting "List _ with a key or a string atom" x
+
+asPcbnewKicadPcb :: [SExpr] -> Either String PcbnewKicadPcb
+asPcbnewKicadPcb sxs = interpretRest sxs defaultPcbnewKicadPcb
+   where
+      interpretRest [] pcb = Right pcb
+      interpretRest (sx:sxs) pcb = case fromSExpr sx of
+         Right (PcbnewExprAttribute attr) ->
+             interpretRest sxs (over kicadPcbAttrs (++[attr]) pcb)
+         _ -> expecting "kicad_pcb attributes or items" sx
 
 asPcbnewModule :: [SExpr] -> Either String PcbnewModule
 asPcbnewModule (Atom _ n:xs) =
