@@ -463,11 +463,12 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewLayer l) = List pos [ Atom pos "layer"
                                    , Atom pos $ layerToStr l
                                    ]
-    toSExpr (PcbnewAt (PcbnewAtT (x,y) o)) =
+    toSExpr (PcbnewAt (PcbnewAtT (x,y) o unlocked)) =
         List pos $ [ Atom pos "at"
                , atomDbl x
                , atomDbl y
                ] ++ [atomDbl o | o /= 0]
+               ++ [Atom pos "unlocked" | unlocked]
     toSExpr (PcbnewLayers ls) =
         List pos (Atom pos "layers" : map (Atom pos . layerToStr) ls)
     toSExpr (PcbnewFont s t i) =
@@ -738,15 +739,17 @@ justifyToString t = fromMaybe "" $ lookup t $ map swap strToJustifyMap
 
 data PcbnewAtT = PcbnewAtT { pcbnewAtPoint :: V2Double
                            , pcbnewAtOrientation :: Double
+                           , pcbnewAtUnlocked :: Bool
                            }
     deriving (Show, Eq)
 
 instance AEq PcbnewAtT where
-    (PcbnewAtT p1 o1) ~== (PcbnewAtT p2 o2) = p1 ~== p2 && o1 ~== o2
+  (PcbnewAtT p1 o1 l1) ~== (PcbnewAtT p2 o2 l2) = p1 ~== p2 && o1 ~== o2 && l1 == l2
 
 defaultPcbnewAtT :: PcbnewAtT
 defaultPcbnewAtT = PcbnewAtT { pcbnewAtPoint = (0,0)
                              , pcbnewAtOrientation = 0
+                             , pcbnewAtUnlocked = False
                              }
 
 fpTextJustify :: Functor f => LensLike' f PcbnewItem [PcbnewJustifyT]
@@ -756,13 +759,13 @@ fpTextJustify f x = (\_ -> x) `fmap` f []
 
 
 atP :: Functor f => LensLike' f PcbnewAtT V2Double
-atP f (PcbnewAtT p o) =  (\p' -> PcbnewAtT p' o) `fmap` f p
+atP f (PcbnewAtT p o l) =  (\p' -> PcbnewAtT p' o l) `fmap` f p
 
 atX :: Functor f => LensLike' f PcbnewAtT Double
-atX f (PcbnewAtT (x,y) o) = (\x' -> PcbnewAtT (x',y) o) `fmap` f x
+atX f (PcbnewAtT (x,y) o l) = (\x' -> PcbnewAtT (x',y) o l) `fmap` f x
 
 atY :: Functor f => LensLike' f PcbnewAtT Double
-atY f (PcbnewAtT (x,y) o) = (\y' -> PcbnewAtT (x,y') o) `fmap` f y
+atY f (PcbnewAtT (x,y) o l) = (\y' -> PcbnewAtT (x,y') o l) `fmap` f y
 
 data PcbnewFpTextTypeT = FpTextReference | FpTextValue | FpTextUser
     deriving (Show, Eq, Enum, Bounded)

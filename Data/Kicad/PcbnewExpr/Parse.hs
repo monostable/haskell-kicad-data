@@ -320,9 +320,14 @@ asPcbnewAt :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewAt sx@(Atom _ x:[Atom _ y]) = case readXy x y of
     Just xy -> Right $ PcbnewAt $ defaultPcbnewAtT {pcbnewAtPoint = xy}
     Nothing -> expecting' "x y coordinates" sx
-asPcbnewAt sx@(Atom _ x:Atom _ y:[Atom _ o]) = case readXyz x y o of
-    Just (x', y', o') -> Right $ PcbnewAt $ PcbnewAtT (x',y') o'
-    Nothing -> expecting' "x y coordinates and orientation" sx
+asPcbnewAt sx@(Atom posx x:Atom posy y:[Atom _ o]) =
+   case o of
+     "unlocked" -> case readXy x y of
+       Just xy -> Right $ PcbnewAt $ defaultPcbnewAtT {pcbnewAtPoint = xy, pcbnewAtUnlocked = True}
+       Nothing -> expecting' "x y coordinates" sx
+     _ -> case readXyz x y o of
+       Just (x', y', o') -> Right $ PcbnewAt $ PcbnewAtT (x',y') o' False
+       Nothing -> expecting' "x y coordinates and orientation" sx
 asPcbnewAt l@[List _ _] = asXyz PcbnewModelAt l
 asPcbnewAt x =
     expecting' "x y coordinates and orientation" x
