@@ -10,3 +10,5 @@ jobs:
           enable-stack: true
           stack-version: 'latest'
       - run: stack build
+      - run: stack test
+      - run: ./parse_all_footprints
