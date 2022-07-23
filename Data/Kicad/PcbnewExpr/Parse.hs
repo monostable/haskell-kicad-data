@@ -30,8 +30,8 @@ parseWithFilename filename =
 {-| Interpret a 'SExpr' as a 'PcbnewExpr'. -}
 fromSExpr :: SExpr -> Either String PcbnewExpr
 fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
+    "footprint"  -> PcbnewExprFootprint <$> asPcbnewFootprint        sxs
     "module"     -> PcbnewExprModule    <$> asPcbnewModule           sxs
-    "footprint"  -> PcbnewExprModule    <$> asPcbnewModule           sxs
     "pad"        -> PcbnewExprItem      <$> asPcbnewPad              sxs
     "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
     "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
@@ -53,6 +53,8 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "xy"         -> PcbnewExprAttribute <$> asXy PcbnewXy            sxs
     "scale"      -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
     "rotate"     -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
+    "version"    -> PcbnewExprAttribute <$> asString PcbnewVersion   sxs
+    "generator"  -> PcbnewExprAttribute <$> asString PcbnewGenerator sxs
     "descr"      -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
     "tags"       -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
     "path"       -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
@@ -118,6 +120,27 @@ asPcbnewModule (Atom _ n:xs) =
             Right _ -> expecting "layer, items or attributes" sx
 asPcbnewModule (x:_) = expecting "module name" x
 asPcbnewModule x = expecting' "module name" x
+
+asPcbnewFootprint :: [SExpr] -> Either String PcbnewFootprint
+asPcbnewFootprint (Atom _ n:xs) =
+    interpretRest xs defaultPcbnewFootprint { pcbnewFootprintName = n }
+    where
+        interpretRest [] m = Right m
+        interpretRest (sx:sxs) m = case fromSExpr sx of
+            Left err -> Left err
+            Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
+                interpretRest sxs m {pcbnewFootprintLayer = layer}
+            Right (PcbnewExprAttribute (PcbnewVersion version)) ->
+                interpretRest sxs m {pcbnewFootprintVersion = version}
+            Right (PcbnewExprAttribute (PcbnewGenerator generator)) ->
+                interpretRest sxs m {pcbnewFootprintGenerator = generator}
+            Right (PcbnewExprItem item) ->
+                interpretRest sxs (over footprintItems (++[item]) m)
+            Right (PcbnewExprAttribute attr) ->
+                interpretRest sxs (over footprintAttrs (++[attr]) m)
+            Right _ -> expecting "layer, items or attributes" sx
+asPcbnewFootprint (x:_) = expecting "footprint name" x
+asPcbnewFootprint x = expecting' "footprint name" x
 
 asPcbnewFpText :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpText (t:s:a:xs) = interpretType

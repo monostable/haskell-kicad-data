@@ -6,6 +6,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 -- * Types
   PcbnewExpr(..)
 , PcbnewModule(..)
+, PcbnewFootprint(..)
 , PcbnewItem(..)
 , PcbnewAttribute(..)
 -- * Attribute types
@@ -22,6 +23,8 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , fpTextJustify
 , moduleItems
 , moduleAttrs
+, footprintItems
+, footprintAttrs
 , itemLayers
 , padAttributes
 , atP
@@ -43,6 +46,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , justifyToString
 -- * Default (empty) instances
 , defaultPcbnewModule
+, defaultPcbnewFootprint
 , defaultPcbnewFpText
 , defaultPcbnewFpLine
 , defaultPcbnewFpCircle
@@ -66,18 +70,21 @@ import Data.Kicad.SExpr.SExpr
 import Data.Kicad.Util
 
 data PcbnewExpr = PcbnewExprModule PcbnewModule
+                | PcbnewExprFootprint PcbnewFootprint
                 | PcbnewExprItem PcbnewItem
                 | PcbnewExprAttribute PcbnewAttribute
     deriving (Show, Eq)
 
 instance AEq PcbnewExpr where
     PcbnewExprModule    x ~== PcbnewExprModule    y = x ~== y
+    PcbnewExprFootprint x ~== PcbnewExprFootprint y = x ~== y
     PcbnewExprItem      x ~== PcbnewExprItem      y = x ~== y
     PcbnewExprAttribute x ~== PcbnewExprAttribute y = x ~== y
     _ ~== _ = False
 
 instance SExpressable PcbnewExpr where
     toSExpr (PcbnewExprModule x)    = toSExpr x
+    toSExpr (PcbnewExprFootprint x) = toSExpr x
     toSExpr (PcbnewExprItem x)      = toSExpr x
     toSExpr (PcbnewExprAttribute x) = toSExpr x
 
@@ -86,6 +93,15 @@ data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
                                  , pcbnewModuleAttrs :: [PcbnewAttribute]
                                  , pcbnewModuleItems :: [PcbnewItem]
                                  }
+    deriving (Show, Eq)
+
+data PcbnewFootprint = PcbnewFootprint { pcbnewFootprintName      :: String
+                                       , pcbnewFootprintVersion   :: String
+                                       , pcbnewFootprintGenerator :: String
+                                       , pcbnewFootprintLayer     :: PcbnewLayerT
+                                       , pcbnewFootprintAttrs     :: [PcbnewAttribute]
+                                       , pcbnewFootprintItems     :: [PcbnewItem]
+                                       }
     deriving (Show, Eq)
 
 
@@ -100,18 +116,46 @@ instance SExpressable PcbnewModule where
                ] ++ map toSExpr attrs
                ++ map toSExpr items
 
+instance SExpressable PcbnewFootprint where
+    toSExpr (PcbnewFootprint name ver gen l attrs items) =
+        List pos $ [ Atom pos "footprint"
+               , Atom pos name
+               , toSExpr (PcbnewVersion ver)
+               , toSExpr (PcbnewGenerator gen)
+               , toSExpr (PcbnewLayer l)
+               ] ++ map toSExpr attrs
+               ++ map toSExpr items
+
 defaultPcbnewModule :: PcbnewModule
 defaultPcbnewModule = PcbnewModule "" FCu [] []
+
+defaultPcbnewFootprint :: PcbnewFootprint
+defaultPcbnewFootprint = PcbnewFootprint "" "" "haskell-kicad-data" FCu [] []
 
 moduleItems :: Functor f => LensLike' f PcbnewModule [PcbnewItem]
 moduleItems f (PcbnewModule n l a i) = PcbnewModule n l a `fmap` f i
 
+footprintItems :: Functor f => LensLike' f PcbnewFootprint [PcbnewItem]
+footprintItems f (PcbnewFootprint n v g l a i) = PcbnewFootprint n v g l a `fmap` f i
+
 moduleAttrs :: Functor f => LensLike' f PcbnewModule [PcbnewAttribute]
 moduleAttrs f (PcbnewModule n l a i) = (\a' -> PcbnewModule n l a' i) `fmap` f a
+
+footprintAttrs :: Functor f => LensLike' f PcbnewFootprint [PcbnewAttribute]
+footprintAttrs f (PcbnewFootprint n v g l a i) = (\a' -> PcbnewFootprint n v g l a' i) `fmap` f a
 
 instance AEq PcbnewModule where
     PcbnewModule n1 l1 as1 is1 ~== PcbnewModule n2 l2 as2 is2 =
            n1   == n2
+        && l1   == l2
+        && as1 ~== as2
+        && is1 ~== is2
+
+instance AEq PcbnewFootprint where
+    PcbnewFootprint n1 v1 g1 l1 as1 is1 ~== PcbnewFootprint n2 v2 g2 l2 as2 is2 =
+           n1   == n2
+        && v1   == v2
+        && g2   == g2
         && l1   == l2
         && as1 ~== as2
         && is1 ~== is2
@@ -356,6 +400,8 @@ instance AEq PcbnewDrillT where
 
 data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewAt         PcbnewAtT
+                     | PcbnewGenerator  String
+                     | PcbnewVersion    String
                      | PcbnewFpTextType PcbnewFpTextTypeT
                      | PcbnewSize       V2Double
                      | PcbnewThickness  Double
@@ -471,11 +517,13 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewEnd       xy)       = toSxDD "end"        xy
     toSExpr (PcbnewXy        xy)       = toSxDD "xy"         xy
     toSExpr (PcbnewOffset    xy)       = toSxDD "offset"     xy
-    toSExpr (PcbnewTedit s)            = toSxStr "tedit" s
-    toSExpr (PcbnewDescr s)            = toSxStr "descr" s
-    toSExpr (PcbnewTags  s)            = toSxStr "tags"  s
-    toSExpr (PcbnewPath  s)            = toSxStr "path"  s
-    toSExpr (PcbnewAttr  s)            = toSxStr "attr"  s
+    toSExpr (PcbnewVersion s)          = toSxStr "version"   s
+    toSExpr (PcbnewGenerator s)        = toSxStr "generator" s
+    toSExpr (PcbnewTedit s)            = toSxStr "tedit"     s
+    toSExpr (PcbnewDescr s)            = toSxStr "descr"     s
+    toSExpr (PcbnewTags  s)            = toSxStr "tags"      s
+    toSExpr (PcbnewPath  s)            = toSxStr "path"      s
+    toSExpr (PcbnewAttr  s)            = toSxStr "attr"      s
     toSExpr PcbnewItalic               = Atom pos "italic"
     toSExpr PcbnewHide                 = Atom pos "hide"
     toSExpr PcbnewPlaced               = Atom pos "placed"
