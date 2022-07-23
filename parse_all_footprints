@@ -28,9 +28,10 @@ mod_files=$(find "$kicad_mod_dir/" -name "*.kicad_mod")
 echo "Running parse on $(echo "${mod_files}" | wc -l) kicad_mod files"
 IFS=$'\n'
 for f in $mod_files; do
+  echo "testing $f"
   out=$(echo "$f" | sed "s!$kicad_mod_dir!$kicad_mod_output_dir!")
   mkdir -p "$out"
-  $test_executable "$f" > "$out/file.kicad_mod" &
+  $test_executable "$f" > "$out/file.kicad_mod"
 done
 
 wait

@@ -391,6 +391,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewModelAt           PcbnewAttribute
                      | PcbnewModelScale        PcbnewAttribute
                      | PcbnewModelRotate       PcbnewAttribute
+                     | PcbnewModelOffset       PcbnewAttribute
                      | PcbnewXyz               PcbnewXyzT
                      | PcbnewClearance         Double
                      | PcbnewSolderPasteRatio  Double
@@ -450,6 +451,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewModelAt     xyz)  = List pos [Atom pos "at"    , toSExpr xyz]
     toSExpr (PcbnewModelScale  xyz)  = List pos [Atom pos "scale" , toSExpr xyz]
     toSExpr (PcbnewModelRotate xyz)  = List pos [Atom pos "rotate", toSExpr xyz]
+    toSExpr (PcbnewModelOffset xyz)  = List pos [Atom pos "offset", toSExpr xyz]
     toSExpr (PcbnewClearance   d)      = toSxD "clearance"                 d
     toSExpr (PcbnewSolderPasteRatio d) = toSxD "solder_paste_ratio"        d
     toSExpr (PcbnewMaskMargin  d)      = toSxD "solder_mask_margin"        d
@@ -524,6 +526,7 @@ instance AEq PcbnewAttribute where
     (PcbnewModelAt           x) ~== (PcbnewModelAt           y) = x ~== y
     (PcbnewModelScale        x) ~== (PcbnewModelScale        y) = x ~== y
     (PcbnewModelRotate       x) ~== (PcbnewModelRotate       y) = x ~== y
+    (PcbnewModelOffset       x) ~== (PcbnewModelOffset       y) = x ~== y
     (PcbnewModel p1 a1 s1 r1)   ~== (PcbnewModel p2 a2 s2 r2) =
         p1 == p2 && a1 ~== a2 && s1 ~== s2 && r1 ~== r2
     (PcbnewFont s1 t1 i1) ~== (PcbnewFont s2 t2 i2) =

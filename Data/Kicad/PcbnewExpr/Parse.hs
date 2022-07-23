@@ -31,6 +31,7 @@ parseWithFilename filename =
 fromSExpr :: SExpr -> Either String PcbnewExpr
 fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "module"     -> PcbnewExprModule    <$> asPcbnewModule           sxs
+    "footprint"  -> PcbnewExprModule    <$> asPcbnewModule           sxs
     "pad"        -> PcbnewExprItem      <$> asPcbnewPad              sxs
     "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
     "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
@@ -50,7 +51,6 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "center"     -> PcbnewExprAttribute <$> asXy PcbnewCenter        sxs
     "rect_delta" -> PcbnewExprAttribute <$> asXy PcbnewRectDelta     sxs
     "xy"         -> PcbnewExprAttribute <$> asXy PcbnewXy            sxs
-    "offset"     -> PcbnewExprAttribute <$> asXy PcbnewOffset        sxs
     "scale"      -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
     "rotate"     -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
     "descr"      -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
@@ -90,6 +90,9 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
     "die_length"
         -> PcbnewExprAttribute <$> asDouble PcbnewDieLength sxs
+    "offset" -> PcbnewExprAttribute <$> case (asXy PcbnewOffset sxs) of
+                                           Right _ -> asXy PcbnewOffset sxs
+                                           Left _ -> asXyz PcbnewModelOffset sxs
     _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
@@ -428,8 +431,10 @@ asPcbnewModel (Atom _ p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPa
                 interpretRest sxs model {pcbnewModelScale = xyz}
             Right (PcbnewExprAttribute (PcbnewModelRotate (PcbnewXyz xyz))) ->
                 interpretRest sxs model {pcbnewModelRotate = xyz}
-            Right _ -> expecting "only at, scale and rotate" sx
-asPcbnewModel x = expecting' "model path, at, scale and rotate" x
+            Right (PcbnewExprAttribute (PcbnewModelOffset (PcbnewXyz xyz))) ->
+                interpretRest sxs model {pcbnewModelRotate = xyz}
+            Right _ -> expecting "only at, scale, rotate or offset" sx
+asPcbnewModel x = expecting' "model path, at, scale, rotate or offset" x
 
 
 justifyOneOf :: String
