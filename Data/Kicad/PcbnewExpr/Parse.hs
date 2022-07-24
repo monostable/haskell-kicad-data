@@ -280,9 +280,6 @@ asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
                interpretRest sxs fp_poly {itemFill = Just f}
             Right _ -> expecting "width, layer or 'pts'" sx
 
-asPcbnewGrPoly :: [SExpr] -> Either String PcbnewGrItem
-asPcbnewGrPoly xs = undefined
-
 asPcbnewGroup :: [SExpr] -> Either String PcbnewItem
 asPcbnewGroup (Atom _ n:xs) =
     interpretRest xs defaultPcbnewGroup { groupName = n }
@@ -597,7 +594,22 @@ oneGrItem (List _ ((Atom _ "gr_poly"):pts:xs)) =
                 Right (PcbnewExprAttribute (PcbnewGrItemFill))
                   -> Right $ gr {grItemFill = True}
                 Right _ -> expecting "width or fill" sx
-oneGrItem sx = expecting "points" sx
+oneGrItem (List _ ((Atom _ "gr_arc"):xs)) =
+  interpretRest xs defaultPcbnewGrArc
+        where
+          interpretRest [] gr = Right gr
+          interpretRest (sx:sxs) gr = case fromSExpr sx of
+                Left err -> Left err
+                Right (PcbnewExprAttribute (PcbnewWidth w))
+                  -> Right $ gr {grItemWidth = w}
+                Right (PcbnewExprAttribute (PcbnewGrItemFill))
+                  -> Right $ gr {grItemFill = True}
+                Right (PcbnewExprAttribute (PcbnewStart dd))
+                  -> Right $ gr {grArcStart = dd}
+                Right (PcbnewExprAttribute (PcbnewEnd dd))
+                  -> Right $ gr {grArcEnd = dd}
+                Right _ -> expecting "gr_arc items (e.g. start or end)" sx
+oneGrItem sx = expecting "graphical item (e.g. gr_poly)" sx
 
 asPcbnewAttr :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewAttr [] = Right defaultPcbnewAttr
