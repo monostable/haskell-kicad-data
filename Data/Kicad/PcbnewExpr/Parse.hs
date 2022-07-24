@@ -54,6 +54,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "scale"      -> PcbnewExprAttribute <$> asXyz PcbnewModelScale   sxs
     "rotate"     -> PcbnewExprAttribute <$> asXyz PcbnewModelRotate  sxs
     "version"    -> PcbnewExprAttribute <$> asString PcbnewVersion   sxs
+    "tstamp"     -> PcbnewExprAttribute <$> asString PcbnewTstamp    sxs
     "generator"  -> PcbnewExprAttribute <$> asString PcbnewGenerator sxs
     "descr"      -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
     "tags"       -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
@@ -183,6 +184,8 @@ asPcbnewFpText (t:s:a:xs) = interpretType
                 interpretRest sxs (interpretEffects effects fp_text)
             Right (PcbnewExprAttribute PcbnewHide) ->
                 interpretRest sxs (fp_text {fpTextHide = True})
+            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
+               interpretRest sxs fp_text {itemTstamp = uuid}
             _ -> expecting "layer or effects expression or 'hide'" sx
 asPcbnewFpText x = expecting' "a text-type, text, 'at' and layer" x
 
@@ -208,6 +211,8 @@ asFp defaultFp (s:e:xs) = interpretStart defaultFp
                 -> interpretRest sxs fp_shape {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
                 -> interpretRest sxs fp_shape {itemLayer = d}
+            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
+               interpretRest sxs fp_shape {itemTstamp = uuid}
             Right _ -> expecting "width or layer" sx
 asFp _ x = expecting' "fp_line (or fp_circle) start (center), end and attributes" x
 
@@ -233,6 +238,8 @@ asPcbnewFpArc (s:e:xs) = interpretStart defaultPcbnewFpArc
                 -> interpretRest sxs fp_arc {itemLayer = d}
             Right (PcbnewExprAttribute (PcbnewAngle d))
                 -> interpretRest sxs fp_arc {fpArcAngle = d}
+            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
+               interpretRest sxs fp_arc {itemTstamp = uuid}
             Right _ -> expecting "width, layer or angle" sx
 asPcbnewFpArc x = expecting' "fp_arc start, end and attributes" x
 
@@ -248,6 +255,8 @@ asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
                 -> interpretRest sxs fp_poly {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
                 -> interpretRest sxs fp_poly {itemLayer = d}
+            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
+               interpretRest sxs fp_poly {itemTstamp = uuid}
             Right _ -> expecting "width, layer or 'pts'" sx
 
 asPcbnewPad :: [SExpr] -> Either String PcbnewItem
@@ -280,6 +289,8 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
                 -> interpretRest sxs pad {padLayers = d}
             Right (PcbnewExprAttribute  (PcbnewSize d))
                 -> interpretRest sxs pad {itemSize = d}
+            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
+               interpretRest sxs pad {itemTstamp = uuid}
             Right (PcbnewExprAttribute a@(PcbnewDrill _))
                 -> pushToAttrs sxs a pad
             Right (PcbnewExprAttribute a@(PcbnewRectDelta _))

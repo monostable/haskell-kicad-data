@@ -169,26 +169,31 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                                , fpTextThickness :: Double
                                , fpTextItalic    :: Bool
                                , fpTextJustify_  :: [PcbnewJustifyT]
+                               , itemTstamp      :: String
                                }
-                | PcbnewFpLine { itemStart :: V2Double
-                               , itemEnd   :: V2Double
-                               , itemLayer :: PcbnewLayerT
-                               , itemWidth :: Double
+                | PcbnewFpLine { itemStart  :: V2Double
+                               , itemEnd    :: V2Double
+                               , itemLayer  :: PcbnewLayerT
+                               , itemWidth  :: Double
+                               , itemTstamp :: String
                                }
                 | PcbnewFpCircle { itemStart  :: V2Double
                                  , itemEnd    :: V2Double
                                  , itemLayer  :: PcbnewLayerT
                                  , itemWidth  :: Double
+                                 , itemTstamp :: String
                                  }
                 | PcbnewFpArc { itemStart  :: V2Double
                               , itemEnd    :: V2Double
                               , fpArcAngle :: Double
                               , itemLayer  :: PcbnewLayerT
                               , itemWidth  :: Double
+                              , itemTstamp :: String
                               }
-                | PcbnewFpPoly { fpPolyPts :: [V2Double]
-                               , itemLayer :: PcbnewLayerT
-                               , itemWidth :: Double
+                | PcbnewFpPoly { fpPolyPts  :: [V2Double]
+                               , itemLayer  :: PcbnewLayerT
+                               , itemWidth  :: Double
+                               , itemTstamp :: String
                                }
                 | PcbnewPad { padNumber      :: String
                             , padType        :: PcbnewPadTypeT
@@ -196,6 +201,7 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                             , itemAt         :: PcbnewAtT
                             , itemSize       :: V2Double
                             , padLayers      :: [PcbnewLayerT]
+                            , itemTstamp     :: String
                             , padAttributes_ :: [PcbnewAttribute]
                             }
     deriving (Show, Eq)
@@ -234,46 +240,45 @@ itemHandle f item = setter `fmap` (f (headOr (0,0) (view itemPoints item)))
 
 
 instance SExpressable PcbnewItem where
-    toSExpr (PcbnewFpText t s a l h si th i j) =
+    toSExpr (PcbnewFpText t s a l h si th i j ts) =
         List pos $ [ Atom pos "fp_text"
                , Atom pos $ fpTextTypeToStr t
                , Atom pos s
                , toSExpr (PcbnewAt a)
                , toSExpr (PcbnewLayer l)
+               , toSExpr (PcbnewTstamp ts)
                ]
                ++ [Atom pos "hide" | h]
-               ++ [toSExpr $ PcbnewFpTextEffects $
-                      [PcbnewFont si th i]
-                      ++ if j == [] then [] else [PcbnewJustify j]]
-    toSExpr (PcbnewFpLine s e l w) =
-        List pos [ Atom pos "fp_line"
+               ++ [toSExpr (PcbnewFpTextEffects ([PcbnewFont si th i] ++ (if j == [] then [] else [PcbnewJustify j])))]
+    toSExpr (PcbnewFpLine s e l w ts) =
+        List pos $ [ Atom pos "fp_line"
              , toSExpr (PcbnewStart s)
              , toSExpr (PcbnewEnd   e)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
-             ]
-    toSExpr (PcbnewFpCircle s e l w) =
-        List pos [ Atom pos "fp_circle"
+             ] ++ (if ts == "" then [] else [toSExpr (PcbnewTstamp ts)])
+    toSExpr (PcbnewFpCircle s e l w ts) =
+        List pos $ [ Atom pos "fp_circle"
              , toSExpr (PcbnewCenter s)
              , toSExpr (PcbnewEnd    e)
              , toSExpr (PcbnewLayer  l)
              , toSExpr (PcbnewWidth  w)
-             ]
-    toSExpr (PcbnewFpArc s e a l w) =
-        List pos [ Atom pos "fp_arc"
+             ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+    toSExpr (PcbnewFpArc s e a l w ts) =
+        List pos $ [ Atom pos "fp_arc"
              , toSExpr (PcbnewStart s)
              , toSExpr (PcbnewEnd   e)
              , toSExpr (PcbnewAngle a)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
-             ]
-    toSExpr (PcbnewFpPoly ps l w) =
-        List pos [ Atom pos "fp_poly"
+             ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+    toSExpr (PcbnewFpPoly ps l w ts) =
+        List pos $ [ Atom pos "fp_poly"
              , toSExpr (PcbnewPts ps)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
-             ]
-    toSExpr (PcbnewPad n t s a si l attrs) =
+             ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+    toSExpr (PcbnewPad n t s a si l ts attrs) =
         List pos $ [ Atom pos "pad"
                , Atom pos n
                , Atom pos $ fpPadTypeToStr t
@@ -281,7 +286,8 @@ instance SExpressable PcbnewItem where
                , toSExpr $ PcbnewAt a
                , toSExpr $ PcbnewSize si
                , toSExpr $ PcbnewLayers l
-               ] ++ map toSExpr attrs
+               ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+                 ++ map toSExpr attrs
 
 itemLayers :: Functor f => LensLike' f PcbnewItem [PcbnewLayerT]
 itemLayers f item@(PcbnewPad { }) =
@@ -294,8 +300,8 @@ padAttributes :: Functor f => LensLike' f PcbnewItem [PcbnewAttribute]
 padAttributes f i = (\as -> i {padAttributes_ = as}) `fmap` f (padAttributes_ i)
 
 instance AEq PcbnewItem where
-    (PcbnewFpText t1 s1 a1 l1 h1 si1 th1 i1 j1)
-        ~== (PcbnewFpText t2 s2 a2 l2 h2 si2 th2 i2 j2) =
+    (PcbnewFpText t1 s1 a1 l1 h1 si1 th1 i1 j1 ts1)
+        ~== (PcbnewFpText t2 s2 a2 l2 h2 si2 th2 i2 j2 ts2) =
            t1   == t2
         && s1   == s2
         && a1  ~== a2
@@ -305,34 +311,40 @@ instance AEq PcbnewItem where
         && th1 ~== th2
         && i1   == i2
         && j1   == j2
-    (PcbnewFpLine s1 e1 l1 w1) ~== (PcbnewFpLine s2 e2 l2 w2) =
+        && ts1  == ts2
+    (PcbnewFpLine s1 e1 l1 w1 ts1) ~== (PcbnewFpLine s2 e2 l2 w2 ts2) =
            s1 ~== s2
         && e1 ~== e2
         && l1  == l2
         && w1 ~== w2
-    (PcbnewFpCircle s1 e1 l1 w1) ~== (PcbnewFpCircle s2 e2 l2 w2) =
+        && ts1  == ts2
+    (PcbnewFpCircle s1 e1 l1 w1 ts1) ~== (PcbnewFpCircle s2 e2 l2 w2 ts2) =
            s1 ~== s2
         && e1 ~== e2
         && l1  == l2
         && w1 ~== w2
-    (PcbnewFpArc s1 e1 a1 l1 w1) ~== (PcbnewFpArc s2 e2 a2 l2 w2) =
+        && ts1  == ts2
+    (PcbnewFpArc s1 e1 a1 l1 w1 ts1) ~== (PcbnewFpArc s2 e2 a2 l2 w2 ts2) =
            s1 ~== s2
         && e1 ~== e2
         && a1 ~== a2
         && l1  == l2
         && w1 ~== w2
-    (PcbnewFpPoly ps1 l1 w1) ~== (PcbnewFpPoly ps2 l2 w2) =
+        && ts1  == ts2
+    (PcbnewFpPoly ps1 l1 w1 ts1) ~== (PcbnewFpPoly ps2 l2 w2 ts2) =
            ps1 ~== ps2
         && l1   == l2
         && w1  ~== w2
-    (PcbnewPad n1 t1 s1 a1 si1 l1 attrs1)
-        ~== (PcbnewPad n2 t2 s2 a2 si2 l2 attrs2) =
+        && ts1  == ts2
+    (PcbnewPad n1 t1 s1 a1 si1 l1 ts1 attrs1)
+        ~== (PcbnewPad n2 t2 s2 a2 si2 l2 ts2 attrs2) =
            n1   == n2
         && t1   == t2
         && s1   == s2
         && a1  ~== a2
         && si1 ~== si2
         && l1   == l2
+        && ts1  == ts2
         && attrs1 ~== attrs2
     x ~== y = x == y
 
@@ -346,33 +358,38 @@ defaultPcbnewFpText = PcbnewFpText { fpTextType      = FpTextUser
                                    , fpTextThickness = 1.0
                                    , fpTextItalic    = False
                                    , fpTextJustify_  = []
+                                   , itemTstamp      = ""
                                    }
 
 defaultPcbnewFpLine :: PcbnewItem
-defaultPcbnewFpLine = PcbnewFpLine { itemStart = (0,0)
-                                   , itemEnd   = (0,0)
-                                   , itemLayer = FSilkS
-                                   , itemWidth = 0.15
+defaultPcbnewFpLine = PcbnewFpLine { itemStart  = (0,0)
+                                   , itemEnd    = (0,0)
+                                   , itemLayer  = FSilkS
+                                   , itemWidth  = 0.15
+                                   , itemTstamp = ""
                                    }
 
 defaultPcbnewFpCircle :: PcbnewItem
-defaultPcbnewFpCircle = PcbnewFpCircle { itemStart = (0,0)
-                                       , itemEnd   = (0,0)
-                                       , itemLayer = FSilkS
-                                       , itemWidth = 0.15
+defaultPcbnewFpCircle = PcbnewFpCircle { itemStart    = (0,0)
+                                       , itemEnd      = (0,0)
+                                       , itemLayer    = FSilkS
+                                       , itemWidth    = 0.15
+                                       , itemTstamp   = ""
                                        }
 defaultPcbnewFpArc :: PcbnewItem
-defaultPcbnewFpArc = PcbnewFpArc { itemStart  = (0,0)
-                                 , itemEnd    = (0,0)
-                                 , fpArcAngle = 0
-                                 , itemLayer  = FSilkS
-                                 , itemWidth = 0.15
+defaultPcbnewFpArc = PcbnewFpArc { itemStart    = (0,0)
+                                 , itemEnd      = (0,0)
+                                 , fpArcAngle   = 0
+                                 , itemLayer    = FSilkS
+                                 , itemWidth    = 0.15
+                                 , itemTstamp   = ""
                                  }
 
 defaultPcbnewFpPoly :: PcbnewItem
 defaultPcbnewFpPoly = PcbnewFpPoly { fpPolyPts   = []
                                    , itemLayer   = FSilkS
-                                   , itemWidth = 0.15
+                                   , itemWidth   = 0.15
+                                   , itemTstamp  = ""
                                    }
 
 defaultPcbnewPad :: PcbnewItem
@@ -382,6 +399,7 @@ defaultPcbnewPad = PcbnewPad { padNumber      = ""
                              , itemAt         = defaultPcbnewAtT
                              , itemSize       = (0,0)
                              , padLayers      = []
+                             , itemTstamp     = ""
                              , padAttributes_ = []
                              }
 
@@ -402,6 +420,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewAt         PcbnewAtT
                      | PcbnewGenerator  String
                      | PcbnewVersion    String
+                     | PcbnewTstamp     String
                      | PcbnewFpTextType PcbnewFpTextTypeT
                      | PcbnewSize       V2Double
                      | PcbnewThickness  Double
@@ -518,6 +537,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewEnd       xy)       = toSxDD "end"        xy
     toSExpr (PcbnewXy        xy)       = toSxDD "xy"         xy
     toSExpr (PcbnewOffset    xy)       = toSxDD "offset"     xy
+    toSExpr (PcbnewTstamp s)           = toSxStr "tstamp"    s
     toSExpr (PcbnewVersion s)          = toSxStr "version"   s
     toSExpr (PcbnewGenerator s)        = toSxStr "generator" s
     toSExpr (PcbnewTedit s)            = toSxStr "tedit"     s
@@ -753,8 +773,8 @@ defaultPcbnewAtT = PcbnewAtT { pcbnewAtPoint = (0,0)
                              }
 
 fpTextJustify :: Functor f => LensLike' f PcbnewItem [PcbnewJustifyT]
-fpTextJustify f (PcbnewFpText t s a l h si th i j) =
-    (\j' -> PcbnewFpText t s a l h si th i j') `fmap` f j
+fpTextJustify f (PcbnewFpText t s a l h si th i j ts) =
+    (\j' -> PcbnewFpText t s a l h si th i j' ts) `fmap` f j
 fpTextJustify f x = (\_ -> x) `fmap` f []
 
 
