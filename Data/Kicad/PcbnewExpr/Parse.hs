@@ -276,6 +276,8 @@ asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
                 -> interpretRest sxs fp_poly {itemLayer = d}
             Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
                interpretRest sxs fp_poly {itemTstamp = uuid}
+            Right (PcbnewExprAttribute (PcbnewShapeFill f)) ->
+               interpretRest sxs fp_poly {itemFill = Just f}
             Right _ -> expecting "width, layer or 'pts'" sx
 
 asPcbnewGrPoly :: [SExpr] -> Either String PcbnewGrItem

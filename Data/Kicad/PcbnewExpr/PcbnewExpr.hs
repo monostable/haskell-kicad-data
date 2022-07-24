@@ -219,6 +219,7 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                 | PcbnewFpPoly { fpPolyPts  :: [V2Double]
                                , itemLayer  :: PcbnewLayerT
                                , itemWidth  :: Double
+                               , itemFill   :: Maybe Bool
                                , itemTstamp :: String
                                }
                 | PcbnewPad { padNumber      :: String
@@ -312,12 +313,13 @@ instance SExpressable PcbnewItem where
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
              ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
-    toSExpr (PcbnewFpPoly ps l w ts) =
+    toSExpr (PcbnewFpPoly ps l w fill ts) =
         List pos $ [ Atom pos "fp_poly"
              , toSExpr (PcbnewPts ps)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
-             ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+             ] ++ (maybeToList (fmap (toSExpr . PcbnewShapeFill) fill))
+             ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
     toSExpr (PcbnewPad n t s a si l ts attrs) =
         List pos $ [ Atom pos "pad"
                , Atom pos n
@@ -377,10 +379,11 @@ instance AEq PcbnewItem where
         && l1  == l2
         && w1 ~== w2
         && ts1  == ts2
-    (PcbnewFpPoly ps1 l1 w1 ts1) ~== (PcbnewFpPoly ps2 l2 w2 ts2) =
+    (PcbnewFpPoly ps1 l1 w1 f1 ts1) ~== (PcbnewFpPoly ps2 l2 w2 f2 ts2) =
            ps1 ~== ps2
         && l1   == l2
         && w1  ~== w2
+        && f1  == f2
         && ts1  == ts2
     (PcbnewPad n1 t1 s1 a1 si1 l1 ts1 attrs1)
         ~== (PcbnewPad n2 t2 s2 a2 si2 l2 ts2 attrs2) =
@@ -446,6 +449,7 @@ defaultPcbnewFpPoly :: PcbnewItem
 defaultPcbnewFpPoly = PcbnewFpPoly { fpPolyPts   = []
                                    , itemLayer   = FSilkS
                                    , itemWidth   = 0.15
+                                   , itemFill    = Nothing
                                    , itemTstamp  = ""
                                    }
 
