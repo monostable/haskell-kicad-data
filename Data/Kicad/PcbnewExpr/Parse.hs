@@ -102,6 +102,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
                   [Atom _ "none"] -> Right $ PcbnewShapeFill False
                   [Atom _ "solid"] -> Right $ PcbnewShapeFill True
                   _ -> expecting' "'none' or 'solid'" sxs
+    "locked" -> Right $ PcbnewExprAttribute PcbnewLocked
     _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
@@ -320,6 +321,8 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
             Right (PcbnewExprAttribute a@(PcbnewRoundrectRratio _))
                 -> pushToAttrs sxs a pad
             Right (PcbnewExprAttribute a@(PcbnewDieLength _))
+                -> pushToAttrs sxs a pad
+            Right (PcbnewExprAttribute a@(PcbnewLocked))
                 -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)
