@@ -44,6 +44,8 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , fpTextTypeToStr
 , strToJustify
 , justifyToString
+, strToZoneConnect
+, zoneConnectToStr
 -- * Default (empty) instances
 , defaultPcbnewModule
 , defaultPcbnewFootprint
@@ -510,7 +512,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewOffset            V2Double
                      | PcbnewAutoplaceCost90   Int
                      | PcbnewAutoplaceCost180  Int
-                     | PcbnewZoneConnect       Int
+                     | PcbnewZoneConnect       PcbnewZoneConnectT
                      | PcbnewThermalWidth      Double
                      | PcbnewThermalGap        Double
                      | PcbnewJustify           [PcbnewJustifyT]
@@ -599,8 +601,8 @@ instance SExpressable PcbnewAttribute where
         List pos [Atom pos "autoplace_cost90"  , Atom pos (show i)]
     toSExpr (PcbnewAutoplaceCost180 i) =
         List pos [Atom pos "autoplace_cost180" , Atom pos (show i)]
-    toSExpr (PcbnewZoneConnect      i) =
-        List pos [Atom pos "zone_connect"      , Atom pos (show i)]
+    toSExpr (PcbnewZoneConnect      zc) =
+        List pos [Atom pos "zone_connect"      , Atom pos (zoneConnectToStr zc)]
     toSExpr (PcbnewJustify         js) =
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
     toSExpr (PcbnewShapeFill b)        = List pos [Atom pos "fill", Atom pos (if b then "solid" else "none")]
@@ -785,6 +787,25 @@ strToPadShape s = lookup s strToPadShapeMap
 
 fpPadShapeToStr :: PcbnewPadShapeT -> String
 fpPadShapeToStr t = fromMaybe "" $ lookup t $ map swap strToPadShapeMap
+
+
+data PcbnewZoneConnectT = NotConnected | ThermalRelief | Solid | TroughHoleThermalRelief
+    deriving (Show, Eq, Enum, Bounded)
+
+strToZoneConnectMap :: [(String, PcbnewZoneConnectT)]
+strToZoneConnectMap =
+  [ ("0", NotConnected)
+  , ("1", ThermalRelief)
+  , ("2", Solid)
+  , ("3", TroughHoleThermalRelief)
+  ]
+
+strToZoneConnect :: String -> Maybe PcbnewZoneConnectT
+strToZoneConnect s = lookup s strToZoneConnectMap
+
+zoneConnectToStr :: PcbnewZoneConnectT -> String
+zoneConnectToStr t = fromMaybe "" $ lookup t $ map swap strToZoneConnectMap
+
 
 data PcbnewJustifyT =
     JustifyLeft | JustifyRight | JustifyTop | JustifyBottom | JustifyMirror

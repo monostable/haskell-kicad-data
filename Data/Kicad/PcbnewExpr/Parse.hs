@@ -67,6 +67,8 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "thickness"  -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
     "width"      -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
     "justify"    -> PcbnewExprAttribute <$> asPcbnewJustifyT         sxs
+    "zone_connect"
+        -> PcbnewExprAttribute <$> asZoneConnect sxs
     "thermal_gap"
         -> PcbnewExprAttribute <$> asDouble PcbnewThermalGap sxs
     "thermal_width"
@@ -91,8 +93,6 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost180 sxs
     "autoplace_cost90"
         -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost90 sxs
-    "zone_connect"
-        -> PcbnewExprAttribute <$> asInt PcbnewZoneConnect sxs
     "roundrect_rratio"
         -> PcbnewExprAttribute <$> asDouble PcbnewRoundrectRratio sxs
     "die_length"
@@ -356,6 +356,12 @@ onePcbnewLayer (Atom _ n) = case strToLayer n of
     Just l  -> Right $ PcbnewLayer l
     Nothing -> Left ("-> Unknown layer name: " ++ n)
 onePcbnewLayer x = expecting "layer name" x
+
+asZoneConnect :: [SExpr] -> Either String PcbnewAttribute
+asZoneConnect [Atom _ n] = case strToZoneConnect n of
+    Just zc -> Right $ PcbnewZoneConnect zc
+    Nothing -> Left $ "-> Unknown zone_connect " ++ n
+asZoneConnect x = expecting' "one number" x
 
 asPcbnewAt :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewAt sx@(Atom _ x:[Atom _ y]) = case readXy x y of
