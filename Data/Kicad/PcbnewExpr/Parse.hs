@@ -615,7 +615,8 @@ expecting x y =
 
 
 expecting' :: String -> [SExpr] -> Either String a
-expecting' x y = expecting x $ List (newPos "" 0 0) y
+expecting' x y = expecting x $ List pos y
+  where pos = headOr (newPos "" 0 0) $ fmap getPos y
 
 
 {- Like readMaybe but allows for '.1' and '-.1' style doubles -}
