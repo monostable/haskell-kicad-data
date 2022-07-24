@@ -79,8 +79,6 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprAttribute <$> asDouble PcbnewPasteMargin sxs
     "solder_mask_margin"
         -> PcbnewExprAttribute <$> asDouble PcbnewMaskMargin sxs
-    "clearance"
-        -> PcbnewExprAttribute <$> asDouble PcbnewClearance sxs
     "solder_paste_ratio"
         -> PcbnewExprAttribute <$> asDouble PcbnewSolderPasteRatio sxs
     "fp_line"
@@ -102,10 +100,17 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
                                            Left _ -> asXyz PcbnewModelOffset sxs
     "fill" -> PcbnewExprAttribute <$> case sxs of
                   [Atom _ "none"] -> Right $ PcbnewShapeFill False
-                  [Atom _ "solid"] -> Right $ PcbnewShapeFill True
+                  [Atom _ "solid"]-> Right $ PcbnewShapeFill True
+                  [Atom _ "yes"]  -> Right $ PcbnewGrItemFill
                   _ -> expecting' "'none' or 'solid'" sxs
+    "clearance" -> PcbnewExprAttribute <$> case asDouble PcbnewClearance sxs of
+                                             Right x -> Right x
+                                             Left err -> asPcbnewOptionsClearance sxs
     "locked" -> Right $ PcbnewExprAttribute PcbnewLocked
     "members" -> PcbnewExprAttribute <$> asStrings PcbnewMembers sxs
+    "options" -> PcbnewExprAttribute <$> asPcbnewOptions sxs
+    "anchor" -> PcbnewExprAttribute <$> asPcbnewOptionsAnchor sxs
+    "primitives" -> PcbnewExprAttribute <$> asPcbnewPrimitives sxs
     _ -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 
 fromSExpr sx@(Atom _ s) = case s of
@@ -272,6 +277,9 @@ asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
                interpretRest sxs fp_poly {itemTstamp = uuid}
             Right _ -> expecting "width, layer or 'pts'" sx
 
+asPcbnewGrPoly :: [SExpr] -> Either String PcbnewGrItem
+asPcbnewGrPoly xs = undefined
+
 asPcbnewGroup :: [SExpr] -> Either String PcbnewItem
 asPcbnewGroup (Atom _ n:xs) =
     interpretRest xs defaultPcbnewGroup { groupName = n }
@@ -342,6 +350,10 @@ asPcbnewPad (n:t:s:xs) = interpretNumber
             Right (PcbnewExprAttribute a@(PcbnewDieLength _))
                 -> pushToAttrs sxs a pad
             Right (PcbnewExprAttribute a@(PcbnewLocked))
+                -> pushToAttrs sxs a pad
+            Right (PcbnewExprAttribute a@(PcbnewOptions _ _))
+                -> pushToAttrs sxs a pad
+            Right (PcbnewExprAttribute a@(PcbnewPrimitives _))
                 -> pushToAttrs sxs a pad
             _ -> expecting "at, size, drill, layers , margins etc. or nothing" sx
         pushToAttrs sxs a pad = interpretRest sxs (over padAttributes (++[a]) pad)
@@ -532,6 +544,58 @@ oneJustifyT sx@(Atom _ s) = case strToJustify s of
    Nothing -> expecting justifyOneOf sx
 oneJustifyT x = expecting justifyOneOf x
 
+
+asPcbnewOptions :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewOptions xs@([clearance, anchor]) =
+       case fromSExpr clearance of
+         Left err -> Left err
+         Right (PcbnewExprAttribute (PcbnewOptionsClearance c)) ->
+           case fromSExpr anchor of
+                Left err -> Left err
+                Right (PcbnewExprAttribute (PcbnewOptionsAnchor a))
+                  -> Right (PcbnewOptions c a)
+                Right _ -> expecting "anchor shape (e.g. 'rect') but got" anchor
+         Right _ -> expecting "clearance type (e.g. 'outline') but got" clearance
+asPcbnewOptions xs = expecting' "clearance and anchor" xs
+
+asPcbnewOptionsClearance :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewOptionsClearance xs@[Atom _ s] = case strToClearance s of
+   Just c -> Right $ PcbnewOptionsClearance c
+   Nothing -> expecting' "clearance option (e.g. outline)" xs
+asPcbnewOptionsClearance xs = expecting' "clearance option (e.g. outline)" xs
+
+asPcbnewOptionsAnchor :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewOptionsAnchor xs@[Atom _ s] = case strToAnchor s of
+   Just a -> Right $ PcbnewOptionsAnchor a
+   Nothing -> expecting' "anchor shape (e.g. rect)" xs
+asPcbnewOptionsAnchor xs = expecting' "anchor shape (e.g. rect)" xs
+
+asPcbnewPrimitives :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewPrimitives xs = case asGrItems xs of
+            Left err -> Left err
+            Right grs -> Right $ PcbnewPrimitives grs
+
+asGrItems :: [SExpr] -> Either String [PcbnewGrItem]
+asGrItems xs = if length (lefts grs) /= 0 then Left (head (lefts grs)) else Right $ rights grs
+  where grs = fmap oneGrItem xs
+
+
+oneGrItem :: SExpr -> Either String PcbnewGrItem
+oneGrItem (List _ ((Atom _ "gr_poly"):pts:xs)) =
+  case fromSExpr pts of
+    Left err -> Left err
+    Right (PcbnewExprAttribute (PcbnewPts v2s))
+      -> interpretRest xs $ defaultPcbnewGrPoly {grPolyPoints = v2s}
+        where
+          interpretRest [] gr = Right gr
+          interpretRest (sx:sxs) gr = case fromSExpr sx of
+                Left err -> Left err
+                Right (PcbnewExprAttribute (PcbnewWidth w))
+                  -> Right $ gr {grItemWidth = w}
+                Right (PcbnewExprAttribute (PcbnewGrItemFill))
+                  -> Right $ gr {grItemFill = True}
+                Right _ -> expecting "width or fill" sx
+oneGrItem sx = expecting "points" sx
 
 expecting :: String -> SExpr -> Either String a
 expecting x y =

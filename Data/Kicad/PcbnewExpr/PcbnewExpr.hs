@@ -5,18 +5,21 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 (
 -- * Types
   PcbnewExpr(..)
-, PcbnewModule(..)
-, PcbnewFootprint(..)
-, PcbnewItem(..)
 , PcbnewAttribute(..)
+, PcbnewFootprint(..)
+, PcbnewGrItem(..)
+, PcbnewItem(..)
+, PcbnewModule(..)
 -- * Attribute types
-, PcbnewDrillT(..)
+, PcbnewAnchorT(..)
+, PcbnewClearanceT(..)
 , PcbnewAtT(..)
+, PcbnewDrillT(..)
+, PcbnewFpTextTypeT(..)
+, PcbnewJustifyT(..)
 , PcbnewLayerT(..)
 , PcbnewPadShapeT(..)
 , PcbnewPadTypeT(..)
-, PcbnewFpTextTypeT(..)
-, PcbnewJustifyT(..)
 , PcbnewXyzT
 , V2Double
 -- * Lenses and other getters/setters
@@ -46,6 +49,10 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , justifyToString
 , strToZoneConnect
 , zoneConnectToStr
+, strToClearance
+, clearanceToStr
+, strToAnchor
+, anchorToStr
 -- * Default (empty) instances
 , defaultPcbnewModule
 , defaultPcbnewFootprint
@@ -61,6 +68,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , defaultPcbnewFont
 , defaultPcbnewModel
 , defaultPcbnewAtT
+, defaultPcbnewGrPoly
 )
 where
 import Lens.Family2
@@ -76,6 +84,7 @@ import Data.Kicad.Util
 data PcbnewExpr = PcbnewExprModule PcbnewModule
                 | PcbnewExprFootprint PcbnewFootprint
                 | PcbnewExprItem PcbnewItem
+                | PcbnewExprGrItem PcbnewGrItem
                 | PcbnewExprAttribute PcbnewAttribute
     deriving (Show, Eq)
 
@@ -83,6 +92,7 @@ instance AEq PcbnewExpr where
     PcbnewExprModule    x ~== PcbnewExprModule    y = x ~== y
     PcbnewExprFootprint x ~== PcbnewExprFootprint y = x ~== y
     PcbnewExprItem      x ~== PcbnewExprItem      y = x ~== y
+    PcbnewExprGrItem    x ~== PcbnewExprGrItem    y = x ~== y
     PcbnewExprAttribute x ~== PcbnewExprAttribute y = x ~== y
     _ ~== _ = False
 
@@ -90,6 +100,7 @@ instance SExpressable PcbnewExpr where
     toSExpr (PcbnewExprModule x)    = toSExpr x
     toSExpr (PcbnewExprFootprint x) = toSExpr x
     toSExpr (PcbnewExprItem x)      = toSExpr x
+    toSExpr (PcbnewExprGrItem x)    = toSExpr x
     toSExpr (PcbnewExprAttribute x) = toSExpr x
 
 data PcbnewModule = PcbnewModule { pcbnewModuleName  :: String
@@ -461,6 +472,25 @@ instance AEq PcbnewDrillT where
     PcbnewDrillT s1 o1 off1 ~== PcbnewDrillT s2 o2 off2
         = s1 ~== s2 && o1 == o2 && off1 ~== off2
 
+
+data PcbnewGrItem = PcbnewGrPoly { grPolyPoints :: [V2Double]
+                                 , grItemWidth :: Double
+                                 , grItemFill :: Bool
+                                 }
+      deriving (Show, Eq)
+
+instance AEq PcbnewGrItem where
+    PcbnewGrPoly pts1 w1 f1 ~== PcbnewGrPoly pts2 w2 f2 = pts1 ~== pts2 && w1 ~== w2 && f1 == f2
+
+instance SExpressable PcbnewGrItem where
+    toSExpr (PcbnewGrPoly pts w f) = List pos $
+        [ Atom pos "gr_poly"
+        , toSExpr (PcbnewPts pts)
+        , toSExpr (PcbnewWidth w)
+        ] ++ (if f then [toSExpr PcbnewGrItemFill] else [])
+
+defaultPcbnewGrPoly = PcbnewGrPoly [] 0 False
+
 data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewAt         PcbnewAtT
                      | PcbnewGenerator  String
@@ -520,8 +550,14 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewShapeFill         Bool
                      | PcbnewId                String
                      | PcbnewMembers           [String]
+                     | PcbnewOptions { pcbnewOptionsClearance :: PcbnewClearanceT
+                                     , pcbnewOptionsAnchor    :: PcbnewAnchorT
+                                     }
+                     | PcbnewOptionsClearance PcbnewClearanceT
+                     | PcbnewOptionsAnchor    PcbnewAnchorT
+                     | PcbnewPrimitives       [PcbnewGrItem]
+                     | PcbnewGrItemFill
     deriving (Show, Eq)
-
 
 
 type PcbnewXyzT = (Double, Double, Double)
@@ -607,7 +643,16 @@ instance SExpressable PcbnewAttribute where
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
     toSExpr (PcbnewShapeFill b)        = List pos [Atom pos "fill", Atom pos (if b then "solid" else "none")]
     toSExpr (PcbnewId s)               = List pos [Atom pos "id", Atom pos s]
-    toSExpr (PcbnewMembers ms)         = List pos $  [Atom pos "members"] ++ (fmap (Atom pos) ms)
+    toSExpr (PcbnewMembers ms)         = List pos $ [Atom pos "members"] ++ (fmap (Atom pos) ms)
+    toSExpr (PcbnewOptions clr anchr)  = List pos $ [Atom pos "options"
+                                                    , toSExpr (PcbnewOptionsClearance clr)
+                                                    , toSExpr (PcbnewOptionsAnchor anchr)
+                                                    ]
+    toSExpr (PcbnewOptionsAnchor a)    = List pos $ [Atom pos "anchor", Atom pos (anchorToStr a)]
+    toSExpr (PcbnewOptionsClearance c) = List pos $ [Atom pos "clearance", Atom pos (clearanceToStr c)]
+    toSExpr (PcbnewGrItemFill)         = List pos $ [Atom pos "fill", Atom pos "yes"]
+    toSExpr (PcbnewPrimitives grs)     = List pos $ [Atom pos "primitives"] ++ fmap toSExpr grs
+    toSExpr x                          = error $ "toSExpr not implmented for " ++ (show x)
 
 
 atomDbl :: Double -> SExpr
@@ -771,7 +816,7 @@ strToPadType s = lookup s strToPadTypeMap
 fpPadTypeToStr :: PcbnewPadTypeT -> String
 fpPadTypeToStr t = fromMaybe "" $ lookup t $ map swap strToPadTypeMap
 
-data PcbnewPadShapeT = Circle | Oval | Rect | Trapezoid | RoundRect
+data PcbnewPadShapeT = Circle | Oval | Rect | Trapezoid | RoundRect | Custom
     deriving (Show, Eq, Enum, Bounded)
 
 strToPadShapeMap :: [(String, PcbnewPadShapeT)]
@@ -780,6 +825,7 @@ strToPadShapeMap = [ ("circle"   , Circle)
                    , ("rect"     , Rect)
                    , ("roundrect", RoundRect)
                    , ("trapezoid", Trapezoid)
+                   , ("custom"  ,  Custom)
                    ]
 
 strToPadShape :: String -> Maybe PcbnewPadShapeT
@@ -883,3 +929,34 @@ instance Num V2Double where
     abs (x,y)     = (abs x, abs y)
     signum (x,y)  = (signum x, signum y)
     fromInteger i = (fromInteger i, fromInteger i)
+
+data PcbnewClearanceT = ClearanceOutline | ClearanceConvexHull
+  deriving (Show, Eq, Enum, Bounded)
+
+strToPcbnewClearanceMap :: [(String, PcbnewClearanceT)]
+strToPcbnewClearanceMap =
+  [ ("outline", ClearanceOutline)
+  , ("convexhull", ClearanceConvexHull)
+  ]
+
+strToClearance :: String -> Maybe PcbnewClearanceT
+strToClearance s = lookup s strToPcbnewClearanceMap
+
+clearanceToStr :: PcbnewClearanceT -> String
+clearanceToStr t = fromMaybe "" $ lookup t $ map swap strToPcbnewClearanceMap
+
+data PcbnewAnchorT = AnchorRect | AnchorCircle
+  deriving (Show, Eq, Enum, Bounded)
+
+
+strToPcbnewAnchorMap :: [(String, PcbnewAnchorT)]
+strToPcbnewAnchorMap =
+  [ ("rect", AnchorRect)
+  , ("circle", AnchorCircle)
+  ]
+
+strToAnchor :: String -> Maybe PcbnewAnchorT
+strToAnchor s = lookup s strToPcbnewAnchorMap
+
+anchorToStr :: PcbnewAnchorT -> String
+anchorToStr t = fromMaybe "" $ lookup t $ map swap strToPcbnewAnchorMap
