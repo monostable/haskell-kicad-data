@@ -60,7 +60,6 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "descr"      -> PcbnewExprAttribute <$> asString PcbnewDescr     sxs
     "tags"       -> PcbnewExprAttribute <$> asString PcbnewTags      sxs
     "path"       -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
-    "attr"       -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
     "tedit"      -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
     "id"         -> PcbnewExprAttribute <$> asString PcbnewId        sxs
     "angle"      -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
@@ -111,6 +110,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "options" -> PcbnewExprAttribute <$> asPcbnewOptions sxs
     "anchor" -> PcbnewExprAttribute <$> asPcbnewOptionsAnchor sxs
     "primitives" -> PcbnewExprAttribute <$> asPcbnewPrimitives sxs
+    "attr"       -> PcbnewExprAttribute <$> asPcbnewAttr sxs
     _ -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 
 fromSExpr sx@(Atom _ s) = case s of
@@ -599,6 +599,19 @@ oneGrItem (List _ ((Atom _ "gr_poly"):pts:xs)) =
                   -> Right $ gr {grItemFill = True}
                 Right _ -> expecting "width or fill" sx
 oneGrItem sx = expecting "points" sx
+
+asPcbnewAttr :: [SExpr] -> Either String PcbnewAttribute
+asPcbnewAttr [] = Right defaultPcbnewAttr
+asPcbnewAttr (x:xs) = interpret (asPcbnewAttr xs) x
+  where
+    interpret (Right attr) sx = case sx of
+        (Atom _ "board_only")             -> Right $ attr {pcbnewAttrBoardOnly = True}
+        (Atom _ "exclude_from_pos_files") -> Right $ attr {pcbnewAttrExcludeFromPos = True}
+        (Atom _ "exclude_from_bom")       -> Right $ attr {pcbnewAttrExcludeFromBom = True}
+        (Atom _ s) -> case strToAttrFootprintType s of
+            Just a -> Right $ attr {pcbnewAttrFootprintType = Just a}
+            Nothing -> expecting "attribute (e.g. 'board_only)" sx
+        _  -> expecting "attr (e.g. 'board_only)" sx
 
 expecting :: String -> SExpr -> Either String a
 expecting x y =

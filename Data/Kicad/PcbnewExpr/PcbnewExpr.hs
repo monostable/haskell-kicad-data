@@ -4,16 +4,16 @@
 module Data.Kicad.PcbnewExpr.PcbnewExpr
 (
 -- * Types
-  PcbnewExpr(..)
-, PcbnewAttribute(..)
+  PcbnewAttribute(..)
+, PcbnewExpr(..)
 , PcbnewFootprint(..)
 , PcbnewGrItem(..)
 , PcbnewItem(..)
 , PcbnewModule(..)
 -- * Attribute types
 , PcbnewAnchorT(..)
-, PcbnewClearanceT(..)
 , PcbnewAtT(..)
+, PcbnewClearanceT(..)
 , PcbnewDrillT(..)
 , PcbnewFpTextTypeT(..)
 , PcbnewJustifyT(..)
@@ -23,52 +23,55 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , PcbnewXyzT
 , V2Double
 -- * Lenses and other getters/setters
-, fpTextJustify
-, moduleItems
-, moduleAttrs
-, footprintItems
-, footprintAttrs
-, itemLayers
-, padAttributes
 , atP
 , atX
 , atY
-, itemsOn
-, itemPoints
+, footprintAttrs
+, footprintItems
+, fpTextJustify
 , itemHandle
+, itemLayers
+, itemPoints
+, itemsOn
+, moduleAttrs
+, moduleItems
+, padAttributes
 -- * String conversion
-, strToLayer
-, layerToStr
-, strToPadType
-, fpPadTypeToStr
-, strToPadShape
+, anchorToStr
+, attrFootrintTypeToStr
+, clearanceToStr
 , fpPadShapeToStr
-, strToFpTextType
+, fpPadTypeToStr
 , fpTextTypeToStr
-, strToJustify
 , justifyToString
+, layerToStr
+, strToAnchor
+, strToAttrFootprintType
+, strToClearance
+, strToFpTextType
+, strToJustify
+, strToLayer
+, strToPadShape
+, strToPadType
 , strToZoneConnect
 , zoneConnectToStr
-, strToClearance
-, clearanceToStr
-, strToAnchor
-, anchorToStr
 -- * Default (empty) instances
-, defaultPcbnewModule
-, defaultPcbnewFootprint
-, defaultPcbnewFpText
-, defaultPcbnewFpLine
-, defaultPcbnewFpCircle
-, defaultPcbnewFpRect
-, defaultPcbnewFpArc
-, defaultPcbnewFpPoly
-, defaultPcbnewGroup
-, defaultPcbnewPad
+, defaultPcbnewAtT
+, defaultPcbnewAttr
 , defaultPcbnewDrillT
 , defaultPcbnewFont
-, defaultPcbnewModel
-, defaultPcbnewAtT
+, defaultPcbnewFootprint
+, defaultPcbnewFpArc
+, defaultPcbnewFpCircle
+, defaultPcbnewFpLine
+, defaultPcbnewFpPoly
+, defaultPcbnewFpRect
+, defaultPcbnewFpText
 , defaultPcbnewGrPoly
+, defaultPcbnewGroup
+, defaultPcbnewModel
+, defaultPcbnewModule
+, defaultPcbnewPad
 )
 where
 import Lens.Family2
@@ -515,7 +518,11 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewDescr      String
                      | PcbnewTags       String
                      | PcbnewPath       String
-                     | PcbnewAttr       String
+                     | PcbnewAttr { pcbnewAttrFootprintType :: Maybe PcbnewAttrFootprintType
+                                  , pcbnewAttrBoardOnly :: Bool
+                                  , pcbnewAttrExcludeFromPos :: Bool
+                                  , pcbnewAttrExcludeFromBom :: Bool
+                                  }
                      | PcbnewLayers     [PcbnewLayerT]
                      | PcbnewDrill      PcbnewDrillT
                      | PcbnewRectDelta  V2Double
@@ -634,7 +641,6 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewDescr s)            = toSxStr "descr"     s
     toSExpr (PcbnewTags  s)            = toSxStr "tags"      s
     toSExpr (PcbnewPath  s)            = toSxStr "path"      s
-    toSExpr (PcbnewAttr  s)            = toSxStr "attr"      s
     toSExpr PcbnewItalic               = Atom pos "italic"
     toSExpr PcbnewHide                 = Atom pos "hide"
     toSExpr PcbnewPlaced               = Atom pos "placed"
@@ -658,6 +664,11 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewOptionsClearance c) = List pos $ [Atom pos "clearance", Atom pos (clearanceToStr c)]
     toSExpr (PcbnewGrItemFill)         = List pos $ [Atom pos "fill", Atom pos "yes"]
     toSExpr (PcbnewPrimitives grs)     = List pos $ [Atom pos "primitives"] ++ fmap toSExpr grs
+    toSExpr (PcbnewAttr t bo efpf efb) = List pos $ [ Atom pos "attr" ]
+                                            ++ fmap (Atom pos . attrFootrintTypeToStr) (maybeToList t)
+                                            ++ if bo then [Atom pos "board_only"] else []
+                                            ++ if efpf then [Atom pos "exclude_from_pos_files"] else []
+                                            ++ if efb then [Atom pos "exclude_from_bom"] else []
     toSExpr x                          = error $ "toSExpr not implmented for " ++ (show x)
 
 
@@ -717,6 +728,12 @@ defaultPcbnewModel = PcbnewModel { pcbnewModelPath   = ""
                                  , pcbnewModelRotate = (0,0,0)
                                  , pcbnewModelHide   = False
                                  }
+defaultPcbnewAttr :: PcbnewAttribute
+defaultPcbnewAttr = PcbnewAttr { pcbnewAttrFootprintType  = Nothing
+                               , pcbnewAttrBoardOnly      = False
+                               , pcbnewAttrExcludeFromPos = False
+                               , pcbnewAttrExcludeFromBom = False
+                               }
 
 data PcbnewLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS
                   | BCu       | BPaste    | BMask     | DwgsUser  | CmtsUser
@@ -895,6 +912,7 @@ defaultPcbnewAtT = PcbnewAtT { pcbnewAtPoint = (0,0)
                              , pcbnewAtUnlocked = False
                              }
 
+
 fpTextJustify :: Functor f => LensLike' f PcbnewItem [PcbnewJustifyT]
 fpTextJustify f (PcbnewFpText t s a l h si th i j ts) =
     (\j' -> PcbnewFpText t s a l h si th i j' ts) `fmap` f j
@@ -967,3 +985,19 @@ strToAnchor s = lookup s strToPcbnewAnchorMap
 
 anchorToStr :: PcbnewAnchorT -> String
 anchorToStr t = fromMaybe "" $ lookup t $ map swap strToPcbnewAnchorMap
+
+data PcbnewAttrFootprintType = PcbnewAttrSmd | PcbnewAttrThroughHole | PcbnewAttrVirtual
+  deriving (Show, Eq, Enum, Bounded)
+
+strToPcbnewAttrFootprintTypeMap :: [(String, PcbnewAttrFootprintType)]
+strToPcbnewAttrFootprintTypeMap =
+  [ ("smd", PcbnewAttrSmd)
+  , ("through_hole", PcbnewAttrThroughHole)
+  , ("virtual", PcbnewAttrVirtual)
+  ]
+
+strToAttrFootprintType :: String -> Maybe PcbnewAttrFootprintType
+strToAttrFootprintType s = lookup s strToPcbnewAttrFootprintTypeMap
+
+attrFootrintTypeToStr :: PcbnewAttrFootprintType -> String
+attrFootrintTypeToStr t = fromMaybe "" $ lookup t $ map swap strToPcbnewAttrFootprintTypeMap
