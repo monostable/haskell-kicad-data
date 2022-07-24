@@ -50,6 +50,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , defaultPcbnewFpText
 , defaultPcbnewFpLine
 , defaultPcbnewFpCircle
+, defaultPcbnewFpRect
 , defaultPcbnewFpArc
 , defaultPcbnewFpPoly
 , defaultPcbnewPad
@@ -183,6 +184,13 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                                  , itemWidth  :: Double
                                  , itemTstamp :: String
                                  }
+                | PcbnewFpRect { itemStart  :: V2Double
+                               , itemEnd    :: V2Double
+                               , itemLayer  :: PcbnewLayerT
+                               , itemWidth  :: Double
+                               , itemFill   :: Maybe Bool
+                               , itemTstamp :: String
+                               }
                 | PcbnewFpArc { itemStart  :: V2Double
                               , itemEnd    :: V2Double
                               , fpArcAngle :: Double
@@ -264,6 +272,14 @@ instance SExpressable PcbnewItem where
              , toSExpr (PcbnewLayer  l)
              , toSExpr (PcbnewWidth  w)
              ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+    toSExpr (PcbnewFpRect s e l w fill ts) =
+        List pos $ [ Atom pos "fp_rect"
+             , toSExpr (PcbnewCenter s)
+             , toSExpr (PcbnewEnd    e)
+             , toSExpr (PcbnewLayer  l)
+             , toSExpr (PcbnewWidth  w)
+             ] ++ (maybeToList (fmap (toSExpr . PcbnewShapeFill) fill))
+             ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
     toSExpr (PcbnewFpArc s e a l w ts) =
         List pos $ [ Atom pos "fp_arc"
              , toSExpr (PcbnewStart s)
@@ -376,6 +392,16 @@ defaultPcbnewFpCircle = PcbnewFpCircle { itemStart    = (0,0)
                                        , itemWidth    = 0.15
                                        , itemTstamp   = ""
                                        }
+
+defaultPcbnewFpRect :: PcbnewItem
+defaultPcbnewFpRect = PcbnewFpRect { itemStart  = (0,0)
+                                   , itemEnd    = (0,0)
+                                   , itemLayer  = FSilkS
+                                   , itemWidth  = 0.15
+                                   , itemFill   = Nothing
+                                   , itemTstamp = ""
+                                   }
+
 defaultPcbnewFpArc :: PcbnewItem
 defaultPcbnewFpArc = PcbnewFpArc { itemStart    = (0,0)
                                  , itemEnd      = (0,0)
@@ -472,6 +498,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewThermalGap        Double
                      | PcbnewJustify           [PcbnewJustifyT]
                      | PcbnewDieLength         Double
+                     | PcbnewShapeFill         Bool
     deriving (Show, Eq)
 
 
@@ -557,6 +584,7 @@ instance SExpressable PcbnewAttribute where
         List pos [Atom pos "zone_connect"      , Atom pos (show i)]
     toSExpr (PcbnewJustify         js) =
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
+    toSExpr (PcbnewShapeFill b)        = List pos [Atom pos "fill", Atom pos (if b then "solid" else "none")]
 
 
 atomDbl :: Double -> SExpr

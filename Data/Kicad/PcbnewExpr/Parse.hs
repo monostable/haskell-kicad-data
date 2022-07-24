@@ -83,6 +83,8 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprItem <$> asFp defaultPcbnewFpLine sxs
     "fp_circle"
         -> PcbnewExprItem <$> asFp defaultPcbnewFpCircle sxs
+    "fp_rect"
+        -> PcbnewExprItem <$> asFp defaultPcbnewFpRect sxs
     "autoplace_cost180"
         -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost180 sxs
     "autoplace_cost90"
@@ -96,6 +98,10 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "offset" -> PcbnewExprAttribute <$> case (asXy PcbnewOffset sxs) of
                                            Right _ -> asXy PcbnewOffset sxs
                                            Left _ -> asXyz PcbnewModelOffset sxs
+    "fill" -> PcbnewExprAttribute <$> case sxs of
+                  [Atom _ "none"] -> Right $ PcbnewShapeFill False
+                  [Atom _ "solid"] -> Right $ PcbnewShapeFill True
+                  _ -> expecting' "'none' or 'solid'" sxs
     _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
@@ -211,6 +217,8 @@ asFp defaultFp (s:e:xs) = interpretStart defaultFp
                 -> interpretRest sxs fp_shape {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
                 -> interpretRest sxs fp_shape {itemLayer = d}
+            Right (PcbnewExprAttribute (PcbnewShapeFill b))
+                -> interpretRest sxs fp_shape {itemFill = Just b}
             Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
                interpretRest sxs fp_shape {itemTstamp = uuid}
             Right _ -> expecting "width or layer" sx
