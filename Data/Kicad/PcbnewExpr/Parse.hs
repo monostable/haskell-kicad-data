@@ -379,20 +379,17 @@ asZoneConnect [Atom _ n] = case strToZoneConnect n of
 asZoneConnect x = expecting' "one number" x
 
 asPcbnewAt :: [SExpr] -> Either String PcbnewAttribute
-asPcbnewAt sx@(Atom _ x:[Atom _ y]) = case readXy x y of
-    Just xy -> Right $ PcbnewAt $ defaultPcbnewAtT {pcbnewAtPoint = xy}
-    Nothing -> expecting' "x y coordinates" sx
-asPcbnewAt sx@(Atom posx x:Atom posy y:[Atom _ o]) =
-   case o of
-     "unlocked" -> case readXy x y of
-       Just xy -> Right $ PcbnewAt $ defaultPcbnewAtT {pcbnewAtPoint = xy, pcbnewAtUnlocked = True}
-       Nothing -> expecting' "x y coordinates" sx
-     _ -> case readXyz x y o of
-       Just (x', y', o') -> Right $ PcbnewAt $ PcbnewAtT (x',y') o' False
-       Nothing -> expecting' "x y coordinates and orientation" sx
+asPcbnewAt all@(Atom _ x:Atom _ y:xs) = case readXy x y of
+    Nothing -> expecting' "x y coordinates" all
+    Just xy -> fmap PcbnewAt $ interpretRest xs (defaultPcbnewAtT {pcbnewAtPoint = xy})
+      where interpretRest [] at     = Right at
+            interpretRest (sx:sxs) at = case sx of
+                    Atom _ "unlocked" -> interpretRest sxs (at {pcbnewAtUnlocked = True})
+                    Atom _ s -> case readMaybeDouble s of
+                       Nothing -> expecting "unlocked or orientation" sx
+                       Just d -> interpretRest sxs (at {pcbnewAtOrientation = d})
 asPcbnewAt l@[List _ _] = asXyz PcbnewModelAt l
-asPcbnewAt x =
-    expecting' "x y coordinates and orientation" x
+asPcbnewAt x = expecting' "x y coordinates" x
 
 readXy :: String -> String -> Maybe (Double, Double)
 readXy x y = do
