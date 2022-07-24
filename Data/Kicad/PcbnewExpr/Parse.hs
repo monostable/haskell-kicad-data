@@ -36,6 +36,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
     "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
     "fp_poly"    -> PcbnewExprItem      <$> asPcbnewFpPoly           sxs
+    "group"      -> PcbnewExprItem      <$> asPcbnewGroup            sxs
     "layer"      -> PcbnewExprAttribute <$> asPcbnewLayer            sxs
     "at"         -> PcbnewExprAttribute <$> asPcbnewAt               sxs
     "effects"    -> PcbnewExprAttribute <$> asPcbnewEffects          sxs
@@ -61,6 +62,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "path"       -> PcbnewExprAttribute <$> asString PcbnewPath      sxs
     "attr"       -> PcbnewExprAttribute <$> asString PcbnewAttr      sxs
     "tedit"      -> PcbnewExprAttribute <$> asString PcbnewTedit     sxs
+    "id"         -> PcbnewExprAttribute <$> asString PcbnewId        sxs
     "angle"      -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
     "thickness"  -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
     "width"      -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
@@ -103,7 +105,9 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
                   [Atom _ "solid"] -> Right $ PcbnewShapeFill True
                   _ -> expecting' "'none' or 'solid'" sxs
     "locked" -> Right $ PcbnewExprAttribute PcbnewLocked
-    _   -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
+    "members" -> PcbnewExprAttribute <$> asStrings PcbnewMembers sxs
+    _ -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
+
 fromSExpr sx@(Atom _ s) = case s of
     "italic" -> Right $ PcbnewExprAttribute PcbnewItalic
     "hide"   -> Right $ PcbnewExprAttribute PcbnewHide
@@ -268,6 +272,21 @@ asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
                interpretRest sxs fp_poly {itemTstamp = uuid}
             Right _ -> expecting "width, layer or 'pts'" sx
 
+asPcbnewGroup :: [SExpr] -> Either String PcbnewItem
+asPcbnewGroup (Atom _ n:xs) =
+    interpretRest xs defaultPcbnewGroup { groupName = n }
+    where
+        interpretRest [] m = Right m
+        interpretRest (sx:sxs) m = case fromSExpr sx of
+            Left err -> Left err
+            Right (PcbnewExprAttribute (PcbnewId i)) ->
+                interpretRest sxs m {groupId = i}
+            Right (PcbnewExprAttribute (PcbnewMembers ms)) ->
+                interpretRest sxs m {groupMembers = ms}
+            Right _ -> expecting "id or member" sx
+asPcbnewGroup (x:_) = expecting "group name" x
+asPcbnewGroup x = expecting' "group name" x
+
 asPcbnewPad :: [SExpr] -> Either String PcbnewItem
 asPcbnewPad (n:t:s:xs) = interpretNumber
     where
@@ -416,6 +435,9 @@ asString :: (String -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttrib
 asString pcbnew [Atom _ s] =  Right $ pcbnew s
 asString _ x = expecting' "string" x
 
+asStrings :: ([String] -> PcbnewAttribute) -> [SExpr] -> Either String PcbnewAttribute
+asStrings pcbnew atms = Right $ pcbnew (fmap (\(Atom _ s) -> s) atms)
+
 asPcbnewLayers :: [SExpr] -> Either String PcbnewAttribute
 asPcbnewLayers [] = Right $ PcbnewLayers []
 asPcbnewLayers xs = let layers = map onePcbnewLayer xs in case lefts layers of
@@ -485,7 +507,6 @@ asPcbnewModel (Atom _ p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPa
                 interpretRest sxs model {pcbnewModelRotate = xyz}
             Right _ -> expecting "only at, scale, rotate or offset" sx
 asPcbnewModel x = expecting' "model path, at, scale, rotate or offset" x
-
 
 justifyOneOf :: String
 justifyOneOf = "one of '"

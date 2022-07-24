@@ -53,6 +53,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , defaultPcbnewFpRect
 , defaultPcbnewFpArc
 , defaultPcbnewFpPoly
+, defaultPcbnewGroup
 , defaultPcbnewPad
 , defaultPcbnewDrillT
 , defaultPcbnewFont
@@ -212,6 +213,11 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                             , itemTstamp     :: String
                             , padAttributes_ :: [PcbnewAttribute]
                             }
+                | PcbnewGroup { groupName :: String
+                              , groupId   :: String
+                              , groupMembers :: [String]
+                              }
+
     deriving (Show, Eq)
 
 
@@ -304,6 +310,11 @@ instance SExpressable PcbnewItem where
                , toSExpr $ PcbnewLayers l
                ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
                  ++ map toSExpr attrs
+    toSExpr (PcbnewGroup n i ms) =
+        List pos $ [ Atom pos "group"
+                   , toSExpr (PcbnewId i)
+                   , toSExpr (PcbnewMembers ms)
+                   ]
 
 itemLayers :: Functor f => LensLike' f PcbnewItem [PcbnewLayerT]
 itemLayers f item@(PcbnewPad { }) =
@@ -418,6 +429,12 @@ defaultPcbnewFpPoly = PcbnewFpPoly { fpPolyPts   = []
                                    , itemTstamp  = ""
                                    }
 
+defaultPcbnewGroup :: PcbnewItem
+defaultPcbnewGroup = PcbnewGroup { groupName = ""
+                                 , groupId = ""
+                                 , groupMembers = []
+                                 }
+
 defaultPcbnewPad :: PcbnewItem
 defaultPcbnewPad = PcbnewPad { padNumber      = ""
                              , padType        = ThruHole
@@ -499,6 +516,8 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewJustify           [PcbnewJustifyT]
                      | PcbnewDieLength         Double
                      | PcbnewShapeFill         Bool
+                     | PcbnewId                String
+                     | PcbnewMembers           [String]
     deriving (Show, Eq)
 
 
@@ -585,6 +604,8 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewJustify         js) =
         List pos $ (Atom pos "justify"):map (Atom pos . justifyToString) js
     toSExpr (PcbnewShapeFill b)        = List pos [Atom pos "fill", Atom pos (if b then "solid" else "none")]
+    toSExpr (PcbnewId s)               = List pos [Atom pos "id", Atom pos s]
+    toSExpr (PcbnewMembers ms)         = List pos $  [Atom pos "members"] ++ (fmap (Atom pos) ms)
 
 
 atomDbl :: Double -> SExpr
