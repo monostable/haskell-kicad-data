@@ -196,6 +196,7 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                                  , itemEnd    :: V2Double
                                  , itemLayer  :: PcbnewLayerT
                                  , itemWidth  :: Double
+                                 , itemFill   :: Maybe Bool
                                  , itemTstamp :: String
                                  }
                 | PcbnewFpRect { itemStart  :: V2Double
@@ -284,13 +285,14 @@ instance SExpressable PcbnewItem where
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
              ] ++ (if ts == "" then [] else [toSExpr (PcbnewTstamp ts)])
-    toSExpr (PcbnewFpCircle s e l w ts) =
+    toSExpr (PcbnewFpCircle s e l w fill ts) =
         List pos $ [ Atom pos "fp_circle"
              , toSExpr (PcbnewCenter s)
              , toSExpr (PcbnewEnd    e)
              , toSExpr (PcbnewLayer  l)
              , toSExpr (PcbnewWidth  w)
-             ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+             ] ++ (maybeToList (fmap (toSExpr . PcbnewShapeFill) fill))
+             ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
     toSExpr (PcbnewFpRect s e l w fill ts) =
         List pos $ [ Atom pos "fp_rect"
              , toSExpr (PcbnewCenter s)
@@ -358,11 +360,12 @@ instance AEq PcbnewItem where
         && l1  == l2
         && w1 ~== w2
         && ts1  == ts2
-    (PcbnewFpCircle s1 e1 l1 w1 ts1) ~== (PcbnewFpCircle s2 e2 l2 w2 ts2) =
+    (PcbnewFpCircle s1 e1 l1 w1 f1 ts1) ~== (PcbnewFpCircle s2 e2 l2 w2 f2 ts2) =
            s1 ~== s2
         && e1 ~== e2
         && l1  == l2
         && w1 ~== w2
+        && f1 == f2
         && ts1  == ts2
     (PcbnewFpArc s1 e1 a1 l1 w1 ts1) ~== (PcbnewFpArc s2 e2 a2 l2 w2 ts2) =
            s1 ~== s2
@@ -414,6 +417,7 @@ defaultPcbnewFpCircle = PcbnewFpCircle { itemStart    = (0,0)
                                        , itemEnd      = (0,0)
                                        , itemLayer    = FSilkS
                                        , itemWidth    = 0.15
+                                       , itemFill     = Nothing
                                        , itemTstamp   = ""
                                        }
 
@@ -527,6 +531,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                                    , pcbnewModelAt     :: PcbnewXyzT
                                    , pcbnewModelScale  :: PcbnewXyzT
                                    , pcbnewModelRotate :: PcbnewXyzT
+                                   , pcbnewModelHide   :: Bool
                                    }
                      | PcbnewModelAt           PcbnewAttribute
                      | PcbnewModelScale        PcbnewAttribute
@@ -580,13 +585,14 @@ instance SExpressable PcbnewAttribute where
                ] ++ [Atom pos "italic" | i]
     toSExpr (PcbnewPts xys) =
         List pos $ Atom pos "pts" : map (toSExpr . PcbnewXy) xys
-    toSExpr (PcbnewModel p a s r) =
-        List pos [ Atom pos "model"
-             , Atom pos p
-             , toSExpr (PcbnewModelAt     (PcbnewXyz a))
-             , toSExpr (PcbnewModelScale  (PcbnewXyz s))
-             , toSExpr (PcbnewModelRotate (PcbnewXyz r))
-             ]
+    toSExpr (PcbnewModel p a s r h) =
+        List pos $ [ Atom pos "model"
+                   , Atom pos p
+                   ] ++ if h then [Atom pos "hide"] else []
+                   ++ [ toSExpr (PcbnewModelAt     (PcbnewXyz a))
+                      , toSExpr (PcbnewModelScale  (PcbnewXyz s))
+                      , toSExpr (PcbnewModelRotate (PcbnewXyz r))
+                      ]
     toSExpr (PcbnewDrill (PcbnewDrillT s o off)) =
         List pos $ [Atom pos "drill"]
              ++ [Atom pos "oval" | o]
@@ -692,8 +698,8 @@ instance AEq PcbnewAttribute where
     (PcbnewModelScale        x) ~== (PcbnewModelScale        y) = x ~== y
     (PcbnewModelRotate       x) ~== (PcbnewModelRotate       y) = x ~== y
     (PcbnewModelOffset       x) ~== (PcbnewModelOffset       y) = x ~== y
-    (PcbnewModel p1 a1 s1 r1)   ~== (PcbnewModel p2 a2 s2 r2) =
-        p1 == p2 && a1 ~== a2 && s1 ~== s2 && r1 ~== r2
+    (PcbnewModel p1 a1 s1 r1 h1) ~== (PcbnewModel p2 a2 s2 r2 h2) =
+      p1 == p2 && a1 ~== a2 && s1 ~== s2 && r1 ~== r2 && h1 == h2
     (PcbnewFont s1 t1 i1) ~== (PcbnewFont s2 t2 i2) =
         s1 ~== s2 && t1 ~== t2 && i1 == i2
     x ~== y = x == y
@@ -709,6 +715,7 @@ defaultPcbnewModel = PcbnewModel { pcbnewModelPath   = ""
                                  , pcbnewModelAt     = (0,0,0)
                                  , pcbnewModelScale  = (0,0,0)
                                  , pcbnewModelRotate = (0,0,0)
+                                 , pcbnewModelHide   = False
                                  }
 
 data PcbnewLayerT = FSilkS    | FCu       | FPaste    | FMask     | BSilkS

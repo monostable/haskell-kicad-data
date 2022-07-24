@@ -224,13 +224,14 @@ asFp defaultFp (s:e:xs) = interpretStart defaultFp
         interpretRest (sx:sxs) fp_shape = case fromSExpr sx of
             Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewWidth d))
-                -> interpretRest sxs fp_shape {itemWidth = d}
+                -> interpretRest sxs $ fp_shape {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
-                -> interpretRest sxs fp_shape {itemLayer = d}
+                -> interpretRest sxs $ fp_shape {itemLayer = d}
             Right (PcbnewExprAttribute (PcbnewShapeFill b))
-                -> interpretRest sxs fp_shape {itemFill = Just b}
+
+                -> interpretRest sxs $ fp_shape {itemFill = Just b}
             Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
-               interpretRest sxs fp_shape {itemTstamp = uuid}
+               interpretRest sxs $ fp_shape {itemTstamp = uuid}
             Right _ -> expecting "width or layer" sx
 asFp _ x = expecting' "fp_line (or fp_circle) start (center), end and attributes" x
 
@@ -523,6 +524,8 @@ asPcbnewModel (Atom _ p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPa
                 interpretRest sxs model {pcbnewModelRotate = xyz}
             Right (PcbnewExprAttribute (PcbnewModelOffset (PcbnewXyz xyz))) ->
                 interpretRest sxs model {pcbnewModelRotate = xyz}
+            Right (PcbnewExprAttribute PcbnewHide) ->
+                interpretRest sxs model {pcbnewModelHide = True}
             Right _ -> expecting "only at, scale, rotate or offset" sx
 asPcbnewModel x = expecting' "model path, at, scale, rotate or offset" x
 
