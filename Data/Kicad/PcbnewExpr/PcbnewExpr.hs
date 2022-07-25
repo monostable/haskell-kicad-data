@@ -503,6 +503,11 @@ data PcbnewGrItem = PcbnewGrPoly { grPolyPoints :: [V2Double]
                                   , grItemWidth  :: Double
                                   , grItemTstamp :: String
                                   }
+                  | PcbnewGrCircle  { grCircleCenter :: V2Double
+                                    , grCircleEnd    :: V2Double
+                                    , grItemWidth    :: Double
+                                    , grItemTstamp   :: String
+                                    }
       deriving (Show, Eq)
 
 instance AEq PcbnewGrItem where
@@ -511,6 +516,8 @@ instance AEq PcbnewGrItem where
   PcbnewGrArc s1 m1 e1 a1 w1 t1 ~== PcbnewGrArc s2 m2 e2 a2 w2 t2
     = s1 ~== s2 && m1 ~== m2 && e1 ~== e2 && a1 ~== a2 && w1 ~== w2 && t1 == t2
   PcbnewGrLine s1 e1 w1 t1 ~== PcbnewGrLine s2 e2 w2 t2
+    = s1 ~== s2 && e1 ~== e2 && w1 ~== w2 && t1 == t2
+  PcbnewGrCircle s1 e1 w1 t1 ~== PcbnewGrCircle s2 e2 w2 t2
     = s1 ~== s2 && e1 ~== e2 && w1 ~== w2 && t1 == t2
 
 instance SExpressable PcbnewGrItem where
@@ -524,9 +531,21 @@ instance SExpressable PcbnewGrItem where
         [ Atom pos "gr_arc"
         , toSExpr (PcbnewStart s)
         ] ++ fmap (toSxDD "mid") (maybeToList m)
-        ++ [toSExpr (PcbnewEnd s)]
+        ++ [toSExpr (PcbnewEnd e)]
         ++ fmap (toSxD "angle") (maybeToList a)
         ++ [toSExpr (PcbnewWidth w)]
+        ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+    toSExpr (PcbnewGrLine s e w ts) = List pos $
+        [ Atom pos "gr_line"
+        , toSExpr (PcbnewStart s)
+        , toSExpr (PcbnewEnd e)
+        , toSExpr (PcbnewWidth w)]
+        ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+    toSExpr (PcbnewGrCircle c e w ts) = List pos $
+        [ Atom pos "gr_circle"
+        , toSExpr (PcbnewCenter c)
+        , toSExpr (PcbnewEnd e)
+        , toSExpr (PcbnewWidth w)]
         ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
 
 defaultPcbnewGrPoly :: PcbnewGrItem
