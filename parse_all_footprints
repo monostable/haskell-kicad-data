@@ -22,18 +22,8 @@ fi
 cd "$root_dir"
 
 echo "Compiling."
-stack exec -- ghc tests/Parse.hs -tmpdir "$temp_dir" -o "$test_executable"
+stack exec -- ghc tests/Parse.hs -threaded -tmpdir "$temp_dir" -o "$test_executable"
 
-mod_files=$(find "$kicad_mod_dir/" -name "*.kicad_mod")
-echo "Running parse on $(echo "${mod_files}" | wc -l) kicad_mod files"
-IFS=$'\n'
-for f in $mod_files; do
-  echo "testing $f"
-  out=$(echo "$f" | sed "s!$kicad_mod_dir!$kicad_mod_output_dir!")
-  mkdir -p "$out"
-  $test_executable "$f" > "$out/file.kicad_mod"
-done
-
-wait
+"$test_executable" "$kicad_mod_dir" +RTS -N
 
 python kicad_footprint_load.py "$kicad_mod_output_dir"
