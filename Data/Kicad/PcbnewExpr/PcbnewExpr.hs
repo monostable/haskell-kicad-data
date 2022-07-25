@@ -486,28 +486,28 @@ instance AEq PcbnewDrillT where
         = s1 ~== s2 && o1 == o2 && off1 ~== off2
 
 
-data PcbnewGrItem = PcbnewGrPoly { grPolyPoints :: [V2Double]
-                                 , grItemWidth  :: Double
-                                 , grItemFill   :: Bool
-                                 , grItemTstamp :: String
-                                 }
-                  | PcbnewGrArc  { grArcStart   :: V2Double
-                                 , grArcMid     :: Maybe V2Double
-                                 , grArcEnd     :: V2Double
-                                 , grArcAngle   :: Maybe Double
-                                 , grItemWidth  :: Double
-                                 , grItemTstamp :: String
-                                 }
-                  | PcbnewGrLine  { grLineStart  :: V2Double
-                                  , grLineEnd    :: V2Double
-                                  , grItemWidth  :: Double
-                                  , grItemTstamp :: String
-                                  }
-                  | PcbnewGrCircle  { grCircleCenter :: V2Double
-                                    , grCircleEnd    :: V2Double
-                                    , grItemWidth    :: Double
-                                    , grItemTstamp   :: String
-                                    }
+data PcbnewGrItem = PcbnewGrPoly   { grPolyPoints   :: [V2Double]
+                                   , grItemWidth    :: Double
+                                   , grItemFill     :: Bool
+                                   , grItemTstamp   :: String
+                                   }
+                  | PcbnewGrArc    { grArcStart     :: V2Double
+                                   , grArcMid       :: Maybe V2Double
+                                   , grArcEnd       :: V2Double
+                                   , grArcAngle     :: Maybe Double
+                                   , grItemWidth    :: Double
+                                   , grItemTstamp   :: String
+                                   }
+                  | PcbnewGrLine   { grLineStart    :: V2Double
+                                   , grLineEnd      :: V2Double
+                                   , grItemWidth    :: Double
+                                   , grItemTstamp   :: String
+                                   }
+                  | PcbnewGrCircle { grCircleCenter :: V2Double
+                                   , grCircleEnd    :: V2Double
+                                   , grItemWidth    :: Double
+                                   , grItemTstamp   :: String
+                                   }
       deriving (Show, Eq)
 
 instance AEq PcbnewGrItem where
