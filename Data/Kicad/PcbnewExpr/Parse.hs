@@ -602,13 +602,24 @@ oneGrItem (List _ ((Atom _ "gr_arc"):xs)) =
                 Left err -> Left err
                 Right (PcbnewExprAttribute (PcbnewWidth w))
                   -> Right $ gr {grItemWidth = w}
-                Right (PcbnewExprAttribute (PcbnewGrItemFill))
-                  -> Right $ gr {grItemFill = True}
                 Right (PcbnewExprAttribute (PcbnewStart dd))
                   -> Right $ gr {grArcStart = dd}
                 Right (PcbnewExprAttribute (PcbnewEnd dd))
                   -> Right $ gr {grArcEnd = dd}
                 Right _ -> expecting "gr_arc items (e.g. start or end)" sx
+oneGrItem (List _ ((Atom _ "gr_line"):xs)) =
+  interpretRest xs defaultPcbnewGrLine
+        where
+          interpretRest [] gr = Right gr
+          interpretRest (sx:sxs) gr = case fromSExpr sx of
+                Left err -> Left err
+                Right (PcbnewExprAttribute (PcbnewWidth w))
+                  -> Right $ gr {grItemWidth = w}
+                Right (PcbnewExprAttribute (PcbnewStart dd))
+                  -> Right $ gr {grArcStart = dd}
+                Right (PcbnewExprAttribute (PcbnewEnd dd))
+                  -> Right $ gr {grArcEnd = dd}
+                Right _ -> expecting "gr_line items (e.g. start or end)" sx
 oneGrItem sx = expecting "graphical item (e.g. gr_poly)" sx
 
 asPcbnewAttr :: [SExpr] -> Either String PcbnewAttribute

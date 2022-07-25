@@ -68,6 +68,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , defaultPcbnewFpRect
 , defaultPcbnewFpText
 , defaultPcbnewGrArc
+, defaultPcbnewGrLine
 , defaultPcbnewGrPoly
 , defaultPcbnewGroup
 , defaultPcbnewModel
@@ -497,10 +498,20 @@ data PcbnewGrItem = PcbnewGrPoly { grPolyPoints :: [V2Double]
                                  , grItemWidth  :: Double
                                  , grItemTstamp :: String
                                  }
+                  | PcbnewGrLine  { grLineStart  :: V2Double
+                                  , grLineEnd    :: V2Double
+                                  , grItemWidth  :: Double
+                                  , grItemTstamp :: String
+                                  }
       deriving (Show, Eq)
 
 instance AEq PcbnewGrItem where
-  PcbnewGrPoly pts1 w1 f1 t1 ~== PcbnewGrPoly pts2 w2 f2 t2 = pts1 ~== pts2 && w1 ~== w2 && f1 == f2 && t1 == t2
+  PcbnewGrPoly pts1 w1 f1 t1 ~== PcbnewGrPoly pts2 w2 f2 t2
+    = pts1 ~== pts2 && w1 ~== w2 && f1 == f2 && t1 == t2
+  PcbnewGrArc s1 m1 e1 a1 w1 t1 ~== PcbnewGrArc s2 m2 e2 a2 w2 t2
+    = s1 ~== s2 && m1 ~== m2 && e1 ~== e2 && a1 ~== a2 && w1 ~== w2 && t1 == t2
+  PcbnewGrLine s1 e1 w1 t1 ~== PcbnewGrLine s2 e2 w2 t2
+    = s1 ~== s2 && e1 ~== e2 && w1 ~== w2 && t1 == t2
 
 instance SExpressable PcbnewGrItem where
     toSExpr (PcbnewGrPoly pts w f ts) = List pos $
@@ -523,6 +534,9 @@ defaultPcbnewGrPoly = PcbnewGrPoly [] 0 False ""
 
 defaultPcbnewGrArc :: PcbnewGrItem
 defaultPcbnewGrArc = PcbnewGrArc (0,0) Nothing (0,0) Nothing 0 ""
+
+defaultPcbnewGrLine :: PcbnewGrItem
+defaultPcbnewGrLine = PcbnewGrLine (0,0) (0,0) 0 ""
 
 data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewAt         PcbnewAtT
