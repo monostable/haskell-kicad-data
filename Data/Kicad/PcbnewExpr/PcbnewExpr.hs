@@ -628,6 +628,9 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewOptionsAnchor    PcbnewAnchorT
                      | PcbnewPrimitives       [PcbnewGrItem]
                      | PcbnewGrItemFill
+                     | PcbnewProperty { pcbnewPropertyKey :: String
+                                      , pcbnewProprertyValue :: String
+                                      }
     deriving (Show, Eq)
 
 
@@ -723,11 +726,12 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewOptionsClearance c) = List pos $ [Atom pos "clearance", Atom pos (clearanceToStr c)]
     toSExpr (PcbnewGrItemFill)         = List pos $ [Atom pos "fill", Atom pos "yes"]
     toSExpr (PcbnewPrimitives grs)     = List pos $ [Atom pos "primitives"] ++ fmap toSExpr grs
-    toSExpr (PcbnewAttr t bo efpf efb) = List pos $ [ Atom pos "attr" ]
+    toSExpr (PcbnewAttr t bo efpf efb) = List pos $ [Atom pos "attr"]
                                             ++ fmap (Atom pos . attrFootrintTypeToStr) (maybeToList t)
                                             ++ if bo then [Atom pos "board_only"] else []
                                             ++ if efpf then [Atom pos "exclude_from_pos_files"] else []
                                             ++ if efb then [Atom pos "exclude_from_bom"] else []
+    toSExpr (PcbnewProperty k v)       = List pos $ [Atom pos "property", Atom pos k, Atom pos v]
     toSExpr x                          = error $ "toSExpr not implmented for " ++ (show x)
 
 

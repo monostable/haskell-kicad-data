@@ -111,6 +111,9 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "anchor" -> PcbnewExprAttribute <$> asPcbnewOptionsAnchor sxs
     "primitives" -> PcbnewExprAttribute <$> asPcbnewPrimitives sxs
     "attr"       -> PcbnewExprAttribute <$> asPcbnewAttr sxs
+    "property"   -> PcbnewExprAttribute <$> case sxs of
+                        [Atom _ k, Atom _ v] -> Right $ PcbnewProperty k v
+                        _ -> expecting' "two strings" sxs
     _ -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 
 fromSExpr sx@(Atom _ s) = case s of
