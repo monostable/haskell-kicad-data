@@ -300,22 +300,23 @@ asPcbnewFpArc x = expecting' "fp_arc start, end and attributes" x
 
 
 asPcbnewFpPoly :: [SExpr] -> Either String PcbnewItem
-asPcbnewFpPoly xs = interpretRest xs defaultPcbnewFpPoly
+asPcbnewFpPoly xs = foldr interpret (Right defaultPcbnewFpPoly) xs
     where
-        interpretRest [] fp_poly = Right fp_poly
-        interpretRest (sx:sxs) fp_poly = case fromSExpr sx of
+        interpret sx result = case fromSExpr sx of
             Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewPts   d))
-                -> interpretRest sxs fp_poly {fpPolyPts = d}
+                -> fmap (\poly -> poly {fpPolyPts = d}) result
             Right (PcbnewExprAttribute (PcbnewWidth d))
-                -> interpretRest sxs fp_poly {itemWidth = d}
+                -> fmap (\poly -> poly {itemWidth = d}) result
             Right (PcbnewExprAttribute (PcbnewLayer d))
-                -> interpretRest sxs fp_poly {itemLayer = d}
-            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
-               interpretRest sxs fp_poly {itemTstamp = uuid}
-            Right (PcbnewExprAttribute (PcbnewShapeFill f)) ->
-               interpretRest sxs fp_poly {itemFill = Just f}
+                -> fmap (\poly -> poly {itemLayer = d}) result
+            Right (PcbnewExprAttribute (PcbnewTstamp uuid))
+                -> fmap (\poly -> poly {itemTstamp = uuid}) result
+            Right (PcbnewExprAttribute (PcbnewShapeFill f))
+                -> fmap (\poly -> poly {itemFill = Just f}) result
             Right _ -> expecting "width, layer or 'pts'" sx
+
+
 
 asPcbnewGroup :: [SExpr] -> Either String PcbnewItem
 asPcbnewGroup (Atom _ n:xs) =
