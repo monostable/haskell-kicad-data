@@ -239,21 +239,20 @@ asFp defaultFp (s:e:xs) = interpretStart defaultFp
 asFp _ x = expecting' "fp_line (or fp_circle) start (center), end and attributes" x
 
 asPcbnewFpArc :: [SExpr] -> Either String PcbnewItem
-asPcbnewFpArc (s:e:xs) = interpretStart defaultPcbnewFpArc
+asPcbnewFpArc (s:xs) = interpretStart defaultPcbnewFpArc
     where
         interpretStart fp_arc = case fromSExpr s of
             Left err -> Left err
             Right (PcbnewExprAttribute (PcbnewStart start)) ->
-                interpretEnd fp_arc {itemStart = start}
+                interpretRest xs fp_arc {itemStart = start}
             Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
-        interpretEnd fp_arc = case fromSExpr e of
-            Left err -> Left err
-            Right (PcbnewExprAttribute (PcbnewEnd end)) ->
-                interpretRest xs fp_arc {itemEnd = end}
-            Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
         interpretRest [] fp_arc = Right fp_arc
         interpretRest (sx:sxs) fp_arc = case fromSExpr sx of
             Left err -> Left err
+            Right (PcbnewExprAttribute (PcbnewMid mid)) ->
+                interpretRest xs fp_arc {fpArcMid = Just mid}
+            Right (PcbnewExprAttribute (PcbnewEnd end)) ->
+                interpretRest xs fp_arc {itemEnd = end}
             Right (PcbnewExprAttribute (PcbnewWidth d))
                 -> interpretRest sxs fp_arc {itemWidth = d}
             Right (PcbnewExprAttribute (PcbnewLayer d))
@@ -262,7 +261,7 @@ asPcbnewFpArc (s:e:xs) = interpretStart defaultPcbnewFpArc
                 -> interpretRest sxs fp_arc {fpArcAngle = d}
             Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
                interpretRest sxs fp_arc {itemTstamp = uuid}
-            Right _ -> expecting "width, layer or angle" sx
+            Right _ -> expecting "mid, end, width, layer or angle" sx
 asPcbnewFpArc x = expecting' "fp_arc start, end and attributes" x
 
 asPcbnewFpPoly :: [SExpr] -> Either String PcbnewItem

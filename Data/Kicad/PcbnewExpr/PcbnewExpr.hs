@@ -212,6 +212,7 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                                , itemTstamp :: String
                                }
                 | PcbnewFpArc { itemStart  :: V2Double
+                              , fpArcMid   :: Maybe V2Double
                               , itemEnd    :: V2Double
                               , fpArcAngle :: Double
                               , itemLayer  :: PcbnewLayerT
@@ -307,10 +308,12 @@ instance SExpressable PcbnewItem where
              , toSExpr (PcbnewWidth  w)
              ] ++ (maybeToList (fmap (toSExpr . PcbnewShapeFill) fill))
              ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
-    toSExpr (PcbnewFpArc s e a l w ts) =
-        List pos $ [ Atom pos "fp_arc"
+    toSExpr (PcbnewFpArc s m e a l w ts) =
+        List pos $
+             [ Atom pos "fp_arc"
              , toSExpr (PcbnewStart s)
-             , toSExpr (PcbnewEnd   e)
+             ] ++ (maybeToList (fmap (toSExpr . PcbnewMid) m)) ++
+             [ toSExpr (PcbnewEnd   e)
              , toSExpr (PcbnewAngle a)
              , toSExpr (PcbnewLayer l)
              , toSExpr (PcbnewWidth w)
@@ -374,8 +377,9 @@ instance AEq PcbnewItem where
         && w1 ~== w2
         && f1 == f2
         && ts1  == ts2
-    (PcbnewFpArc s1 e1 a1 l1 w1 ts1) ~== (PcbnewFpArc s2 e2 a2 l2 w2 ts2) =
+    (PcbnewFpArc s1 m1 e1 a1 l1 w1 ts1) ~== (PcbnewFpArc s2 m2 e2 a2 l2 w2 ts2) =
            s1 ~== s2
+        && m1 ~== m2
         && e1 ~== e2
         && a1 ~== a2
         && l1  == l2
@@ -440,6 +444,7 @@ defaultPcbnewFpRect = PcbnewFpRect { itemStart  = (0,0)
 
 defaultPcbnewFpArc :: PcbnewItem
 defaultPcbnewFpArc = PcbnewFpArc { itemStart    = (0,0)
+                                 , fpArcMid     = Nothing
                                  , itemEnd      = (0,0)
                                  , fpArcAngle   = 0
                                  , itemLayer    = FSilkS
@@ -571,6 +576,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewPlaced
                      | PcbnewLocked
                      | PcbnewStart      V2Double
+                     | PcbnewMid        V2Double
                      | PcbnewCenter     V2Double
                      | PcbnewEnd        V2Double
                      | PcbnewWidth      Double
