@@ -1,5 +1,5 @@
 import Codec.Text.Detect (detectEncodingName)
-import Control.Concurrent.Async (mapConcurrently)
+import Control.Concurrent.Async (mapConcurrently_)
 import Data.Encoding
 import Data.List (isSuffixOf)
 import Data.Maybe (fromMaybe)
@@ -23,7 +23,7 @@ main = do
                         files >>= (\file ->
                             if (".kicad_mod" `isSuffixOf` file) then [joinPath [root, file]] else []))
             putStrLn $ "Running parse on " ++ (show (length mods)) ++ " .kicad_mod files"
-            _ <- mapConcurrently parseAndWrite mods
+            _ <- mapConcurrently_ parseAndWrite mods
             return ()
         _ -> hPutStrLn stderr "invalid argument\nUSAGE: ./Parse FOLDER" >> exitFailure
 
