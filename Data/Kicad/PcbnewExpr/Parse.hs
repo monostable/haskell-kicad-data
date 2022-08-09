@@ -127,17 +127,17 @@ fromSExpr x = expecting "List _ with a key or a string atom" x
 asPcbnewModule :: [SExpr] -> Either String PcbnewModule
 asPcbnewModule (Atom _ n:xs) =
     foldr interpret (Right defaultPcbnewModule {pcbnewModuleName = n}) xs
-        where interpret sx m = case fromSExpr sx of
+        where interpret sx result = case fromSExpr sx of
                     Left err -> Left err
 
                     Right (PcbnewExprAttribute (PcbnewLayer layer))
-                      -> fmap (\m' -> m' {pcbnewModuleLayer = layer}) m
+                      -> fmap (\mod -> mod {pcbnewModuleLayer = layer}) result
 
                     Right (PcbnewExprItem item)
-                      -> fmap (over moduleItems (++[item])) m
+                      -> fmap (over moduleItems (++[item])) result
 
                     Right (PcbnewExprAttribute attr)
-                      -> fmap (over moduleAttrs (++[attr])) m
+                      -> fmap (over moduleAttrs (++[attr])) result
 
                     Right _ -> expecting "layer, items or attributes" sx
 
@@ -148,23 +148,23 @@ asPcbnewFootprint :: [SExpr] -> Either String PcbnewFootprint
 asPcbnewFootprint (Atom _ n:xs) =
   foldr interpret (Right defaultPcbnewFootprint { pcbnewFootprintName = n }) xs
     where
-        interpret sx m = case fromSExpr sx of
+        interpret sx result = case fromSExpr sx of
             Left err -> Left err
 
             Right (PcbnewExprAttribute (PcbnewLayer layer))
-              -> fmap (\m' -> m' {pcbnewFootprintLayer = layer}) m
+              -> fmap (\fp -> fp {pcbnewFootprintLayer = layer}) result
 
             Right (PcbnewExprAttribute (PcbnewVersion version))
-              -> fmap (\m' -> m' {pcbnewFootprintVersion = version}) m
+              -> fmap (\fp -> fp {pcbnewFootprintVersion = version}) result
 
             Right (PcbnewExprAttribute (PcbnewGenerator generator))
-              -> fmap (\m' -> m' {pcbnewFootprintGenerator = generator}) m
+              -> fmap (\fp -> fp {pcbnewFootprintGenerator = generator}) result
 
             Right (PcbnewExprItem item)
-              -> fmap (over footprintItems (++[item])) m
+              -> fmap (over footprintItems (++[item])) result
 
             Right (PcbnewExprAttribute attr)
-              -> fmap (over footprintAttrs (++[attr])) m
+              -> fmap (over footprintAttrs (++[attr])) result
 
             Right _ -> expecting "layer, items or attributes" sx
 
@@ -196,33 +196,34 @@ asPcbnewFpText (t:s:a:xs) =
               Right (PcbnewExprAttribute (PcbnewAt at)) -> Right fp_text {itemAt = at}
               _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
 
-          interpretRest sx fp_text = case fromSExpr sx of
+          interpretRest sx result = case fromSExpr sx of
               Left err -> Left err
 
               Right (PcbnewExprAttribute (PcbnewLayer layer))
-                -> fmap (\m -> m {itemLayer = layer}) fp_text
+                -> fmap (\txt -> txt {itemLayer = layer}) result
 
               Right (PcbnewExprAttribute (PcbnewFpTextEffects effects)) ->
-                  foldr interpretEffects fp_text effects
+                  foldr interpretEffects result effects
 
               Right (PcbnewExprAttribute PcbnewHide) ->
-                  fmap (\m -> m {fpTextHide = True}) fp_text
+                  fmap (\txt -> txt {fpTextHide = True}) result
 
               Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
-                 fmap(\m -> m {itemTstamp = uuid}) fp_text
+                 fmap(\txt -> txt {itemTstamp = uuid}) result
 
               _ -> expecting "layer or effects expression or 'hide'" sx
 
-          interpretEffects e fp_text = case e of
+          interpretEffects e result = case e of
               (PcbnewJustify js) ->
-                  fmap (over fpTextJustify (++ js)) fp_text
-              (PcbnewFont size thickness italic) -> fmap
-                     (\m -> m
+                  fmap (over fpTextJustify (++ js)) result
+              (PcbnewFont size thickness italic)
+                -> fmap
+                     (\txt -> txt
                          { itemSize = size
                          , fpTextThickness = thickness
                          , fpTextItalic    = italic
                          }
-                     ) fp_text
+                     ) result
               _ -> expecting "justify or font" (toSExpr e)
 
 asPcbnewFpText x = expecting' "a text-type, text, 'at' and layer" x
@@ -247,16 +248,16 @@ asFpShape defaultFpShape (s:e:xs) =
               Right (PcbnewExprAttribute (PcbnewEnd end)) ->
                   Right fp_shape {itemEnd = end}
               Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
-          interpretRest sx fp_shape = case fromSExpr sx of
+          interpretRest sx result = case fromSExpr sx of
               Left err -> Left err
               Right (PcbnewExprAttribute (PcbnewWidth d))
-                  -> fmap (\m -> m {itemWidth = d}) fp_shape
+                  -> fmap (\shape -> shape {itemWidth = d}) result
               Right (PcbnewExprAttribute (PcbnewLayer d))
-                  -> fmap (\m -> m {itemLayer = d}) fp_shape
+                  -> fmap (\shape -> shape {itemLayer = d}) result
               Right (PcbnewExprAttribute (PcbnewShapeFill b))
-                  -> fmap (\m -> m {itemFill = Just b}) fp_shape
+                  -> fmap (\shape -> shape {itemFill = Just b}) result
               Right (PcbnewExprAttribute (PcbnewTstamp uuid))
-                  -> fmap (\m -> m {itemTstamp = uuid}) fp_shape
+                  -> fmap (\shape -> shape {itemTstamp = uuid}) result
               Right _ -> expecting "width, layer, tstamp or fill" sx
 asFpShape _ x = expecting' "fp_line (or fp_circle) start (or center), end and attributes" x
 
@@ -272,26 +273,26 @@ asPcbnewFpArc (s:xs) =
               Right (PcbnewExprAttribute (PcbnewStart start)) -> Right fp_arc {itemStart = start}
               Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
 
-          interpretRest sx fp_arc = case fromSExpr sx of
+          interpretRest sx result = case fromSExpr sx of
               Left err -> Left err
 
               Right (PcbnewExprAttribute (PcbnewMid mid))
-                -> fmap (\arc -> arc {fpArcMid = Just mid}) fp_arc
+                -> fmap (\arc -> arc {fpArcMid = Just mid}) result
 
               Right (PcbnewExprAttribute (PcbnewEnd end))
-                -> fmap (\arc -> arc {itemEnd = end}) fp_arc
+                -> fmap (\arc -> arc {itemEnd = end}) result
 
               Right (PcbnewExprAttribute (PcbnewWidth d))
-                -> fmap (\arc -> arc {itemWidth = d}) fp_arc
+                -> fmap (\arc -> arc {itemWidth = d}) result
 
               Right (PcbnewExprAttribute (PcbnewLayer d))
-                -> fmap (\arc -> arc {itemLayer = d}) fp_arc
+                -> fmap (\arc -> arc {itemLayer = d}) result
 
               Right (PcbnewExprAttribute (PcbnewAngle d))
-                -> fmap (\arc -> arc {fpArcAngle = d}) fp_arc
+                -> fmap (\arc -> arc {fpArcAngle = d}) result
 
               Right (PcbnewExprAttribute (PcbnewTstamp uuid))
-                -> fmap (\arc -> arc {itemTstamp = uuid}) fp_arc
+                -> fmap (\arc -> arc {itemTstamp = uuid}) result
 
               Right _ -> expecting "mid, end, width, layer or angle" sx
 
