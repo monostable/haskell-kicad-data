@@ -81,11 +81,11 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "solder_paste_ratio"
         -> PcbnewExprAttribute <$> asDouble PcbnewSolderPasteRatio sxs
     "fp_line"
-        -> PcbnewExprItem <$> asFp defaultPcbnewFpLine sxs
+        -> PcbnewExprItem <$> asFpShape defaultPcbnewFpLine sxs
     "fp_circle"
-        -> PcbnewExprItem <$> asFp defaultPcbnewFpCircle sxs
+        -> PcbnewExprItem <$> asFpShape defaultPcbnewFpCircle sxs
     "fp_rect"
-        -> PcbnewExprItem <$> asFp defaultPcbnewFpRect sxs
+        -> PcbnewExprItem <$> asFpShape defaultPcbnewFpRect sxs
     "autoplace_cost180"
         -> PcbnewExprAttribute <$> asInt PcbnewAutoplaceCost180 sxs
     "autoplace_cost90"
@@ -227,35 +227,38 @@ asPcbnewFpText (t:s:a:xs) =
 
 asPcbnewFpText x = expecting' "a text-type, text, 'at' and layer" x
 
-asFp :: PcbnewItem -> [SExpr] -> Either String PcbnewItem
-asFp defaultFp (s:e:xs) = interpretStart defaultFp
-    where
-        interpretStart fp_shape = case fromSExpr s of
-            Left err -> Left err
-            Right (PcbnewExprAttribute (PcbnewStart start)) ->
-                interpretEnd fp_shape {itemStart = start}
-            Right (PcbnewExprAttribute (PcbnewCenter center)) ->
-                interpretEnd fp_shape {itemStart = center}
-            Right _ -> expecting "start (e.g. '(start 1.0 1.0)')" s
-        interpretEnd fp_shape = case fromSExpr e of
-            Left err -> Left err
-            Right (PcbnewExprAttribute (PcbnewEnd end)) ->
-                interpretRest xs fp_shape {itemEnd = end}
-            Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
-        interpretRest [] fp_shape = Right fp_shape
-        interpretRest (sx:sxs) fp_shape = case fromSExpr sx of
-            Left err -> Left err
-            Right (PcbnewExprAttribute (PcbnewWidth d))
-                -> interpretRest sxs $ fp_shape {itemWidth = d}
-            Right (PcbnewExprAttribute (PcbnewLayer d))
-                -> interpretRest sxs $ fp_shape {itemLayer = d}
-            Right (PcbnewExprAttribute (PcbnewShapeFill b))
 
-                -> interpretRest sxs $ fp_shape {itemFill = Just b}
-            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
-               interpretRest sxs $ fp_shape {itemTstamp = uuid}
-            Right _ -> expecting "width or layer" sx
-asFp _ x = expecting' "fp_line (or fp_circle) start (center), end and attributes" x
+
+asFpShape :: PcbnewItem -> [SExpr] -> Either String PcbnewItem
+asFpShape defaultFpShape (s:e:xs) =
+  interpretStart s defaultFpShape
+    >>= interpretEnd e
+    >>= \fp_shape -> foldr interpretRest (Right fp_shape) xs
+      where
+          interpretStart s fp_shape = case fromSExpr s of
+              Left err -> Left err
+              Right (PcbnewExprAttribute (PcbnewStart start)) ->
+                  Right fp_shape {itemStart = start}
+              Right (PcbnewExprAttribute (PcbnewCenter center)) ->
+                  Right fp_shape {itemStart = center}
+              Right _ -> expecting "start or center (e.g. '(start 1.0 1.0)')" s
+          interpretEnd e fp_shape = case fromSExpr e of
+              Left err -> Left err
+              Right (PcbnewExprAttribute (PcbnewEnd end)) ->
+                  Right fp_shape {itemEnd = end}
+              Right _ -> expecting "end (e.g. '(end 1.0 1.0)')" e
+          interpretRest sx fp_shape = case fromSExpr sx of
+              Left err -> Left err
+              Right (PcbnewExprAttribute (PcbnewWidth d))
+                  -> fmap (\m -> m {itemWidth = d}) fp_shape
+              Right (PcbnewExprAttribute (PcbnewLayer d))
+                  -> fmap (\m -> m {itemLayer = d}) fp_shape
+              Right (PcbnewExprAttribute (PcbnewShapeFill b))
+                  -> fmap (\m -> m {itemFill = Just b}) fp_shape
+              Right (PcbnewExprAttribute (PcbnewTstamp uuid))
+                  -> fmap (\m -> m {itemTstamp = uuid}) fp_shape
+              Right _ -> expecting "width, layer, tstamp or fill" sx
+asFpShape _ x = expecting' "fp_line (or fp_circle) start (or center), end and attributes" x
 
 asPcbnewFpArc :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpArc (s:xs) = interpretStart defaultPcbnewFpArc
