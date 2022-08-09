@@ -36,6 +36,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "fp_text"    -> PcbnewExprItem      <$> asPcbnewFpText           sxs
     "fp_arc"     -> PcbnewExprItem      <$> asPcbnewFpArc            sxs
     "fp_poly"    -> PcbnewExprItem      <$> asPcbnewFpPoly           sxs
+    "fp_curve"   -> PcbnewExprItem      <$> asPcbnewFpCurve          sxs
     "group"      -> PcbnewExprItem      <$> asPcbnewGroup            sxs
     "layer"      -> PcbnewExprAttribute <$> asPcbnewLayer            sxs
     "at"         -> PcbnewExprAttribute <$> asPcbnewAt               sxs
@@ -316,6 +317,21 @@ asPcbnewFpPoly xs = foldr interpret (Right defaultPcbnewFpPoly) xs
                 -> fmap (\poly -> poly {itemTstamp = uuid}) result
             Right (PcbnewExprAttribute (PcbnewShapeFill f))
                 -> fmap (\poly -> poly {itemFill = Just f}) result
+            Right _ -> expecting "width, layer or 'pts'" sx
+
+asPcbnewFpCurve :: [SExpr] -> Either String PcbnewItem
+asPcbnewFpCurve xs = foldr interpret (Right defaultPcbnewFpPoly) xs
+    where
+        interpret sx result = case fromSExpr sx of
+            Left err -> Left err
+            Right (PcbnewExprAttribute (PcbnewPts   d))
+                -> fmap (\curve -> curve {fpPolyPts = d}) result
+            Right (PcbnewExprAttribute (PcbnewWidth d))
+                -> fmap (\curve -> curve {itemWidth = d}) result
+            Right (PcbnewExprAttribute (PcbnewLayer d))
+                -> fmap (\curve -> curve {itemLayer = d}) result
+            Right (PcbnewExprAttribute (PcbnewTstamp uuid))
+                -> fmap (\curve -> curve {itemTstamp = uuid}) result
             Right _ -> expecting "width, layer or 'pts'" sx
 
 

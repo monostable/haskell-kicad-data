@@ -225,6 +225,11 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                                , itemFill   :: Maybe Bool
                                , itemTstamp :: String
                                }
+                | PcbnewFpCurve { fpCurvePts :: [V2Double]
+                                , itemLayer  :: PcbnewLayerT
+                                , itemWidth  :: Double
+                                , itemTstamp :: String
+                                }
                 | PcbnewPad { padNumber      :: String
                             , padType        :: PcbnewPadTypeT
                             , padShape       :: PcbnewPadShapeT
@@ -251,6 +256,7 @@ itemPoints f item = case item of
     PcbnewFpCircle {} -> startEndLense
     PcbnewFpArc {}    -> startEndLense
     PcbnewFpPoly {}   -> polyLense
+    PcbnewFpCurve {}  -> curveLense
     where
         atLense     = atSetter `fmap` (f [view atP (itemAt item)])
         atSetter ps =
@@ -264,6 +270,7 @@ itemPoints f item = case item of
         startEndSetter (p1:[])   = item {itemStart = p1}
         startEndSetter _         = item
         polyLense = (\ps -> item {fpPolyPts = ps}) `fmap` (f (fpPolyPts item))
+        curveLense = (\ps -> item {fpCurvePts = ps}) `fmap` (f (fpCurvePts item))
 
 
 {-| Lense of the item handle, moving the handle will move the entire item -}
@@ -325,6 +332,12 @@ instance SExpressable PcbnewItem where
              , toSExpr (PcbnewWidth w)
              ] ++ (maybeToList (fmap (toSExpr . PcbnewShapeFill) fill))
              ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
+    toSExpr (PcbnewFpCurve ps l w ts) =
+        List pos $ [ Atom pos "curve"
+             , toSExpr (PcbnewPts ps)
+             , toSExpr (PcbnewLayer l)
+             , toSExpr (PcbnewWidth w)
+             ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
     toSExpr (PcbnewPad n t s a si l ts attrs) =
         List pos $ [ Atom pos "pad"
                , Atom pos n
@@ -390,6 +403,11 @@ instance AEq PcbnewItem where
         && l1   == l2
         && w1  ~== w2
         && f1  == f2
+        && ts1  == ts2
+    (PcbnewFpCurve ps1 l1 w1 ts1) ~== (PcbnewFpCurve ps2 l2 w2 ts2) =
+           ps1 ~== ps2
+        && l1   == l2
+        && w1  ~== w2
         && ts1  == ts2
     (PcbnewPad n1 t1 s1 a1 si1 l1 ts1 attrs1)
         ~== (PcbnewPad n2 t2 s2 a2 si2 l2 ts2 attrs2) =
@@ -459,6 +477,13 @@ defaultPcbnewFpPoly = PcbnewFpPoly { fpPolyPts   = []
                                    , itemFill    = Nothing
                                    , itemTstamp  = ""
                                    }
+
+defaultPcbnewFpCurve :: PcbnewItem
+defaultPcbnewFpCurve = PcbnewFpCurve { fpCurvePts   = []
+                                     , itemLayer   = FSilkS
+                                     , itemWidth   = 0.15
+                                     , itemTstamp  = ""
+                                     }
 
 defaultPcbnewGroup :: PcbnewItem
 defaultPcbnewGroup = PcbnewGroup { groupName = ""
