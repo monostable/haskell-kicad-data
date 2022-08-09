@@ -172,49 +172,59 @@ asPcbnewFootprint (x:_) = expecting "footprint name" x
 asPcbnewFootprint x = expecting' "footprint name" x
 
 asPcbnewFpText :: [SExpr] -> Either String PcbnewItem
-asPcbnewFpText (t:s:a:xs) = interpretType
-    where
-        interpretType = case t of
-            (Atom _ "reference") ->
-                interpretString (defaultPcbnewFpText {fpTextType = FpTextReference})
-            (Atom _ "value")     ->
-                interpretString (defaultPcbnewFpText {fpTextType = FpTextValue})
-            (Atom _ "user")     ->
-                interpretString (defaultPcbnewFpText {fpTextType = FpTextUser})
-            _           -> expecting "'reference', 'value' or 'user'" t
-        interpretString fp_text = case s of
-            (Atom _ string) -> interpretAt fp_text {fpTextStr = string}
-            _           -> expecting "string" s
-        interpretAt fp_text = case fromSExpr a of
-            Left err -> Left err
-            Right (PcbnewExprAttribute (PcbnewAt at)) ->
-                interpretRest xs fp_text {itemAt = at}
-            _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
-        interpretEffects [] fp_text = fp_text
-        interpretEffects (e:efs) fp_text = case e of
-            (PcbnewJustify js) ->
-               interpretEffects efs (over fpTextJustify (++ js) fp_text)
-            (PcbnewFont size thickness italic) ->
-               interpretEffects efs
-                   (fp_text
-                       { itemSize = size
-                       , fpTextThickness = thickness
-                       , fpTextItalic    = italic
-                       }
-                   )
-            _ -> fp_text
-        interpretRest [] fp_text = Right fp_text
-        interpretRest (sx:sxs) fp_text = case fromSExpr sx of
-            Left err -> Left err
-            Right (PcbnewExprAttribute (PcbnewLayer layer)) ->
-                interpretRest sxs (fp_text {itemLayer = layer})
-            Right (PcbnewExprAttribute (PcbnewFpTextEffects effects)) ->
-                interpretRest sxs (interpretEffects effects fp_text)
-            Right (PcbnewExprAttribute PcbnewHide) ->
-                interpretRest sxs (fp_text {fpTextHide = True})
-            Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
-               interpretRest sxs fp_text {itemTstamp = uuid}
-            _ -> expecting "layer or effects expression or 'hide'" sx
+asPcbnewFpText (t:s:a:xs) =
+  interpretType t defaultPcbnewFpText
+    >>= interpretString s
+    >>= interpretAt a
+    >>= \fp_text -> foldr interpretRest (Right fp_text) xs
+      where
+          interpretType t fp_text = case t of
+              (Atom _ "reference") ->
+                  Right  fp_text {fpTextType = FpTextReference}
+              (Atom _ "value")     ->
+                  Right (fp_text {fpTextType = FpTextValue})
+              (Atom _ "user")     ->
+                  Right (fp_text {fpTextType = FpTextUser})
+              _           -> expecting "'reference', 'value' or 'user'" t
+
+          interpretString s fp_text = case s of
+              (Atom _ string) -> Right fp_text {fpTextStr = string}
+              _           -> expecting "string" s
+
+          interpretAt a fp_text = case fromSExpr a of
+              Left err -> Left err
+              Right (PcbnewExprAttribute (PcbnewAt at)) -> Right fp_text {itemAt = at}
+              _ -> expecting "'at' expression (e.g. '(at 1.0 1.0)')" a
+
+          interpretRest sx fp_text = case fromSExpr sx of
+              Left err -> Left err
+
+              Right (PcbnewExprAttribute (PcbnewLayer layer))
+                -> fmap (\m -> m {itemLayer = layer}) fp_text
+
+              Right (PcbnewExprAttribute (PcbnewFpTextEffects effects)) ->
+                  foldr interpretEffects fp_text effects
+
+              Right (PcbnewExprAttribute PcbnewHide) ->
+                  fmap (\m -> m {fpTextHide = True}) fp_text
+
+              Right (PcbnewExprAttribute (PcbnewTstamp uuid)) ->
+                 fmap(\m -> m {itemTstamp = uuid}) fp_text
+
+              _ -> expecting "layer or effects expression or 'hide'" sx
+
+          interpretEffects e fp_text = case e of
+              (PcbnewJustify js) ->
+                  fmap (over fpTextJustify (++ js)) fp_text
+              (PcbnewFont size thickness italic) -> fmap
+                     (\m -> m
+                         { itemSize = size
+                         , fpTextThickness = thickness
+                         , fpTextItalic    = italic
+                         }
+                     ) fp_text
+              _ -> expecting "justify or font" (toSExpr e)
+
 asPcbnewFpText x = expecting' "a text-type, text, 'at' and layer" x
 
 asFp :: PcbnewItem -> [SExpr] -> Either String PcbnewItem
