@@ -114,6 +114,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "property"   -> PcbnewExprAttribute <$> case sxs of
                         [Atom _ k, Atom _ v] -> Right $ PcbnewProperty k v
                         _ -> expecting' "two strings" sxs
+    "mid"        -> PcbnewExprAttribute  <$> asXy PcbnewMid sxs
     _ -> Left $ "Error in " ++ (show pos) ++ ": unknown expression type '" ++ kw ++ "'"
 
 fromSExpr sx@(Atom _ s) = case s of

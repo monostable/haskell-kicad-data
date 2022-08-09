@@ -535,7 +535,7 @@ instance SExpressable PcbnewGrItem where
     toSExpr (PcbnewGrArc s m e a w ts) = List pos $
         [ Atom pos "gr_arc"
         , toSExpr (PcbnewStart s)
-        ] ++ fmap (toSxDD "mid") (maybeToList m)
+        ] ++ fmap (toSExpr . PcbnewMid) (maybeToList m)
         ++ [toSExpr (PcbnewEnd e)]
         ++ fmap (toSxD "angle") (maybeToList a)
         ++ [toSExpr (PcbnewWidth w)]
@@ -700,6 +700,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewCenter    xy)       = toSxDD "center"     xy
     toSExpr (PcbnewRectDelta xy)       = toSxDD "rect_delta" xy
     toSExpr (PcbnewEnd       xy)       = toSxDD "end"        xy
+    toSExpr (PcbnewMid       xy)       = toSxDD "mid"        xy
     toSExpr (PcbnewXy        xy)       = toSxDD "xy"         xy
     toSExpr (PcbnewOffset    xy)       = toSxDD "offset"     xy
     toSExpr (PcbnewTstamp s)           = toSxStr "tstamp"    s
