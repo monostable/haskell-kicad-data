@@ -66,6 +66,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
     "angle"      -> PcbnewExprAttribute <$> asDouble PcbnewAngle     sxs
     "thickness"  -> PcbnewExprAttribute <$> asDouble PcbnewThickness sxs
     "width"      -> PcbnewExprAttribute <$> asDouble PcbnewWidth     sxs
+    "opacity"    -> PcbnewExprAttribute <$> asDouble PcbnewModelOpacity sxs
     "justify"    -> PcbnewExprAttribute <$> asPcbnewJustifyT         sxs
     "zone_connect"
         -> PcbnewExprAttribute <$> asZoneConnect sxs
@@ -97,7 +98,7 @@ fromSExpr (List _ (Atom pos kw:sxs)) = case kw of
         -> PcbnewExprAttribute <$> asDouble PcbnewDieLength sxs
     "offset" -> PcbnewExprAttribute <$> case (asXy PcbnewOffset sxs) of
                                            Right _ -> asXy PcbnewOffset sxs
-                                           Left _ -> asXyz PcbnewModelOffset sxs
+                                           Left _  -> asXyz PcbnewModelOffset sxs
     "fill" -> PcbnewExprAttribute <$> case sxs of
                   [Atom _ "none"] -> Right $ PcbnewShapeFill False
                   [Atom _ "solid"]-> Right $ PcbnewShapeFill True
@@ -319,6 +320,9 @@ asPcbnewFpPoly xs = foldr interpret (Right defaultPcbnewFpPoly) xs
                 -> fmap (\poly -> poly {itemFill = Just f}) result
             Right _ -> expecting "width, layer or 'pts'" sx
 
+
+
+
 asPcbnewFpCurve :: [SExpr] -> Either String PcbnewItem
 asPcbnewFpCurve xs = foldr interpret (Right defaultPcbnewFpPoly) xs
     where
@@ -333,6 +337,7 @@ asPcbnewFpCurve xs = foldr interpret (Right defaultPcbnewFpPoly) xs
             Right (PcbnewExprAttribute (PcbnewTstamp uuid))
                 -> fmap (\curve -> curve {itemTstamp = uuid}) result
             Right _ -> expecting "width, layer or 'pts'" sx
+
 
 
 
@@ -555,10 +560,10 @@ asPcbnewXyz sx@(Atom _ x:Atom _ y:[Atom _ z]) = case readXyz x y z of
     Nothing -> expecting' "three floats" sx
 asPcbnewXyz x = expecting' "three floats" x
 
-asXyz :: (PcbnewAttribute -> a) -> [SExpr] -> Either String a
+asXyz :: (PcbnewXyzT -> a) -> [SExpr] -> Either String a
 asXyz constructor [l@(List _ _)] = case fromSExpr l of
     Left err -> Left err
-    Right (PcbnewExprAttribute xyz) -> Right $ constructor xyz
+    Right (PcbnewExprAttribute (PcbnewXyz xyz)) -> Right $ constructor xyz
     Right _ -> expecting "xyz (e.g. '(xyz 1 1 1)')" l
 asXyz _ x = expecting' "xyz (e.g. '(xyz 1 1 1)')" x
 
@@ -568,16 +573,18 @@ asPcbnewModel (Atom _ p:xs) = interpretRest xs defaultPcbnewModel {pcbnewModelPa
         interpretRest [] model = Right model
         interpretRest (sx:sxs) model = case fromSExpr sx of
             Left err -> Left err
-            Right (PcbnewExprAttribute (PcbnewModelAt (PcbnewXyz xyz))) ->
-                interpretRest sxs model {pcbnewModelAt = xyz}
-            Right (PcbnewExprAttribute (PcbnewModelScale (PcbnewXyz xyz))) ->
+            Right (PcbnewExprAttribute (PcbnewModelAt xyz)) ->
+                interpretRest sxs model {pcbnewModelPosition = PcbnewModelPosAt xyz}
+            Right (PcbnewExprAttribute (PcbnewModelOffset xyz)) ->
+                interpretRest sxs model {pcbnewModelPosition = PcbnewModelPosOffset xyz}
+            Right (PcbnewExprAttribute (PcbnewModelScale xyz)) ->
                 interpretRest sxs model {pcbnewModelScale = xyz}
-            Right (PcbnewExprAttribute (PcbnewModelRotate (PcbnewXyz xyz))) ->
-                interpretRest sxs model {pcbnewModelRotate = xyz}
-            Right (PcbnewExprAttribute (PcbnewModelOffset (PcbnewXyz xyz))) ->
+            Right (PcbnewExprAttribute (PcbnewModelRotate xyz)) ->
                 interpretRest sxs model {pcbnewModelRotate = xyz}
             Right (PcbnewExprAttribute PcbnewHide) ->
                 interpretRest sxs model {pcbnewModelHide = True}
+            Right (PcbnewExprAttribute (PcbnewModelOpacity d)) ->
+                interpretRest sxs model {pcbnewModelOpacity = Just d}
             Right _ -> expecting "only at, scale, rotate or offset" sx
 asPcbnewModel x = expecting' "model path, at, scale, rotate or offset" x
 

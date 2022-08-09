@@ -20,6 +20,7 @@ module Data.Kicad.PcbnewExpr.PcbnewExpr
 , PcbnewLayerT(..)
 , PcbnewPadShapeT(..)
 , PcbnewPadTypeT(..)
+, PcbnewModelPosT(..)
 , PcbnewXyzT
 , V2Double
 -- * Lenses and other getters/setters
@@ -624,16 +625,18 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewAngle Double
                      | PcbnewXy    V2Double
                      | PcbnewPts   [V2Double]
-                     | PcbnewModel { pcbnewModelPath   :: String
-                                   , pcbnewModelAt     :: PcbnewXyzT
-                                   , pcbnewModelScale  :: PcbnewXyzT
-                                   , pcbnewModelRotate :: PcbnewXyzT
-                                   , pcbnewModelHide   :: Bool
+                     | PcbnewModel { pcbnewModelPath      :: String
+                                   , pcbnewModelPosition  :: PcbnewModelPosT
+                                   , pcbnewModelScale     :: PcbnewXyzT
+                                   , pcbnewModelRotate    :: PcbnewXyzT
+                                   , pcbnewModelHide      :: Bool
+                                   , pcbnewModelOpacity   :: Maybe Double
                                    }
-                     | PcbnewModelAt           PcbnewAttribute
-                     | PcbnewModelScale        PcbnewAttribute
-                     | PcbnewModelRotate       PcbnewAttribute
-                     | PcbnewModelOffset       PcbnewAttribute
+                     | PcbnewModelAt           PcbnewXyzT
+                     | PcbnewModelScale        PcbnewXyzT
+                     | PcbnewModelRotate       PcbnewXyzT
+                     | PcbnewModelOffset       PcbnewXyzT
+                     | PcbnewModelOpacity      Double
                      | PcbnewXyz               PcbnewXyzT
                      | PcbnewClearance         Double
                      | PcbnewSolderPasteRatio  Double
@@ -667,6 +670,17 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
 
 type PcbnewXyzT = (Double, Double, Double)
 
+data PcbnewModelPosT = PcbnewModelPosAt PcbnewXyzT | PcbnewModelPosOffset PcbnewXyzT
+  deriving (Show, Eq)
+
+
+instance AEq PcbnewModelPosT where
+  PcbnewModelPosAt xyz1 ~== PcbnewModelPosAt xyz2 = xyz1 ~== xyz2
+  PcbnewModelPosOffset xyz1 ~== PcbnewModelPosOffset xyz2 = xyz1 ~== xyz2
+  _ ~== _ = False
+
+
+
 instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewLayer l) = List pos [ Atom pos "layer"
                                    , Atom pos $ layerToStr l
@@ -685,13 +699,16 @@ instance SExpressable PcbnewAttribute where
                ] ++ [Atom pos "italic" | i]
     toSExpr (PcbnewPts xys) =
         List pos $ Atom pos "pts" : map (toSExpr . PcbnewXy) xys
-    toSExpr (PcbnewModel p a s r h) =
+    toSExpr (PcbnewModel p a s r h o) =
         List pos $ [ Atom pos "model"
                    , Atom pos p
                    ] ++ if h then [Atom pos "hide"] else []
-                   ++ [ toSExpr (PcbnewModelAt     (PcbnewXyz a))
-                      , toSExpr (PcbnewModelScale  (PcbnewXyz s))
-                      , toSExpr (PcbnewModelRotate (PcbnewXyz r))
+                   ++ fmap (toSExpr . PcbnewModelOpacity) (maybeToList o)
+                   ++ [ case a of
+                        (PcbnewModelPosOffset xyz) -> toSExpr (PcbnewModelOffset xyz)
+                        (PcbnewModelPosAt xyz) ->     toSExpr (PcbnewModelAt xyz) ]
+                   ++ [ toSExpr (PcbnewModelScale  s)
+                      , toSExpr (PcbnewModelRotate r)
                       ]
     toSExpr (PcbnewDrill (PcbnewDrillT s o off)) =
         List pos $ [Atom pos "drill"]
@@ -704,10 +721,10 @@ instance SExpressable PcbnewAttribute where
         List pos [Atom pos "xyz", atomDbl x, atomDbl y, atomDbl z]
     toSExpr (PcbnewFpTextEffects l)  = List pos $ [Atom pos "effects"] ++ fmap toSExpr l
     toSExpr (PcbnewFpTextType t)     = Atom pos $ fpTextTypeToStr t
-    toSExpr (PcbnewModelAt     xyz)  = List pos [Atom pos "at"    , toSExpr xyz]
-    toSExpr (PcbnewModelScale  xyz)  = List pos [Atom pos "scale" , toSExpr xyz]
-    toSExpr (PcbnewModelRotate xyz)  = List pos [Atom pos "rotate", toSExpr xyz]
-    toSExpr (PcbnewModelOffset xyz)  = List pos [Atom pos "offset", toSExpr xyz]
+    toSExpr (PcbnewModelAt     xyz)  = List pos [Atom pos "at"    , toSExpr (PcbnewXyz xyz)]
+    toSExpr (PcbnewModelScale  xyz)  = List pos [Atom pos "scale" , toSExpr (PcbnewXyz xyz)]
+    toSExpr (PcbnewModelRotate xyz)  = List pos [Atom pos "rotate", toSExpr (PcbnewXyz xyz)]
+    toSExpr (PcbnewModelOffset xyz)  = List pos [Atom pos "offset", toSExpr (PcbnewXyz xyz)]
     toSExpr (PcbnewClearance   d)      = toSxD "clearance"                 d
     toSExpr (PcbnewSolderPasteRatio d) = toSxD "solder_paste_ratio"        d
     toSExpr (PcbnewMaskMargin  d)      = toSxD "solder_mask_margin"        d
@@ -720,6 +737,7 @@ instance SExpressable PcbnewAttribute where
     toSExpr (PcbnewThermalWidth d)     = toSxD "thermal_width"             d
     toSExpr (PcbnewThermalGap   d)     = toSxD "thermal_gap"               d
     toSExpr (PcbnewDieLength   d)      = toSxD "die_length"                d
+    toSExpr (PcbnewModelOpacity   d)   = toSxD "die_length"                d
     toSExpr (PcbnewSize      xy)       = toSxDD "size"       xy
     toSExpr (PcbnewStart     xy)       = toSxDD "start"      xy
     toSExpr (PcbnewCenter    xy)       = toSxDD "center"     xy
@@ -804,8 +822,8 @@ instance AEq PcbnewAttribute where
     (PcbnewModelScale        x) ~== (PcbnewModelScale        y) = x ~== y
     (PcbnewModelRotate       x) ~== (PcbnewModelRotate       y) = x ~== y
     (PcbnewModelOffset       x) ~== (PcbnewModelOffset       y) = x ~== y
-    (PcbnewModel p1 a1 s1 r1 h1) ~== (PcbnewModel p2 a2 s2 r2 h2) =
-      p1 == p2 && a1 ~== a2 && s1 ~== s2 && r1 ~== r2 && h1 == h2
+    (PcbnewModel p1 a1 s1 r1 h1 o1) ~== (PcbnewModel p2 a2 s2 r2 h2 o2) =
+      p1 == p2 && a1 ~== a2 && s1 ~== s2 && r1 ~== r2 && h1 == h2 && o1 ~== o2
     (PcbnewFont s1 t1 i1) ~== (PcbnewFont s2 t2 i2) =
         s1 ~== s2 && t1 ~== t2 && i1 == i2
     x ~== y = x == y
@@ -817,11 +835,12 @@ defaultPcbnewFont = PcbnewFont { pcbnewFontSize = (1.0, 1.0)
                                }
 
 defaultPcbnewModel :: PcbnewAttribute
-defaultPcbnewModel = PcbnewModel { pcbnewModelPath   = ""
-                                 , pcbnewModelAt     = (0,0,0)
-                                 , pcbnewModelScale  = (0,0,0)
-                                 , pcbnewModelRotate = (0,0,0)
-                                 , pcbnewModelHide   = False
+defaultPcbnewModel = PcbnewModel { pcbnewModelPath    = ""
+                                 , pcbnewModelPosition = PcbnewModelPosOffset (0,0,0)
+                                 , pcbnewModelScale    = (0,0,0)
+                                 , pcbnewModelRotate   = (0,0,0)
+                                 , pcbnewModelHide     = False
+                                 , pcbnewModelOpacity  = Nothing
                                  }
 defaultPcbnewAttr :: PcbnewAttribute
 defaultPcbnewAttr = PcbnewAttr { pcbnewAttrFootprintType  = Nothing
