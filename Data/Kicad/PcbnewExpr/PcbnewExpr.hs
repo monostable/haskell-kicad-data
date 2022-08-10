@@ -81,6 +81,7 @@ import Lens.Family2
 import Data.AEq
 import Data.Tuple (swap)
 import Data.Maybe
+import qualified Data.Set as Set
 import Data.Foldable (foldMap)
 import Text.Parsec.Pos (newPos, SourcePos)
 
@@ -240,13 +241,69 @@ data PcbnewItem = PcbnewFpText { fpTextType      :: PcbnewFpTextTypeT
                             , itemTstamp     :: String
                             , padAttributes_ :: [PcbnewAttribute]
                             }
-                | PcbnewGroup { groupName :: String
-                              , groupId   :: String
+                | PcbnewGroup { groupName    :: String
+                              , groupId      :: String
                               , groupMembers :: [String]
                               }
+                | PcbnewZone { zoneNet           :: Int
+                             , zoneNetName       :: String
+                             , itemLayer         :: PcbnewLayerT
+                             , itemTstamp        :: String
+                             , zoneName          :: Maybe String
+                             , zoneHatch         :: ZoneHatchT
+                             , zonePadConnect    :: ZonePadConnectT
+                             , zoneMinThickness  :: Double
+                             , zoneFill          :: ZoneFillT
+                             , zoneKeepout       :: ZoneKeepoutT
+                             , zonePolygon       :: [V2Double]
+                             , zoneFilledPolygon :: [V2Double]
+                             }
 
     deriving (Show, Eq)
 
+
+
+data ZoneHatchT = ZoneHatchT { zoneHatchStyle :: ZoneHatchStyleT
+                             , zoneHatchPitch :: Double
+                             }
+  deriving (Show, Eq)
+
+
+
+data ZoneHatchStyleT = ZoneHatchNone | ZoneHatchEdge | ZoneHatchFull
+  deriving (Show, Eq, Enum, Bounded)
+
+
+
+data ZonePadConnectT = ZonePadConnectT { zonePadConnectStyle     :: PcbnewZoneConnectT
+                                       , zonePadConnectClearance :: Double
+                                       }
+  deriving (Show, Eq)
+
+
+
+
+data ZoneItem = ZonePolygon [V2Double] | ZoneFilledPolygon [V2Double]
+  deriving (Show, Eq)
+
+
+
+
+
+data ZoneKeepoutT = ZoneKeepout { zoneKeepoutTracks     :: Maybe Bool
+                                , zoneKeepoutVias       :: Maybe Bool
+                                , zoneKeepoutPads       :: Maybe Bool
+                                , zoneKeepoutCopperPour :: Maybe Bool
+                                , zoneKeepoutFootprints :: Maybe Bool
+                                }
+      deriving (Show, Eq)
+
+
+data ZoneFillT = ZoneFillT { zoneFillEnabled            :: Bool
+                           , zoneFillThermalGap         :: Double
+                           , zoneFillThermalBridgeWidth :: Double
+                           }
+      deriving (Show, Eq)
 
 {-| Lense of the points that define this item -}
 itemPoints :: Functor f => LensLike' f PcbnewItem [V2Double]
@@ -349,11 +406,30 @@ instance SExpressable PcbnewItem where
                , toSExpr $ PcbnewLayers l
                ] ++ if ts == "" then [] else [toSExpr (PcbnewTstamp ts)]
                  ++ map toSExpr attrs
+
     toSExpr (PcbnewGroup n i ms) =
         List pos $ [ Atom pos "group"
                    , toSExpr (PcbnewId i)
                    , toSExpr (PcbnewMembers ms)
                    ]
+
+    toSExpr (PcbnewZone net nn l ts name hatch c min fill ko poly fpoly) =
+        List pos $ [ Atom pos "zone"
+                   , toSExpr (PcbnewZoneNet net)
+                   , toSExpr (PcbnewZoneNetName nn)
+                   , toSExpr (PcbnewLayer l)
+                   , toSExpr (PcbnewTstamp ts)
+                   ] ++ fmap (toSExpr . PcbnewZoneName) (maybeToList name)
+                   ++ [ toSExpr (PcbnewZoneHatch hatch)
+                      , toSExpr (PcbnewZonePadConnect c)
+                      , toSExpr (PcbnewZoneMinThickness min)
+                      , toSExpr (PcbnewZoneKeepout ko)
+                      , toSExpr (PcbnewZonePolygon poly)
+                      , toSExpr (PcbnewZoneFilledPolygon fpoly)
+                      ]
+
+
+
 
 itemLayers :: Functor f => LensLike' f PcbnewItem [PcbnewLayerT]
 itemLayers f item@(PcbnewPad { }) =
@@ -630,7 +706,7 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                                    , pcbnewModelScale     :: PcbnewXyzT
                                    , pcbnewModelRotate    :: PcbnewXyzT
                                    , pcbnewModelHide      :: Bool
-                                   , pcbnewModelOpacity   :: Maybe Double
+                                   , pcbnewModelOpacity  :: Maybe Double
                                    }
                      | PcbnewModelAt           PcbnewXyzT
                      | PcbnewModelScale        PcbnewXyzT
@@ -665,6 +741,15 @@ data PcbnewAttribute = PcbnewLayer      PcbnewLayerT
                      | PcbnewProperty { pcbnewPropertyKey :: String
                                       , pcbnewProprertyValue :: String
                                       }
+                     | PcbnewZoneNet           Int
+                     | PcbnewZoneNetName       String
+                     | PcbnewZoneName          String
+                     | PcbnewZoneHatch         ZoneHatchT
+                     | PcbnewZonePadConnect    ZonePadConnectT
+                     | PcbnewZoneMinThickness  Double
+                     | PcbnewZoneKeepout       ZoneKeepoutT
+                     | PcbnewZonePolygon       [V2Double]
+                     | PcbnewZoneFilledPolygon [V2Double]
     deriving (Show, Eq)
 
 
