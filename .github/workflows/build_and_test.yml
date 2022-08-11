@@ -11,4 +11,4 @@ jobs:
           stack-version: 'latest'
       - run: stack build
       - run: stack test
-      - run: ./parse_all_footprints
+      - run: ./test_parse_all

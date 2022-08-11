@@ -1,6 +1,7 @@
 import Codec.Text.Detect (detectEncodingName)
 import Control.Concurrent.Async (mapConcurrently_)
 import Data.Encoding
+import Data.Encoding.UTF8
 import Data.List (isSuffixOf)
 import Data.Maybe (fromMaybe)
 import System.Directory (createDirectoryIfMissing)
@@ -17,26 +18,29 @@ main :: IO ()
 main = do
     args <- getArgs
     case args of
-        [folder] -> do
-            pw <- pathWalkLazy folder
-            let mods = pw >>= (\(root, dirs, files) ->
+        [ext, input_folder, output_folder] -> do
+            pw <- pathWalkLazy input_folder
+            let files = pw >>= (\(root, dirs, files) ->
                         files >>= (\file ->
-                            if (".kicad_mod" `isSuffixOf` file) then [joinPath [root, file]] else []))
-            putStrLn $ "Running parse on " ++ (show (length mods)) ++ " .kicad_mod files"
-            _ <- mapConcurrently_ parseAndWrite mods
+                            if (("." ++ ext) `isSuffixOf` file) then [joinPath [root, file]] else []))
+            putStrLn $ "Running parse on " ++ (show (length files)) ++ " ." ++ ext ++ " files"
+            _ <- mapConcurrently_ (parseAndWrite ext output_folder) files
             return ()
-        _ -> hPutStrLn stderr "invalid argument\nUSAGE: ./Parse FOLDER" >> exitFailure
+        _ -> hPutStrLn stderr "invalid arguments\nUSAGE: ./parse <FILE_EXTENSION> <INPUT_FOLDER> <OUTPUT_FOLDER>" >> exitFailure
 
-parseAndWrite :: String -> IO ()
-parseAndWrite f = do
+parseAndWrite :: String -> String -> String -> IO ()
+parseAndWrite ext output_folder f = do
             input <- L.readFile f
             let name = detectEncodingName input
-                enc  = encodingFromString (fromMaybe "" name)
+                enc  = fromMaybe (encodingFromString "utf8") (name >>= encodingFromStringExplicit)
                 str  = decodeLazyByteString enc input
-            case PcbnewExpr.parseWithFilename f str of
+                parse = case ext of
+                          "kicad_mod" -> PcbnewExpr.parseWithFilename
+                          _           -> error "unimplemented"
+            case parse f str of
                 Left err -> hPutStrLn stderr err >> exitFailure
                 Right px -> do
-                    let outFile = joinPath ["dist/build/parse-tmp/mod-output", f]
+                    let outFile = joinPath [output_folder, f]
                         outDir = takeDirectory outFile
                     createDirectoryIfMissing True outDir
                     L.writeFile outFile

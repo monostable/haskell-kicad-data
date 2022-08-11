@@ -1,0 +1,55 @@
+#!/bin/bash
+# Run our parser on all the KiCad files we have found so far
+set -eu
+set -o pipefail
+
+test_dir=dist/build
+temp_dir=$test_dir/parse-tmp
+kicad_mod_dir=$temp_dir/kicad_footprints
+kicad_mod_output_dir=$temp_dir/mod-output
+kicad_sch_dir=$temp_dir/kicad6-file-collection
+kicad_sch_output_dir=$temp_dir/sch-output
+parse_exe=$test_dir/parse
+root_dir=$(pwd)
+parse_mod=false
+parse_sch=false
+
+if [ $# -eq 0 ]
+then
+  parse_mod=true
+  parse_sch=true
+else for arg in "$@"
+  do case "$arg" in
+    mod) parse_mod=true;;
+    sch) parse_sch=true;;
+    *) echo >&2 "Unknown argument: $arg" && exit 1
+  esac
+done
+fi
+
+mkdir -p $test_dir
+mkdir -p $temp_dir
+
+if [ "$parse_mod" == "true" ] && [ ! -d "$kicad_mod_dir" ]; then
+  git clone 'https://github.com/kitspace/kicad_footprints' "$kicad_mod_dir"
+  cd "$kicad_mod_dir" && ./init
+  cd "$root_dir"
+fi
+
+if [ "$parse_sch" == "true" ] && [ ! -d "$kicad_sch_dir" ]; then
+  git clone 'https://github.com/kitspace-test-repos/kicad6-file-collection' "$kicad_sch_dir"
+fi
+
+
+echo "Compiling."
+stack exec -- ghc tests/parse.hs -threaded -tmpdir "$temp_dir" -o "$parse_exe"
+
+if [ "$parse_mod" == "true" ]; then
+  "$parse_exe" "kicad_mod" "$kicad_mod_dir" "$kicad_mod_output_dir" +RTS -N
+  python kicad_footprint_load.py "$kicad_mod_output_dir"
+fi
+
+if [ "$parse_sch" == "true" ]; then
+  "$parse_exe" "kicad_sch" "$kicad_sch_dir" "$kicad_sch_output_dir" +RTS -N
+  python kicad_footprint_load.py "$kicad_mod_output_dir"
+fi
